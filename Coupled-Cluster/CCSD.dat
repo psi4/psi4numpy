@@ -1,0 +1,248 @@
+# A simple Psi 4 script to compute MP2 from a simple RHF reference
+# Scipy and numpy python modules are required
+#
+# Algorithms were taken directly from Daniel Crawford's programming website:
+# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+# Special thanks to Rob Parrish for initial assistance with libmints
+
+# !!! This is a work in progress and not yet complete !!!
+
+import time
+import numpy as np
+from scipy import linalg as SLA
+np.set_printoptions(precision=5,linewidth=200,suppress=True)
+memory 8 GB
+
+molecule mol {
+O
+H 1 1.1
+H 1 1.1 2 104
+symmetry c1
+}
+
+#molecule mol {
+#H
+#H 1 0.73257098
+#symmetry c1
+#}
+
+#molecule mol {
+#He
+#symmetry c1
+#}
+
+
+set {
+basis sto-3g
+scf_type pk
+guess core
+mp2_type conv
+e_convergence 1e-8
+}
+
+# Set defaults
+maxiter = 20
+E_conv  = 1.0E-8
+
+# Integral generation from Psi4 MintsHelper
+t=time.time()
+mints = MintsHelper()
+S = mints.ao_overlap()
+T = mints.ao_potential()
+V = mints.ao_kinetic()
+I = mints.ao_eri()
+print '\nTotal time taken for integrals: %.3f seconds' % (time.time()-t)
+
+# Get nbf and ndocc for closed shell molecules
+t=time.time()
+Z = 0
+for A in range(mol.natom()):
+    Z += mol.Z(A)
+ndocc = int(Z / 2)
+nbf = S.rows(0)
+
+print '\nNumber of occupied orbitals: %d' % ndocc
+print 'Number of basis functions: %d' % nbf
+
+# Build H_core
+H = np.matrix(np.array(T)+np.array(V))
+
+# Build I and reshape to rank 4 tensor
+I = np.array(I).reshape(nbf,nbf,nbf,nbf)
+
+# Orthogonalizer A
+A = np.matrix(SLA.sqrtm(S)).I.real
+
+# Calculate initial core guess
+Hp = A*H*A
+e,C2 = SLA.eigh(Hp)
+C = A*C2 
+D = C[:,:ndocc]*C[:,:ndocc].T
+
+print '\nTotal time taken for setup: %.3f seconds' % (time.time()-t)
+
+print('\nStart RHF iterations:\n')
+t=time.time()
+E    = 0.0
+Enuc = mol.nuclear_repulsion_energy()
+Eold = 0.0
+
+# Lists for DIIS extrapolations
+ei = []
+fi = []
+
+for SCF_iter in range(1, maxiter + 1):
+
+    # Build fock matrix
+    J = np.einsum('pqrs,rs', I, D) 
+    K = np.einsum('pqrs,qs', I, D)
+    F = H + J*2 - K
+
+    # DIIS error build
+    diis_e = F*D*S - S*D*F
+    ei = [diis_e] + ei
+    fi = [F] + fi
+
+    # SCF energy and update
+    SCF_E = np.einsum('ij,ij->', F+H, D) + Enuc
+
+    print 'RHF Iteration %3d: Energy = %.16f   dE = %.5E' % (SCF_iter, SCF_E, (SCF_E - Eold))
+    if (abs(SCF_E - Eold) < E_conv):
+        break
+
+    Eold = SCF_E
+
+    # Diagonalize Fock matrix
+    if SCF_iter <=2:
+        Fp = A*F*A
+        e,C2 = SLA.eigh(Fp)
+        C = A*C2
+        D  = C[:,:ndocc]*C[:,:ndocc].T
+
+    # Update using DIIS
+    else:
+        # Make sure DIIS vector is not to large
+        e_cnt = len(ei)
+        if e_cnt>6:
+            e_cnt = 6
+
+        # Build error matrix B
+        B = np.ones((e_cnt+1,e_cnt+1))*-1
+        B[-1,-1] = 0
+        for num1,e1 in enumerate(ei[:e_cnt]):
+            for num2,e2 in enumerate(ei[:e_cnt]):
+                val = np.einsum('ij,ij->',e1,e2)
+                B[num1,num2] = val
+
+        # Build residual vector
+        resid = np.zeros(e_cnt+1)
+        resid[-1] = -1
+
+        # Solve pulay equations
+        ci = SLA.solve(B,resid)
+
+        # Calculate new fock matrix as linear 
+        # combination of previous fock matrices
+        F = np.zeros_like(fi[0])
+        for num,c in enumerate(ci[:-1]):
+            F += c*fi[num]
+
+        # Diagonalize new Fock matrix
+        Fp = A*F*A
+        e,C2 = SLA.eigh(Fp)
+        C = A*C2
+        D  = C[:,:ndocc]*C[:,:ndocc].T
+
+print 'Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t)
+
+print 'Final SCF energy: %.8f hartree' % SCF_E
+SCF_E_psi = energy('scf')
+compare_values(SCF_E_psi, SCF_E, 8, 'SCF Energy')
+
+t=time.time()
+# Split eigenvectors and eigenvalues into o and v
+Co = C[:,:ndocc]
+Cv = C[:,ndocc:]
+Eocc = e[:ndocc]
+Evirt = e[ndocc:]
+
+# Complete the AOpqrs -> MOiajb step
+# "Noddy" N^8 algorithm
+#MO = np.einsum('sB,rJ,qA,pI,pqrs->IAJB', Cv, Co, Cv, Co, I)
+
+# N^5 algorithm
+I = I.astype(np.float64)
+MO = np.einsum('rJ,pqrs->pqJs', Co, I)
+MO = np.einsum('pI,pqJs->IqJs', Co, MO)
+MO = np.einsum('sB,IqJs->IqJB', Cv, MO)
+MO = np.einsum('qA,IqJB->IAJB', Cv, MO)
+
+
+print '\n' + '--'*40
+print 'Total time taken for integral transformation: %.f seconds' % (time.time()-t)
+print 'Shape of MO integrals %s \n' % str(MO.shape)
+
+# Calculate energy denominators and MP2 energy
+epsilon = (Eocc.reshape(-1,1,1,1) - Evirt.reshape(-1,1,1) + Eocc.reshape(-1,1) - Evirt)
+tmp_MP2 = 2*np.einsum('iajb,iajb->iajb', MO, MO)
+tmp_MP2 -= np.einsum('iajb,ibja->ibja', MO, MO)
+tmp_MP2 /= epsilon
+MP2corr_E = np.sum(tmp_MP2)
+#MP2corr_E = np.einsum('iajb,iajb->', tmp_MP2, epsilon) 
+
+MP2total_E = MP2corr_E + SCF_E
+
+print 'MP2 correlation energy: %.8f' % MP2corr_E
+print 'MP2 total energy:       %.8f' % MP2total_E
+MP2_E_psi = energy('mp2')
+compare_values(MP2_E_psi, MP2total_E, 8, 'MP2 Energy')
+
+
+print '\n' + '--'*40
+print 'Starting CCSD'
+
+#Make spin-orbital MO
+MO = np.einsum('rJ,pqrs->pqJs', C, I)
+MO = np.einsum('pI,pqJs->IqJs', C, MO)
+MO = np.einsum('sB,IqJs->IqJB', C, MO)
+MO = np.einsum('qA,IqJB->IAJB', C, MO)
+
+
+MO = np.repeat(MO, 2, axis=0)
+MO = np.repeat(MO, 2, axis=1)
+MO = np.repeat(MO, 2, axis=2)
+MO = np.repeat(MO, 2, axis=3)
+p = np.arange(nbf*2, dtype=np.int).reshape(-1, 1, 1, 1) % 2
+q = np.arange(nbf*2, dtype=np.int).reshape(-1, 1, 1) % 2
+r = np.arange(nbf*2, dtype=np.int).reshape(-1, 1) % 2
+s = np.arange(nbf*2, dtype=np.int) % 2
+
+mask1 = (p==r) * (q==s)
+value1 = MO.copy()
+value1 *= mask1
+
+mask2 = (p==s) * (q==r)
+value2 = MO.copy().swapaxes(1,3)
+value2 *= mask2
+
+MO = value1 - value2
+
+e = np.repeat(e, 2)
+Eocc = e[:ndocc*2]
+Evirt = e[ndocc*2:]
+
+# Compute MP2 in SO basis set to make sure the transformation was correct
+MO = MO.swapaxes(1,2)
+tmp = MO[:ndocc*2, :ndocc*2, ndocc*2:, ndocc*2:]
+tmp = np.power(tmp, 2)
+epsilon = 1/(Eocc.reshape(-1,1,1,1) + Eocc.reshape(-1,1,1) - Evirt.reshape(-1,1) - Evirt)
+
+SO_MP2total_E = np.einsum('iajb,iajb->', tmp, epsilon)/4
+print 'SO based MP2 total energy:       %.8f' % SO_MP2total_E
+
+# DPD approch to CCSD equations
+# See: http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+
+
+
+
