@@ -120,7 +120,7 @@ for SCF_iter in range(1, maxiter + 1):
     # SCF energy and update
     SCF_E = np.einsum('ij,ij->', F+H, D) + Enuc
 
-    print 'RHF Iteration %3d: Energy = %.16f   dE = %.5E' % (SCF_iter, SCF_E, (SCF_E - Eold))
+    print 'RHF Iteration %3d: Energy = %.16f   dE = % .5E' % (SCF_iter, SCF_E, (SCF_E - Eold))
     if (abs(SCF_E - Eold) < E_conv):
         break
 
@@ -200,12 +200,19 @@ epsilon = 1/(Eocc.reshape(-1,1,1,1) - Evirt.reshape(-1,1,1) + Eocc.reshape(-1,1)
 MP2corr_OS = np.einsum('iajb,iajb,iajb->', MO, MO, epsilon)
 MP2corr_SS = np.einsum('iajb,iajb,iajb->', MO - MO.swapaxes(1,3), MO, epsilon)
 
+MP2corr_E = MP2corr_SS + MP2corr_OS
+MP2_E = SCF_E + MP2corr_E
+
 SCS_MP2corr_E = MP2corr_SS/3 + MP2corr_OS*6/5
 SCS_MP2_E = SCF_E + SCS_MP2corr_E
 
 print 'MP2 SS correlation energy:  %.8f' % MP2corr_SS
 print 'MP2 OS correlation energy:  %.8f' % MP2corr_OS
-print 'SCS-MP2 correlation energy: %.8f' % MP2corr_SS
+
+print '\nMP2 correlation energy: %.8f' % MP2corr_E
+print 'MP2 total energy:       %.8f' % MP2_E
+
+print '\nSCS-MP2 correlation energy: %.8f' % MP2corr_SS
 print 'SCS-MP2 total energy:       %.8f' % SCS_MP2_E
 
 

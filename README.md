@@ -4,7 +4,7 @@ psi4numpy
 #####Author: Daniel G. A. Smith
 #####Contact: dsmith@auburn.edu
 
-The overall goal of psi4education is to provide clear, readable code for both learning
+The overall goal of psi4numpy is to provide clear, readable code for both learning
 and development. Python is used to "plug" together low level languages and
 provide an interface that is both simple to use and remains relative fast
 to execute. In this case Psi4 is used for molecular properties and integrals,

@@ -120,7 +120,7 @@ for SCF_iter in range(1, maxiter + 1):
     # SCF energy and update
     SCF_E = np.einsum('ij,ij->', F+H, D) + Enuc
 
-    print 'RHF Iteration %3d: Energy = %.16f   dE = %.5E' % (SCF_iter, SCF_E, (SCF_E - Eold))
+    print 'RHF Iteration %3d: Energy = %.16f   dE = % .5E' % (SCF_iter, SCF_E, (SCF_E - Eold))
     if (abs(SCF_E - Eold) < E_conv):
         break
 
