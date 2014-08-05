@@ -14,8 +14,9 @@ The input files should be run as a normal psi4 input script; however,
 it should be noted the output is printed to the command line instead of merged
 with the psi4 output.
 
-Most algorithms were taken directly from Daniel Crawford's programming [website]
-(http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming).
+Most algorithms were taken directly from Daniel Crawford's programming [website](http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming).
+
+A tutorial that covers the basics of numpy can be found [here](http://wiki.scipy.org/Tentative_NumPy_Tutorial).
 
 #####Requirements:
 - [Psi4](psicode.org)
