@@ -215,8 +215,8 @@ print 'Total time taken for AO -> spatial-orbital MO transformation: %.3f second
 
 # t^a_i
 t1 = np.zeros((ndocc, nvirt))
-# t^{ab}_{ij}
 
+# t^{ab}_{ij}
 # Special note: the .copy() must be here or we simply create a view.
 # If we create a view and then operate in place we modify the MO array
 t2 = MO[:ndocc, :ndocc, ndocc:, ndocc:].copy()
@@ -235,12 +235,33 @@ compare_values(MP2_E_psi, MP2_E, 6, 'MP2 Energy')
 # Build so Fock matirx
 Fpq = H + np.einsum('pmqn->pq', MO[:, :ndocc, :, :ndocc])
 
-#Bulit Eqn 9: tilde{\Taue}) 
+#Bulit Eqn 9: tilde{\Tau}) 
+def build_tilde_tau(t1, t2):
+    tmp1 = np.einsum('ia,jb->ijab', t1, t1)
+    tmp2 = np.einsum('ib,ja->ijab', t1, t1)
+    return tmp2 + 0.5*(tmp1 - tmp2)
 
-tmp1 = np.einsum('ia,jb->ijab', t1, t1)
-tmp2 = np.einsum('ib,ja->ijab', t1, t1)
+#Build Eqn 10: \Tau) 
+def build_tau(t1, t2):
+    tmp1 = np.einsum('ia,jb->ijab', t1, t1)
+    tmp2 = np.einsum('ib,ja->ijab', t1, t1)
+    return tmp2 + tmp1 - tmp2
 
-print tmp1-tmp2
-    
+#Build Eqn 3:
+def build_Fae(t1, t2):
+    tmp1 = Fpq[ndocc:, ndocc:]
+    tmp1[np.diag_indices_from(tmp1)] = 0
+
+    tmp2 = 0.5 * np.einsum('me,ma->ae', F[:ndocc, ndocc:], t1)
+
+    tmp3 = np.einsum('mf,mafe->ae', t1, MO[:ndocc, ndocc:, ndocc:, ndocc:])
+
+    #tmp_tau = build_tilde_tau(t1, t2)
+    #tmp4 = 0.5 * np.einsum('mnaf,mnef->ae', tmp_tau, MO[:ndocc, :ndocc, ndocc:, ndocc:])
+
+    #return tmp1 - tmp2 + tmp3 - tmp4
+
+
+build_Fae(t1, t2) 
 
 
