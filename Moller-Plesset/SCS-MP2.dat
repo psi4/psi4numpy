@@ -195,17 +195,17 @@ print '\nTotal time taken for integral transformation: %.f seconds' % (time.time
 print 'Shape of MO integrals %s \n' % str(MO.shape)
 
 # Calculate energy denominators and MP2 energy
-tmp_MP2 = 2*np.einsum('iajb,iajb->iajb', MO, MO)
-tmp_MP2 -= np.einsum('iajb,ibja->ibja', MO, MO)
 epsilon = 1/(Eocc.reshape(-1,1,1,1) - Evirt.reshape(-1,1,1) + Eocc.reshape(-1,1) - Evirt)
-MP2corr_E = np.einsum('iajb,iajb->', tmp_MP2, epsilon) 
 
-MP2total_E = MP2corr_E + SCF_E
+MP2corr_OS = np.einsum('iajb,iajb,iajb->', MO, MO, epsilon)
+MP2corr_SS = np.einsum('iajb,iajb,iajb->', MO - MO.swapaxes(1,3), MO, epsilon)
 
-print 'MP2 correlation energy: %.8f' % MP2corr_E
-print 'MP2 total energy:       %.8f' % MP2total_E
-MP2_E_psi = energy('mp2')
-compare_values(MP2_E_psi, MP2total_E, 6, 'MP2 Energy')
+SCS_MP2corr_E = MP2corr_SS/3 + MP2corr_OS*6/5
+SCS_MP2_E = SCF_E + SCS_MP2corr_E
 
+print 'MP2 SS correlation energy:  %.8f' % MP2corr_SS
+print 'MP2 OS correlation energy:  %.8f' % MP2corr_OS
+print 'SCS-MP2 correlation energy: %.8f' % MP2corr_SS
+print 'SCS-MP2 total energy:       %.8f' % SCS_MP2_E
 
 

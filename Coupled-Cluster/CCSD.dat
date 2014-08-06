@@ -13,36 +13,31 @@ from scipy import linalg as SLA
 np.set_printoptions(precision=5,linewidth=200,suppress=True)
 memory 8 GB
 
+#molecule mol {
+#O
+#H 1 1.1
+#H 1 1.1 2 104
+#symmetry c1
+#}
+
 molecule mol {
-O
-H 1 1.1
-H 1 1.1 2 104
+H
+H 1 0.73257098
 symmetry c1
 }
 
-#molecule mol {
-#H
-#H 1 0.73257098
-#symmetry c1
-#}
-
-#molecule mol {
-#He
-#symmetry c1
-#}
-
 
 set {
-basis sto-3g
+basis cc-pVDZ
 scf_type pk
 guess core
 mp2_type conv
-e_convergence 1e-8
+e_convergence 1e-10
 }
 
 # Set defaults
 maxiter = 20
-E_conv  = 1.0E-8
+E_conv  = 1.0E-10
 
 # Integral generation from Psi4 MintsHelper
 t=time.time()
@@ -117,7 +112,7 @@ for SCF_iter in range(1, maxiter + 1):
         Fp = A*F*A
         e,C2 = SLA.eigh(Fp)
         C = A*C2
-        D  = C[:,:ndocc]*C[:,:ndocc].T
+        D  = C[:, :ndocc]*C[:, :ndocc].T
 
     # Update using DIIS
     else:
@@ -127,15 +122,15 @@ for SCF_iter in range(1, maxiter + 1):
             e_cnt = 6
 
         # Build error matrix B
-        B = np.ones((e_cnt+1,e_cnt+1))*-1
-        B[-1,-1] = 0
+        B = np.ones((e_cnt+1, e_cnt+1))*-1
+        B[-1, -1] = 0
         for num1,e1 in enumerate(ei[:e_cnt]):
             for num2,e2 in enumerate(ei[:e_cnt]):
-                val = np.einsum('ij,ij->',e1,e2)
-                B[num1,num2] = val
+                val = np.einsum('ij,ij->', e1, e2)
+                B[num1, num2] = val
 
         # Build residual vector
-        resid = np.zeros(e_cnt+1)
+        resid = np.zeros(e_cnt + 1)
         resid[-1] = -1
 
         # Solve pulay equations
@@ -149,9 +144,9 @@ for SCF_iter in range(1, maxiter + 1):
 
         # Diagonalize new Fock matrix
         Fp = A*F*A
-        e,C2 = SLA.eigh(Fp)
+        e, C2 = SLA.eigh(Fp)
         C = A*C2
-        D  = C[:,:ndocc]*C[:,:ndocc].T
+        D  = C[:, :ndocc] * C[:, :ndocc].T
 
 print 'Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t)
 
@@ -159,54 +154,17 @@ print 'Final SCF energy: %.8f hartree' % SCF_E
 SCF_E_psi = energy('scf')
 compare_values(SCF_E_psi, SCF_E, 8, 'SCF Energy')
 
-t=time.time()
-# Split eigenvectors and eigenvalues into o and v
-Co = C[:,:ndocc]
-Cv = C[:,ndocc:]
-Eocc = e[:ndocc]
-Evirt = e[ndocc:]
-
-# Complete the AOpqrs -> MOiajb step
-# "Noddy" N^8 algorithm
-#MO = np.einsum('sB,rJ,qA,pI,pqrs->IAJB', Cv, Co, Cv, Co, I)
-
-# N^5 algorithm
-I = I.astype(np.float64)
-MO = np.einsum('rJ,pqrs->pqJs', Co, I)
-MO = np.einsum('pI,pqJs->IqJs', Co, MO)
-MO = np.einsum('sB,IqJs->IqJB', Cv, MO)
-MO = np.einsum('qA,IqJB->IAJB', Cv, MO)
-
 
 print '\n' + '--'*40
-print 'Total time taken for integral transformation: %.f seconds' % (time.time()-t)
-print 'Shape of MO integrals %s \n' % str(MO.shape)
-
-# Calculate energy denominators and MP2 energy
-epsilon = (Eocc.reshape(-1,1,1,1) - Evirt.reshape(-1,1,1) + Eocc.reshape(-1,1) - Evirt)
-tmp_MP2 = 2*np.einsum('iajb,iajb->iajb', MO, MO)
-tmp_MP2 -= np.einsum('iajb,ibja->ibja', MO, MO)
-tmp_MP2 /= epsilon
-MP2corr_E = np.sum(tmp_MP2)
-#MP2corr_E = np.einsum('iajb,iajb->', tmp_MP2, epsilon) 
-
-MP2total_E = MP2corr_E + SCF_E
-
-print 'MP2 correlation energy: %.8f' % MP2corr_E
-print 'MP2 total energy:       %.8f' % MP2total_E
-MP2_E_psi = energy('mp2')
-compare_values(MP2_E_psi, MP2total_E, 8, 'MP2 Energy')
-
-
-print '\n' + '--'*40
-print 'Starting CCSD'
+print 'Begining CCSD\n'
 
 #Make spin-orbital MO
+t=time.time()
+print 'Starting AO -> spatial-orbital MO transformation...'
 MO = np.einsum('rJ,pqrs->pqJs', C, I)
 MO = np.einsum('pI,pqJs->IqJs', C, MO)
 MO = np.einsum('sB,IqJs->IqJB', C, MO)
 MO = np.einsum('qA,IqJB->IAJB', C, MO)
-
 
 MO = np.repeat(MO, 2, axis=0)
 MO = np.repeat(MO, 2, axis=1)
@@ -217,32 +175,72 @@ q = np.arange(nbf*2, dtype=np.int).reshape(-1, 1, 1) % 2
 r = np.arange(nbf*2, dtype=np.int).reshape(-1, 1) % 2
 s = np.arange(nbf*2, dtype=np.int) % 2
 
+
 mask1 = (p==r) * (q==s)
 value1 = MO.copy()
 value1 *= mask1
 
 mask2 = (p==s) * (q==r)
-value2 = MO.copy().swapaxes(1,3)
+value2 = MO.copy().swapaxes(1, 3)
 value2 *= mask2
 
 MO = value1 - value2
 
+# <pq|rs> -> (pr|qs)
+MO = MO.swapaxes(1, 2) 
+
+# Update ndocc and nvirt
+ndocc = ndocc*2
+nvirt = MO.shape[0] - ndocc
+
+#Extend eigenvalues
 e = np.repeat(e, 2)
-Eocc = e[:ndocc*2]
-Evirt = e[ndocc*2:]
+Eocc = e[:ndocc]
+Evirt = e[ndocc:]
 
-# Compute MP2 in SO basis set to make sure the transformation was correct
-MO = MO.swapaxes(1,2)
-tmp = MO[:ndocc*2, :ndocc*2, ndocc*2:, ndocc*2:]
-tmp = np.power(tmp, 2)
-epsilon = 1/(Eocc.reshape(-1,1,1,1) + Eocc.reshape(-1,1,1) - Evirt.reshape(-1,1) - Evirt)
+# Update Hcore
+H = np.repeat(H, 2, axis=0)
+H = np.repeat(H, 2, axis=1)
 
-SO_MP2total_E = np.einsum('iajb,iajb->', tmp, epsilon)/4
-print 'SO based MP2 total energy:       %.8f' % SO_MP2total_E
+print 'Total time taken for AO -> spatial-orbital MO transformation: %.3f seconds \n' % (time.time()-t)
 
-# DPD approch to CCSD equations
+# DPD approach to CCSD equations
 # See: http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
 
+# occ orbitals i, j, k, l, m, n
+# virt orbitals a, b, c, d, e, f
+# all oribitals p, q, r, s, t, u, v
 
+# Construct initial guess
+
+# t^a_i
+t1 = np.zeros((ndocc, nvirt))
+# t^{ab}_{ij}
+
+# Special note: the .copy() must be here or we simply create a view.
+# If we create a view and then operate in place we modify the MO array
+t2 = MO[:ndocc, :ndocc, ndocc:, ndocc:].copy()
+t2 /= (Eocc.reshape(-1, 1, 1, 1) + Eocc.reshape(-1, 1, 1) - Evirt.reshape(-1, 1) - Evirt)
+
+# Compute MP2 in MO basis set to make sure the transformation was correct
+MOijab = MO[:ndocc, :ndocc, ndocc:, ndocc:]
+MP2corr_E = np.einsum('iajb,iajb->', MOijab, t2)/4
+MP2_E = SCF_E + MP2corr_E
+
+print 'Spatial-orbital MO based MP2 correlation energy: %.8f' % MP2corr_E
+print 'MP2 total energy:       %.8f' % MP2_E
+MP2_E_psi = energy('mp2')
+compare_values(MP2_E_psi, MP2_E, 6, 'MP2 Energy')
+
+# Build so Fock matirx
+Fpq = H + np.einsum('pmqn->pq', MO[:, :ndocc, :, :ndocc])
+
+#Bulit Eqn 9: tilde{\Taue}) 
+
+tmp1 = np.einsum('ia,jb->ijab', t1, t1)
+tmp2 = np.einsum('ib,ja->ijab', t1, t1)
+
+print tmp1-tmp2
+    
 
 
