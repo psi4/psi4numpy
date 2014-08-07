@@ -6,7 +6,7 @@ psi4numpy
 
 The overall goal of psi4numpy is to provide clear, readable code for both learning
 and development. Python is used to "plug" together low level languages and
-provide an interface that is both simple to use and remains relative fast
+provide an interface that is both simple to use and remains relatively fast
 to execute. In this case Psi4 is used for molecular properties and integrals,
 numpy/scipy is used for tensor operations and linear algebra.
 
