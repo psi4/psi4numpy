@@ -345,7 +345,7 @@ Wabef = build_Wabef(t1, t2)
 Wmbej = build_Wmbej(t1, t2) 
 
 # Build RHS side of T1 equations
-rhs_T1 = F[:ndocc, ndocc:]
+rhs_T1 = F[:ndocc, ndocc:].copy()
 rhs_T1 += np.einsum('ie,ae->ia', t1, Fae)
 rhs_T1 -= np.einsum('ma,mi->ia', t1, Fmi)
 rhs_T1 += np.einsum('imae,me->ia', t2, Fme)
@@ -355,11 +355,11 @@ rhs_T1 -= 0.5 * np.einsum('mnae,nmei->ia', t2, MO[:ndocc, :ndocc, ndocc:, :ndocc
 
 # Build RHS side of T2 equations
 
-rhs_T2 = MO[:ndocc, :ndocc, ndocc:, ndocc:]
+rhs_T2 = MO[:ndocc, :ndocc, ndocc:, ndocc:].copy()
 
 tmp = Fae - 0.5 * np.einsum('mb,me->be', t1, Fme)
-Pab = np.einsum('ijae,be', t2, tmp)
-rhs_T2 += 1 - Pab - Pab.swapaxes(-1, -2)
+Pab = np.einsum('ijae,be->ijab', t2, tmp)
+rhs_T2 += 1 - Pab - Pab.swapaxes(2, 3)
 
 tmp = Fmi + 0.5 * np.einsum('je,me->mj', t1, Fme)
 Pij = np.einsum('imab,mj->ijab', t2, tmp)
@@ -377,9 +377,12 @@ Pibaj = np.einsum('imae,mbej->ibaj', t2, Wmbej)
 
 
 
+Eccsd = np.einsum('ia,ia->', F[:ndocc, ndocc:], t1)
+Eccsd += 0.25 * np.einsum('ijab,ijab->', MO[:ndocc, :ndocc, ndocc:, ndocc:], t2)
+Eccsd += 0.5 * np.einsum('ijab,ia,jb->', MO[:ndocc, :ndocc, ndocc:, ndocc:], t1, t1)
 
 
-
+print Eccsd
 
 
 
