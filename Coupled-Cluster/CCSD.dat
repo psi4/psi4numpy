@@ -3,7 +3,6 @@
 #
 # Algorithms were taken directly from Daniel Crawford's programming website:
 # http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
-# Special thanks to Rob Parrish for initial assistance with libmints
 
 # !!! This is a work in progress and not yet complete !!!
 
@@ -211,12 +210,6 @@ print 'Total time taken for AO -> spatial-orbital MO transformation: %.3f second
 # virt orbitals a, b, c, d, e, f
 # all oribitals p, q, r, s, t, u, v
 
-# Construct initial guess
-
-# t^a_i
-t1 = np.zeros((ndocc, nvirt))
-
-# t^{ab}_{ij}
 # Special note: the .copy() must be here or we simply create a view.
 # If we create a view and then operate in place we modify the MO array
 t2 = MO[:ndocc, :ndocc, ndocc:, ndocc:].copy()
@@ -224,7 +217,7 @@ t2 /= (Eocc.reshape(-1, 1, 1, 1) + Eocc.reshape(-1, 1, 1) - Evirt.reshape(-1, 1)
 
 # Compute MP2 in MO basis set to make sure the transformation was correct
 MOijab = MO[:ndocc, :ndocc, ndocc:, ndocc:]
-MP2corr_E = np.einsum('iajb,iajb->', MOijab, t2)/4
+MP2corr_E = np.einsum('ijab,ijab->', MOijab, t2)/4
 MP2_E = SCF_E + MP2corr_E
 
 print 'Spatial-orbital MO based MP2 correlation energy: %.8f' % MP2corr_E
@@ -232,8 +225,7 @@ print 'MP2 total energy:       %.8f' % MP2_E
 MP2_E_psi = energy('mp2')
 compare_values(MP2_E_psi, MP2_E, 6, 'MP2 Energy')
 
-# Build so Fock matirx
-Fpq = H + np.einsum('pmqn->pq', MO[:, :ndocc, :, :ndocc])
+
 
 #Bulit Eqn 9: tilde{\Tau}) 
 def build_tilde_tau(t1, t2):
@@ -249,19 +241,148 @@ def build_tau(t1, t2):
 
 #Build Eqn 3:
 def build_Fae(t1, t2):
-    tmp1 = Fpq[ndocc:, ndocc:]
+    tmp1 = F[ndocc:, ndocc:]
     tmp1[np.diag_indices_from(tmp1)] = 0
 
     tmp2 = 0.5 * np.einsum('me,ma->ae', F[:ndocc, ndocc:], t1)
 
     tmp3 = np.einsum('mf,mafe->ae', t1, MO[:ndocc, ndocc:, ndocc:, ndocc:])
 
-    #tmp_tau = build_tilde_tau(t1, t2)
-    #tmp4 = 0.5 * np.einsum('mnaf,mnef->ae', tmp_tau, MO[:ndocc, :ndocc, ndocc:, ndocc:])
+    tmp_tau = build_tilde_tau(t1, t2)
+    tmp4 = 0.5 * np.einsum('mnaf,mnef->ae', tmp_tau, MO[:ndocc, :ndocc, ndocc:, ndocc:])
 
-    #return tmp1 - tmp2 + tmp3 - tmp4
+    return tmp1 - tmp2 + tmp3 - tmp4
+
+#Build Eqn 4:
+def build_Fmi(t1, t2):
+    tmp1 = F[:ndocc, :ndocc]
+    tmp1[np.diag_indices_from(tmp1)] = 0
+
+    tmp2 = 0.5 * np.einsum('ie,me->mi', F[:ndocc, ndocc:], t1)
+
+    tmp3 = np.einsum('ne,mnie->mi', t1, MO[:ndocc, :ndocc:, :ndocc, ndocc:])
+
+    tmp_tau = build_tilde_tau(t1, t2)
+    tmp4 = 0.5 * np.einsum('inef,mnef->mi', tmp_tau, MO[:ndocc, :ndocc, ndocc:, ndocc:])
+
+    return tmp1 + tmp2 + tmp3 + tmp4
+
+#Build Eqn 5:
+def build_Fme(t1, t2):
+    tmp1 = F[:ndocc, ndocc:]
+
+    tmp2 = np.einsum('nf,mnef->me', t1, MO[:ndocc, :ndocc, ndocc:, ndocc:])
+
+    return tmp1 + tmp2
+
+#Build Eqn 6:
+def build_Wmnij(t1, t2):
+    tmp1 = MO[:ndocc, :ndocc, :ndocc, :ndocc]
+
+    Pij = np.einsum('je,mnie->mnij', t1, MO[:ndocc, :ndocc, :ndocc, ndocc:])
+    tmp2 = 1 - Pij - Pij.swapaxes(-2, -1)
+
+    tmp_tau = build_tilde_tau(t1, t2)
+    tmp3 = 0.25 * np.einsum('ijef,mnef->mnij', tmp_tau, MO[:ndocc, :ndocc, ndocc:, ndocc:])
+
+    return tmp1 + tmp2 + tmp3
+
+#Build Eqn 7:
+def build_Wabef(t1, t2):
+    tmp1 = MO[ndocc:, ndocc:, ndocc:, ndocc:]
+
+    Pab = np.einsum('mb,amef->abef', t1, MO[ndocc:, :ndocc, ndocc:, ndocc:])
+    tmp2 = 1 - Pab - Pab.swapaxes(-2, -1)
+
+    tmp_tau = build_tilde_tau(t1, t2)
+    tmp3 = 0.25 * np.einsum('mnab,mnef->abef', tmp_tau, MO[:ndocc, :ndocc, ndocc:, ndocc:])
+
+    return tmp1 - tmp2 + tmp3
+
+#Build Eqn 8:
+def build_Wmbej(t1, t2):
+    tmp1 = MO[:ndocc, ndocc:, ndocc:, :ndocc]
+
+    tmp2 = np.einsum('jf,mbef->mbej', t1, MO[:ndocc, ndocc:, ndocc:, ndocc:])
+
+    tmp3 = np.einsum('nb,mnej->mbej', t1, MO[:ndocc, :ndocc, ndocc:, :ndocc])
+
+    tmp4 = 0.5 * t2 + np.einsum('jf,nb->jnfb', t1, t1)
+    tmp5 = np.einsum('jnfb,mnef->mbej', tmp4, MO[:ndocc, :ndocc, ndocc:, ndocc:])
+
+    return tmp1 + tmp2 - tmp3 - tmp5
 
 
-build_Fae(t1, t2) 
+# Build so Fock matirx
+F = H + np.einsum('pmqn->pq', MO[:, :ndocc, :, :ndocc])
+
+# Build D matrices
+
+# use matrix.A to access underlying numpy array
+Focc = F[np.arange(ndocc), np.arange(ndocc)].A.flatten()
+Fvirt = F[np.arange(ndocc, nvirt), np.arange(ndocc, nvirt)].A.flatten()
+
+Dia = Focc.reshape(-1, 1) - Fvirt
+Dijab = Focc.reshape(-1, 1, 1, 1) + Focc.reshape(-1, 1, 1) - Fvirt.reshape(-1, 1) - Fvirt
+
+# Construct initial guess
+
+# t^a_i
+t1 = np.zeros((ndocc, nvirt))
+
+# t^{ab}_{ij}
+# Special note: the .copy() must be here or we simply create a view.
+# If we create a view and then operate in place we modify the MO array
+t2 = MO[:ndocc, :ndocc, ndocc:, ndocc:].copy()
+t2 /= (Eocc.reshape(-1, 1, 1, 1) + Eocc.reshape(-1, 1, 1) - Evirt.reshape(-1, 1) - Evirt)
+
+
+Fae = build_Fae(t1, t2) 
+Fmi = build_Fmi(t1, t2) 
+Fme = build_Fme(t1, t2) 
+Wmnij = build_Wmnij(t1, t2) 
+Wabef = build_Wabef(t1, t2) 
+Wmbej = build_Wmbej(t1, t2) 
+
+# Build RHS side of T1 equations
+rhs_T1 = F[:ndocc, ndocc:].copy()
+rhs_T1 += np.einsum('ie,ae->ia', t1, Fae)
+rhs_T1 -= np.einsum('ma,mi->ia', t1, Fmi)
+rhs_T1 += np.einsum('imae,me->ia', t2, Fme)
+rhs_T1 -= np.einsum('nf,naif->ia', t1, MO[:ndocc, ndocc:, :ndocc, ndocc:])
+rhs_T1 -= 0.5 * np.einsum('imef,maef->ia', t2, MO[:ndocc, ndocc:, ndocc:, ndocc:])
+rhs_T1 -= 0.5 * np.einsum('mnae,nmei->ia', t2, MO[:ndocc, :ndocc, ndocc:, :ndocc])
+
+# Build RHS side of T2 equations
+
+rhs_T2 = MO[:ndocc, :ndocc, ndocc:, ndocc:].copy()
+
+tmp = Fae - 0.5 * np.einsum('mb,me->be', t1, Fme)
+Pab = np.einsum('ijae,be->ijab', t2, tmp)
+rhs_T2 += 1 - Pab - Pab.swapaxes(2, 3)
+
+tmp = Fmi + 0.5 * np.einsum('je,me->mj', t1, Fme)
+Pij = np.einsum('imab,mj->ijab', t2, tmp)
+rhs_T2 -= 1 - Pij - Pij.swapaxes(0, 1)
+
+rhs_T2 += 0.5 * np.einsum('mnab,mnij->ijab', t2, Wmnij)
+rhs_T2 += 0.5 * np.einsum('ijef,abef->ijab', t2, Wabef)
+
+tmp = np.einsum('ie,ma,mbej->ijab', t1, t1, MO[:ndocc, ndocc:, ndocc:, :ndocc])
+Pibaj = np.einsum('imae,mbej->ibaj', t2, Wmbej)
+
+# This?
+# (1 - Pij - Pji) * (1 - Pab - Pba)
+# 1 - Pab - Pba - Pij + Pijab + Pijba - Pab + Pjiab + Pjiba 
+
+
+
+Eccsd = np.einsum('ia,ia->', F[:ndocc, ndocc:], t1)
+Eccsd += 0.25 * np.einsum('ijab,ijab->', MO[:ndocc, :ndocc, ndocc:, ndocc:], t2)
+Eccsd += 0.5 * np.einsum('ijab,ia,jb->', MO[:ndocc, :ndocc, ndocc:, ndocc:], t1, t1)
+
+
+print Eccsd
+
 
 
