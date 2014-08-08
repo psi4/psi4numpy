@@ -53,9 +53,8 @@ print "\nSize of the ERI tensor will be %4.2f GB." % I_Size
 memory_footprint = I_Size*1.5
 
 if I_Size > numpy_memory:
-    print "Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory)
     clean()
-    raise ValidationError("Exiting Psi4")
+    raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
 
 T = mints.ao_potential()
 V = mints.ao_kinetic()
@@ -125,9 +124,8 @@ for SCF_ITER in range(1, maxiter + 1):
     D = Cocc*Cocc.T
 
     if SCF_ITER==maxiter:
-        print "Maximum number of SCF cycles exceeded without convergence."
         clean()
-        raise ValidationError("Exiting Psi4")
+        raise Exception("Maximum number of SCF cycles exceeded without convergence.")
 
 print 'Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t)
 
