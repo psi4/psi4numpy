@@ -13,7 +13,7 @@ from scipy import linalg as SLA
 np.set_printoptions(precision=5,linewidth=200,suppress=True)
 memory 8 GB
 
-def pquit():
+def pexit():
     clean()
     raise Exception("Exiting Psi4")
 
@@ -36,6 +36,7 @@ basis 6-31G
 scf_type pk
 guess core
 mp2_type conv
+freeze_core false
 e_convergence 1e-10
 }
 
@@ -170,6 +171,7 @@ MO = np.einsum('pI,pqJs->IqJs', C, MO)
 MO = np.einsum('sB,IqJs->IqJB', C, MO)
 MO = np.einsum('qA,IqJB->IAJB', C, MO)
 
+
 MO = np.repeat(MO, 2, axis=0)
 MO = np.repeat(MO, 2, axis=1)
 MO = np.repeat(MO, 2, axis=2)
@@ -192,6 +194,7 @@ MO = value1 - value2
 
 # <pr||qs> -> <pq||rs>
 MO = MO.swapaxes(1, 2) 
+print 'Total time taken for AO -> spin-orbital MO transformation: %.3f seconds \n' % (time.time()-t)
 
 # Update nocc and nvirt
 nocc = ndocc*2
@@ -202,8 +205,6 @@ e = np.repeat(e, 2)
 Eocc = e[:nocc]
 Evirt = e[nocc:]
 
-
-print 'Total time taken for AO -> spin-orbital MO transformation: %.3f seconds \n' % (time.time()-t)
 
 # DPD approach to CCSD equations
 # See: http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
@@ -228,16 +229,18 @@ compare_values(MP2_E_psi, MP2_E, 6, 'MP2 Energy')
 
 #Bulit Eqn 9: tilde{\Tau}) 
 def build_tilde_tau(t1, t2):
-    tmp1 = np.einsum('ia,jb->ijab', t1, t1)
-    tmp2 = np.einsum('ib,ja->ijab', t1, t1)
-    return t2 + 0.5*(tmp1 - tmp2)
+    ttau = t2.copy()
+    ttau += 0.5 * np.einsum('ia,jb->ijab', t1, t1)
+    ttau -= 0.5 * np.einsum('ib,ja->ijab', t1, t1)
+    return ttau
 
 
 #Build Eqn 10: \Tau) 
 def build_tau(t1, t2):
-    tmp1 = np.einsum('ia,jb->ijab', t1, t1)
-    tmp2 = np.einsum('ib,ja->ijab', t1, t1)
-    return t2 + tmp1 - tmp2
+    ttau = t2.copy()
+    ttau += np.einsum('ia,jb->ijab', t1, t1)
+    ttau -= np.einsum('ib,ja->ijab', t1, t1)
+    return ttau
 
 
 #Build Eqn 3:
@@ -260,7 +263,7 @@ def build_Fmi(t1, t2):
     Fmi = F[:nocc, :nocc].copy()
     Fmi[np.diag_indices_from(Fmi)] = 0
 
-    Fmi += 0.5 * np.einsum('ie,me->mi', F[:nocc, nocc:], t1)
+    Fmi += 0.5 * np.einsum('ie,me->mi', t1, F[:nocc, nocc:])
     Fmi += np.einsum('ne,mnie->mi', t1, MO[:nocc, :nocc:, :nocc, nocc:])
     Fmi += 0.5 * np.einsum('inef,mnef->mi', tmp_tau, MO[:nocc, :nocc, nocc:, nocc:])
     return Fmi
@@ -317,12 +320,17 @@ def build_Wmbej(t1, t2):
 # Update Hcore
 # Also turn H remove np.matrix class by using H.A
 # np.matrix is no longer required anywhere
-H = np.einsum('uj,vi,uv', C, C, H.A)
-H = np.repeat(H, 2, axis=0)
-H = np.repeat(H, 2, axis=1)
+#H = np.einsum('uj,vi,uv', C, C, H.A)
+#H = np.repeat(H, 2, axis=0)
+#H = np.repeat(H, 2, axis=1)
+#p = np.arange(H.shape[0], dtype=np.int).reshape(-1, 1) % 2
+#q = np.arange(H.shape[0], dtype=np.int) % 2
+#H *= (p==q)
+#F = H + np.einsum('pmqm->pq', MO[:, :nocc, :, :nocc])
+#
+#F[np.diag_indices_from(F)] = e
+F = np.diag(e)
 
-# This is not correct!
-F = H + np.einsum('pmqn->pq', MO[:, :nocc, :, :nocc])
 
 # Build D matrices
 
@@ -341,81 +349,84 @@ t1 = np.zeros((nocc, nvirt))
 # t^{ab}_{ij}
 # Special note: the .copy() must be here or we simply create a view.
 # If we create a view and then operate in place we modify the MO array
-t2 = MO[:nocc, :nocc, nocc:, nocc:].copy()
-t2 /= (Eocc.reshape(-1, 1, 1, 1) + Eocc.reshape(-1, 1, 1) - Evirt.reshape(-1, 1) - Evirt)
+eps = (Eocc.reshape(-1, 1, 1, 1) + Eocc.reshape(-1, 1, 1) - Evirt.reshape(-1, 1) - Evirt)
+t2 = MO[:nocc, :nocc, nocc:, nocc:].copy() / Dijab
 
-T2SO_MP2corr_E = np.einsum('ijab,ijab->', t2, MO[:nocc, :nocc, nocc:, nocc:])
-
-tmp_sMO = np.einsum('ijab,abij->ijab', MO[:nocc, :nocc, nocc:, nocc:], MO[nocc:, nocc:, :nocc, :nocc]) 
-DSO_MP2corr_E = np.sum(tmp_sMO / Dijab) * 0.25
-
-print '\n<ij||ab><ab||ij>/D2 spin-orbital MO based MP2 correlation energy: %.8f' % DSO_MP2corr_E
+T2SO_MP2corr_E = np.einsum('ijab,ijab->', t2, MO[:nocc, :nocc, nocc:, nocc:])/4
 print 'T2*<ij||ab> spin-orbital MO based MP2 correlation energy: %.8f' % T2SO_MP2corr_E
 
+#pexit()
 
 ### Start Iterations
+for x in range(20):
+    Fae = build_Fae(t1, t2) 
+    Fmi = build_Fmi(t1, t2) 
+    Fme = build_Fme(t1, t2) 
+    Wmnij = build_Wmnij(t1, t2) 
+    Wabef = build_Wabef(t1, t2) 
+    Wmbej = build_Wmbej(t1, t2) 
+    
+    # Build RHS side of T1 equations
+    rhs_T1 = F[:nocc, nocc:].copy()
+    rhs_T1 += np.einsum('ie,ae->ia', t1, Fae)
+    rhs_T1 -= np.einsum('ma,mi->ia', t1, Fmi)
+    rhs_T1 += np.einsum('imae,me->ia', t2, Fme)
+    rhs_T1 -= np.einsum('nf,naif->ia', t1, MO[:nocc, nocc:, :nocc, nocc:])
+    rhs_T1 -= 0.5 * np.einsum('imef,maef->ia', t2, MO[:nocc, nocc:, nocc:, nocc:])
+    rhs_T1 -= 0.5 * np.einsum('mnae,nmei->ia', t2, MO[:nocc, :nocc, nocc:, :nocc])
+    
+    
+    # Build RHS side of T2 equations
+    rhs_T2 = MO[:nocc, :nocc, nocc:, nocc:].copy()
+    
+    # P_(ab) t_ijae (F_be - 0.5 t_mb  F_me)
+    tmp = Fae - 0.5 * np.einsum('mb,me->be', t1, Fme)
+    Pab = np.einsum('ijae,be->ijab', t2, tmp)
+    rhs_T2 += Pab
+    rhs_T2 -- Pab.swapaxes(-1, -2)
+    
+    # P_(ij) t_imab (F_mj + 0.5 
+    tmp = Fmi + 0.5 * np.einsum('je,me->mj', t1, Fme)
+    Pij = np.einsum('imab,mj->ijab', t2, tmp)
+    rhs_T2 -= Pij
+    rhs_T2 += Pij.swapaxes(0, 1)
+    
+    rhs_T2 += 0.5 * np.einsum('mnab,mnij->ijab', t2, Wmnij)
+    rhs_T2 += 0.5 * np.einsum('ijef,abef->ijab', t2, Wabef)
+    
+    # P_(ij) * P_(ab)
+    # (ij - ji) * (ab - ba)
+    # ijab - ijba -jiab + jiba
+    tmp = np.einsum('ie,ma,mbej->ijab', t1, t1, MO[:nocc, nocc:, nocc:, :nocc])
+    Pijab = np.einsum('imae,mbej->ijab', t2, Wmbej) - tmp
+    rhs_T2 += Pijab
+    rhs_T2 -= Pijab.swapaxes(-1, -2)
+    rhs_T2 -= Pijab.swapaxes(0, 1)
+    rhs_T2 += Pijab.swapaxes(0, 1).swapaxes(-1, -2)
+    
+    Pij = np.einsum('ie,abej->ijab', t1, MO[nocc:, nocc:, nocc:, :nocc])
+    rhs_T2 += Pij
+    rhs_T2 -= Pij.swapaxes(0, 1)
+    
+    Pij = np.einsum('ma,mbij->ijab', t1, MO[:nocc, nocc:, :nocc, :nocc])
+    rhs_T2 -= Pij
+    rhs_T2 += Pij.swapaxes(-1, -2)
+    
+    
+    # Update T1 and T2 amplitudes
+    t1 = rhs_T1/Dia
+    t2 = rhs_T2/Dijab
+    
+    # Compute CCSD correlation energy
+    CCSDcorr_E = np.einsum('ia,ia->', F[:nocc, nocc:], t1)
+    CCSDcorr_E += 0.25 * np.einsum('ijab,ijab->', MO[:nocc, :nocc, nocc:, nocc:], t2)
+    CCSDcorr_E += 0.5 * np.einsum('ijab,ia,jb->', MO[:nocc, :nocc, nocc:, nocc:], t1, t1)
 
-Fae = build_Fae(t1, t2) 
-Fmi = build_Fmi(t1, t2) 
-Fme = build_Fme(t1, t2) 
-Wmnij = build_Wmnij(t1, t2) 
-Wabef = build_Wabef(t1, t2) 
-Wmbej = build_Wmbej(t1, t2) 
 
-# Build RHS side of T1 equations
-rhs_T1 = F[:nocc, nocc:].copy()
-rhs_T1 += np.einsum('ie,ae->ia', t1, Fae)
-rhs_T1 -= np.einsum('ma,mi->ia', t1, Fmi)
-rhs_T1 += np.einsum('imae,me->ia', t2, Fme)
-rhs_T1 -= np.einsum('nf,naif->ia', t1, MO[:nocc, nocc:, :nocc, nocc:])
-rhs_T1 -= 0.5 * np.einsum('imef,maef->ia', t2, MO[:nocc, nocc:, nocc:, nocc:])
-rhs_T1 -= 0.5 * np.einsum('mnae,nmei->ia', t2, MO[:nocc, :nocc, nocc:, :nocc])
+    print 'Current CCSD correlation energy: %.8f' % CCSDcorr_E
 
-
-# Build RHS side of T2 equations
-rhs_T2 = MO[:nocc, :nocc, nocc:, nocc:].copy()
-
-# P_(ab) t_ijae (F_be - 0.5 t_mb  F_me)
-tmp = Fae - 0.5 * np.einsum('mb,me->be', t1, Fme)
-Pab = np.einsum('ijae,be->ijab', t2, tmp)
-rhs_T2 += Pab - Pab.swapaxes(-1, -2)
-
-# P_(ij) t_imab (F_mj + 0.5 
-tmp = Fmi + 0.5 * np.einsum('je,me->mj', t1, Fme)
-Pij = np.einsum('imab,mj->ijab', t2, tmp)
-rhs_T2 -= Pij - Pij.swapaxes(0, 1)
-
-rhs_T2 += 0.5 * np.einsum('mnab,mnij->ijab', t2, Wmnij)
-rhs_T2 += 0.5 * np.einsum('ijef,abef->ijab', t2, Wabef)
-
-# P_(ij) * P_(ab)
-# (ij - ji) * (ab - ba)
-# ijab - ijba -jiab + jiba
-tmp = np.einsum('ie,ma,mbej->ijab', t1, t1, MO[:nocc, nocc:, nocc:, :nocc])
-Pijab = np.einsum('imae,mbej->ijab', t2, Wmbej) - tmp
-rhs_T2 += Pijab
-rhs_T2 -= Pijab.swapaxes(-1, -2)
-rhs_T2 -= Pijab.swapaxes(0, 1)
-rhs_T2 += Pijab.swapaxes(0, 1).swapaxes(-1, -2)
-
-Pij = np.einsum('ie,abej->ijab', t1, MO[nocc:, nocc:, nocc:, :nocc])
-rhs_T2 += Pij - Pij.swapaxes(-1, -2)
-
-Pij = np.einsum('ma,mbij->ijab', t1, MO[:nocc, nocc:, :nocc, :nocc])
-rhs_T2 -= Pij - Pij.swapaxes(0, 1)
-
-
-# Update T1 and T2 amplitudes
-t1 = rhs_T1/Dia
-t2 = rhs_T2/Dijab
-
-# Compute CCSD correlation energy
-CCSDcorr_E = np.einsum('ia,ia->', F[:nocc, nocc:], t1)
-CCSDcorr_E += 0.25 * np.einsum('ijab,ijab->', MO[:nocc, :nocc, nocc:, nocc:], t2)
-CCSDcorr_E += 0.5 * np.einsum('ijab,ia,jb->', MO[:nocc, :nocc, nocc:, nocc:], t1, t1)
-
-
-print '\nCurrent CCSD correlation energy: %.8f' % CCSDcorr_E
-
+print CCSDcorr_E + SCF_E
+print 'Psi4 CCSD energy: %f' % -1.15157347084
+#print energy('CCSD')
 
 
