@@ -353,7 +353,6 @@ print '\n<ij||ab><ab||ij>/D2 spin-orbital MO based MP2 correlation energy: %.8f'
 print 'T2*<ij||ab> spin-orbital MO based MP2 correlation energy: %.8f' % T2SO_MP2corr_E
 
 
-
 ### Start Iterations
 
 Fae = build_Fae(t1, t2) 
@@ -389,9 +388,9 @@ rhs_T2 -= Pij - Pij.swapaxes(0, 1)
 rhs_T2 += 0.5 * np.einsum('mnab,mnij->ijab', t2, Wmnij)
 rhs_T2 += 0.5 * np.einsum('ijef,abef->ijab', t2, Wabef)
 
-
-#(ij - ji) * (ab - ba)
-#ijab - ijba -jiab + jiba
+# P_(ij) * P_(ab)
+# (ij - ji) * (ab - ba)
+# ijab - ijba -jiab + jiba
 tmp = np.einsum('ie,ma,mbej->ijab', t1, t1, MO[:nocc, nocc:, nocc:, :nocc])
 Pijab = np.einsum('imae,mbej->ijab', t2, Wmbej) - tmp
 rhs_T2 += Pijab
@@ -405,9 +404,12 @@ rhs_T2 += Pij - Pij.swapaxes(-1, -2)
 Pij = np.einsum('ma,mbij->ijab', t1, MO[:nocc, nocc:, :nocc, :nocc])
 rhs_T2 -= Pij - Pij.swapaxes(0, 1)
 
+
+# Update T1 and T2 amplitudes
 t1 = rhs_T1/Dia
 t2 = rhs_T2/Dijab
 
+# Compute CCSD correlation energy
 CCSDcorr_E = np.einsum('ia,ia->', F[:nocc, nocc:], t1)
 CCSDcorr_E += 0.25 * np.einsum('ijab,ijab->', MO[:nocc, :nocc, nocc:, nocc:], t2)
 CCSDcorr_E += 0.5 * np.einsum('ijab,ia,jb->', MO[:nocc, :nocc, nocc:, nocc:], t1, t1)
