@@ -10,7 +10,7 @@
 import time
 import numpy as np
 from scipy import linalg as SLA
-np.set_printoptions(precision=5,linewidth=200,suppress=True)
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
 memory 8 GB
 
 def pexit():
@@ -129,8 +129,8 @@ for SCF_iter in range(1, maxiter + 1):
         # Build error matrix B
         B = np.ones((e_cnt+1, e_cnt+1))*-1
         B[-1, -1] = 0
-        for num1,e1 in enumerate(ei[:e_cnt]):
-            for num2,e2 in enumerate(ei[:e_cnt]):
+        for num1, e1 in enumerate(ei[:e_cnt]):
+            for num2, e2 in enumerate(ei[:e_cnt]):
                 val = np.einsum('ij,ij->', e1, e2)
                 B[num1, num2] = val
 
@@ -176,17 +176,17 @@ MO = np.repeat(MO, 2, axis=0)
 MO = np.repeat(MO, 2, axis=1)
 MO = np.repeat(MO, 2, axis=2)
 MO = np.repeat(MO, 2, axis=3)
-p = np.arange(nbf*2, dtype=np.int).reshape(-1, 1, 1, 1) % 2
-q = np.arange(nbf*2, dtype=np.int).reshape(-1, 1, 1) % 2
-r = np.arange(nbf*2, dtype=np.int).reshape(-1, 1) % 2
-s = np.arange(nbf*2, dtype=np.int) % 2
+p = np.arange(nbf * 2, dtype=np.int).reshape(-1, 1, 1, 1) % 2
+q = np.arange(nbf * 2, dtype=np.int).reshape(-1, 1, 1) % 2
+r = np.arange(nbf * 2, dtype=np.int).reshape(-1, 1) % 2
+s = np.arange(nbf * 2, dtype=np.int) % 2
 
 
-mask1 = (p==r) * (q==s)
+mask1 = (p == r) * (q == s)
 value1 = MO.copy()
 value1 *= mask1
 
-mask2 = (p==s) * (q==r)
+mask2 = (p == s) * (q == r)
 value2 = MO.copy().swapaxes(1, 3)
 value2 *= mask2
 
@@ -194,10 +194,10 @@ MO = value1 - value2
 
 # <pr||qs> -> <pq||rs>
 MO = MO.swapaxes(1, 2) 
-print 'Total time taken for AO -> spin-orbital MO transformation: %.3f seconds \n' % (time.time()-t)
+print 'Total time taken for AO -> spin-orbital MO transformation: %.3f seconds \n' % (time.time() - t)
 
 # Update nocc and nvirt
-nocc = ndocc*2
+nocc = ndocc * 2
 nvirt = MO.shape[0] - nocc
 
 #Extend eigenvalues
@@ -221,7 +221,7 @@ MOijab = MO[:nocc, :nocc, nocc:, nocc:]
 MP2corr_E = np.einsum('ijab,ijab->', MOijab, t2)/4
 MP2_E = SCF_E + MP2corr_E
 
-print 'Spin-orbital MO based MP2 correlation energy: %.8f' % MP2corr_E
+print 'MO based MP2 correlation energy: %.8f' % MP2corr_E
 print 'MP2 total energy:       %.8f' % MP2_E
 MP2_E_psi = energy('mp2')
 compare_values(MP2_E_psi, MP2_E, 6, 'MP2 Energy')
@@ -284,10 +284,11 @@ def build_Wmnij(t1, t2):
 
     Pij = np.einsum('je,mnie->mnij', t1, MO[:nocc, :nocc, :nocc, nocc:])
     Wmnij += Pij
-    Wmnij -= Pij.swapaxes(-1, -2)
+    Wmnij -= Pij.swapaxes(2, 3)
 
     Wmnij += 0.25 * np.einsum('ijef,mnef->mnij', tmp_tau, MO[:nocc, :nocc, nocc:, nocc:])
     return Wmnij
+
 
 #Build Eqn 7:
 def build_Wabef(t1, t2):
@@ -301,6 +302,7 @@ def build_Wabef(t1, t2):
 
     Wabef += 0.25 * np.einsum('mnab,mnef->abef', tmp_tau, MO[:nocc, :nocc, nocc:, nocc:])
     return Wabef
+
 
 #Build Eqn 8:
 def build_Wmbej(t1, t2):
@@ -320,23 +322,21 @@ def build_Wmbej(t1, t2):
 # Update Hcore
 # Also turn H remove np.matrix class by using H.A
 # np.matrix is no longer required anywhere
-#H = np.einsum('uj,vi,uv', C, C, H.A)
+#H = np.einsum('uj,vi,uv', C, C, H)
 #H = np.repeat(H, 2, axis=0)
 #H = np.repeat(H, 2, axis=1)
 #p = np.arange(H.shape[0], dtype=np.int).reshape(-1, 1) % 2
 #q = np.arange(H.shape[0], dtype=np.int) % 2
 #H *= (p==q)
 #F = H + np.einsum('pmqm->pq', MO[:, :nocc, :, :nocc])
-#
-#F[np.diag_indices_from(F)] = e
-F = np.diag(e)
 
+F = np.diag(e)
 
 # Build D matrices
 
 # use matrix.A to access underlying numpy array
 Focc = F[np.arange(nocc), np.arange(nocc)].flatten()
-Fvirt = F[np.arange(nocc, nvirt+nocc), np.arange(nocc, nvirt+nocc)].flatten()
+Fvirt = F[np.arange(nocc, nvirt + nocc), np.arange(nocc, nvirt + nocc)].flatten()
 
 Dia = Focc.reshape(-1, 1) - Fvirt
 Dijab = Focc.reshape(-1, 1, 1, 1) + Focc.reshape(-1, 1, 1) - Fvirt.reshape(-1, 1) - Fvirt
@@ -353,20 +353,24 @@ eps = (Eocc.reshape(-1, 1, 1, 1) + Eocc.reshape(-1, 1, 1) - Evirt.reshape(-1, 1)
 t2 = MO[:nocc, :nocc, nocc:, nocc:].copy() / Dijab
 
 T2SO_MP2corr_E = np.einsum('ijab,ijab->', t2, MO[:nocc, :nocc, nocc:, nocc:])/4
-print 'T2*<ij||ab> spin-orbital MO based MP2 correlation energy: %.8f' % T2SO_MP2corr_E
+print '\nT2*<ij||ab> spin-orbital MO based MP2 correlation energy: %.8f' % T2SO_MP2corr_E
 
 #pexit()
 
+maxiter = 20
+CCSDcorr_E_old = 0.0
 ### Start Iterations
-for x in range(20):
+for CCSD_iter in range(1, maxiter + 1):
+
+    ### Build intermediates
     Fae = build_Fae(t1, t2) 
     Fmi = build_Fmi(t1, t2) 
     Fme = build_Fme(t1, t2) 
     Wmnij = build_Wmnij(t1, t2) 
     Wabef = build_Wabef(t1, t2) 
     Wmbej = build_Wmbej(t1, t2) 
-    
-    # Build RHS side of T1 equations
+
+    #### Build RHS side of T1 equations
     rhs_T1 = F[:nocc, nocc:].copy()
     rhs_T1 += np.einsum('ie,ae->ia', t1, Fae)
     rhs_T1 -= np.einsum('ma,mi->ia', t1, Fmi)
@@ -374,59 +378,60 @@ for x in range(20):
     rhs_T1 -= np.einsum('nf,naif->ia', t1, MO[:nocc, nocc:, :nocc, nocc:])
     rhs_T1 -= 0.5 * np.einsum('imef,maef->ia', t2, MO[:nocc, nocc:, nocc:, nocc:])
     rhs_T1 -= 0.5 * np.einsum('mnae,nmei->ia', t2, MO[:nocc, :nocc, nocc:, :nocc])
-    
-    
-    # Build RHS side of T2 equations
+
+    ### Build RHS side of T2 equations
     rhs_T2 = MO[:nocc, :nocc, nocc:, nocc:].copy()
-    
+
     # P_(ab) t_ijae (F_be - 0.5 t_mb  F_me)
     tmp = Fae - 0.5 * np.einsum('mb,me->be', t1, Fme)
     Pab = np.einsum('ijae,be->ijab', t2, tmp)
     rhs_T2 += Pab
-    rhs_T2 -- Pab.swapaxes(-1, -2)
-    
+    rhs_T2 -= Pab.swapaxes(2, 3)
+
     # P_(ij) t_imab (F_mj + 0.5 
     tmp = Fmi + 0.5 * np.einsum('je,me->mj', t1, Fme)
     Pij = np.einsum('imab,mj->ijab', t2, tmp)
     rhs_T2 -= Pij
     rhs_T2 += Pij.swapaxes(0, 1)
-    
+
     rhs_T2 += 0.5 * np.einsum('mnab,mnij->ijab', t2, Wmnij)
     rhs_T2 += 0.5 * np.einsum('ijef,abef->ijab', t2, Wabef)
-    
+
     # P_(ij) * P_(ab)
     # (ij - ji) * (ab - ba)
     # ijab - ijba -jiab + jiba
     tmp = np.einsum('ie,ma,mbej->ijab', t1, t1, MO[:nocc, nocc:, nocc:, :nocc])
     Pijab = np.einsum('imae,mbej->ijab', t2, Wmbej) - tmp
     rhs_T2 += Pijab
-    rhs_T2 -= Pijab.swapaxes(-1, -2)
+    rhs_T2 -= Pijab.swapaxes(2, 3)
     rhs_T2 -= Pijab.swapaxes(0, 1)
-    rhs_T2 += Pijab.swapaxes(0, 1).swapaxes(-1, -2)
-    
+    rhs_T2 += Pijab.swapaxes(0, 1).swapaxes(2, 3)
+
     Pij = np.einsum('ie,abej->ijab', t1, MO[nocc:, nocc:, nocc:, :nocc])
     rhs_T2 += Pij
     rhs_T2 -= Pij.swapaxes(0, 1)
-    
-    Pij = np.einsum('ma,mbij->ijab', t1, MO[:nocc, nocc:, :nocc, :nocc])
-    rhs_T2 -= Pij
-    rhs_T2 += Pij.swapaxes(-1, -2)
-    
-    
-    # Update T1 and T2 amplitudes
-    t1 = rhs_T1/Dia
-    t2 = rhs_T2/Dijab
-    
-    # Compute CCSD correlation energy
+
+    Pab = np.einsum('ma,mbij->ijab', t1, MO[:nocc, nocc:, :nocc, :nocc])
+    rhs_T2 -= Pab
+    rhs_T2 += Pab.swapaxes(2, 3)
+
+    ### Compute CCSD correlation energy
     CCSDcorr_E = np.einsum('ia,ia->', F[:nocc, nocc:], t1)
     CCSDcorr_E += 0.25 * np.einsum('ijab,ijab->', MO[:nocc, :nocc, nocc:, nocc:], t2)
     CCSDcorr_E += 0.5 * np.einsum('ijab,ia,jb->', MO[:nocc, :nocc, nocc:, nocc:], t1, t1)
 
+    ### Print CCSD correlation energy
+    print 'CCSD Iteration %3d: Correlation Energy = %.12f   dE = %.5E' % (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old))
+    if (abs(CCSDcorr_E - CCSDcorr_E_old) < E_conv):
+        break
 
-    print 'Current CCSD correlation energy: %.8f' % CCSDcorr_E
+    CCSDcorr_E_old = CCSDcorr_E
+
+    ### Update T1 and T2 amplitudes
+    t1 = rhs_T1/Dia
+    t2 = rhs_T2/Dijab
 
 print CCSDcorr_E + SCF_E
 print 'Psi4 CCSD energy: %f' % -1.15157347084
 #print energy('CCSD')
-
 
