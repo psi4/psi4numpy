@@ -13,7 +13,7 @@
 import time
 import numpy as np
 from scipy import linalg as SLA
-np.set_printoptions(precision=5,linewidth=200,suppress=True)
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
 
 # Memory for Psi4 in GB
 memory 2 GB
@@ -31,174 +31,63 @@ symmetry c1
 
 
 set {
-basis aug-cc-pVDZ
+basis sto-3G
 scf_type pk
 guess core
 mp2_type conv
 e_convergence 1e-8
 }
 
-# Set defaults
-maxiter = 20
-E_conv = 1.0E-8
+# First compute RHF energy using Psi4
+energy('RHF')
+
+# Grab data from 
+wfn = wavefunction()
+# Coefficient Matrix
+C = np.array(wfn.Ca())
+# Double occupied orbitals
+ndocc = wfn.doccpi()[0]
+# Number of molecular orbitals
+nmo = wfn.nmo()
+# SCF energy
+SCF_E = wfn.energy()
+# Orbital energies
+eps = wfn.epsilon_a()
+eps = np.array([eps.get(x) for x in range(C.shape[0])])
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
 mints = MintsHelper()
-S = mints.ao_overlap()
+I = np.array(mints.ao_eri())
+I = I.reshape(nmo, nmo, nmo, nmo)
 
-# Run a quick check to make sure everything will fit into memory
-I_Size = (np.array(S).shape[0]**4)*8/1.0E9
-print "\nSize of the ERI tensor will be %10.2f GB." % I_Size
+print '\nTotal time taken for ERI integrals: %.3f seconds.' % (time.time()-t)
 
-# Memory utilization will be dominated by ERI tensor I and number of copies in memory
-# Current MP2 algorith uses 2 full ERI tensors in memory at the moment.
-memory_footprint = I_Size * 2.2
-
-if I_Size > numpy_memory:
-    print "Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory)
-    clean()
-    raise ValidationError("Exiting Psi4")
-
-T = mints.ao_potential()
-V = mints.ao_kinetic()
-I = mints.ao_eri()
-
-print '\nTotal time taken for integrals: %.3f seconds.' % (time.time()-t)
-
-# Get nbf and ndocc for closed shell molecules
-t=time.time()
-Z = 0
-for A in range(mol.natom()):
-    Z += mol.Z(A)
-ndocc = int(Z / 2)
-nbf = S.rows(0)
-
-print '\nNumber of occupied orbitals: %d' % ndocc
-print 'Number of basis functions: %d' % nbf
-
-# Build H_core
-H = np.matrix(T) + np.matrix(V)
-
-# Build I and reshape to rank 4 tensor
-I = np.array(I).reshape(nbf, nbf, nbf, nbf)
-
-# Orthogonalizer A = S^(-1/2)
-A = np.matrix(SLA.sqrtm(S)).I.real
-
-# Calculate initial core guess
-Hp = A*H*A
-e, C2 = SLA.eigh(Hp)
-C = A*C2 
-Cocc = C[:, :ndocc]
-D = np.einsum('ij,jk->ik', Cocc, Cocc.T)
-
-print '\nTotal time taken for setup: %.3f seconds' % (time.time()-t)
-
-print('\nStart RHF iterations:\n')
-t = time.time()
-E    = 0.0
-Enuc = mol.nuclear_repulsion_energy()
-Eold = 0.0
-
-# Lists for DIIS extrapolations
-ei = []
-fi = []
-
-for SCF_iter in range(1, maxiter + 1):
-
-    # Build fock matrix
-    J = np.einsum('pqrs,rs', I, D) 
-    K = np.einsum('pqrs,qs', I, D)
-    F = H + J*2 - K
-
-    # DIIS error build
-    diis_e = F*D*S - S*D*F
-    ei = [diis_e] + ei
-    fi = [F] + fi
-
-    # SCF energy and update
-    SCF_E = np.einsum('ij,ij->', F+H, D) + Enuc
-
-    print 'RHF Iteration %3d: Energy = %.16f   dE = % .5E' % (SCF_iter, SCF_E, (SCF_E - Eold))
-    if (abs(SCF_E - Eold) < E_conv):
-        break
-
-    Eold = SCF_E
-
-    # Diagonalize Fock matrix
-    if SCF_iter <=2:
-        Fp = A*F*A
-        e, C2 = SLA.eigh(Fp)
-        C = A*C2
-        Cocc = C[:, :ndocc]
-        D = np.einsum('ij,jk->ik', Cocc, Cocc.T)
-
-    # Update using DIIS
-    else:
-        # Make sure DIIS vector is not to large
-        e_cnt = len(ei)
-        if e_cnt>6:
-            e_cnt = 6
-
-        # Build error matrix B
-        B = np.ones((e_cnt+1,e_cnt+1))*-1
-        B[-1,-1] = 0
-        for num1,e1 in enumerate(ei[:e_cnt]):
-            for num2,e2 in enumerate(ei[:e_cnt]):
-                val = np.einsum('ij,ij->',e1,e2)
-                B[num1,num2] = val
-
-        # Build residual vector
-        resid = np.zeros(e_cnt + 1)
-        resid[-1] = -1
-
-        # Solve pulay equations
-        ci = SLA.solve(B, resid)
-
-        # Calculate new fock matrix as linear 
-        # combination of previous fock matrices
-        F = np.zeros_like(fi[0])
-        for num,c in enumerate(ci[:-1]):
-            F += c*fi[num]
-
-        # Diagonalize new Fock matrix
-        Fp = A*F*A
-        e,C2 = SLA.eigh(Fp)
-        C = A*C2
-        D  = C[:,:ndocc]*C[:,:ndocc].T
-
-print 'Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t)
-
-print 'Final SCF energy: %.8f hartree' % SCF_E
-SCF_E_psi = energy('scf')
-compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
 
 t=time.time()
+
 # Split eigenvectors and eigenvalues into o and v
 Co = C[:, :ndocc]
 Cv = C[:, ndocc:]
-Eocc = e[:ndocc]
-Evirt = e[ndocc:]
 
 # Complete the AOpqrs -> MOiajb step
-# "Noddy" N^8 algorithm
-#MO = np.einsum('sB,rJ,qA,pI,pqrs->IAJB', Cv, Co, Cv, Co, I)
-
-# N^5 algorithm
 MO = np.einsum('rJ,pqrs->pqJs', Co, I)
 MO = np.einsum('pI,pqJs->IqJs', Co, MO)
 MO = np.einsum('sB,IqJs->IqJB', Cv, MO)
 MO = np.einsum('qA,IqJB->IAJB', Cv, MO)
 
 print '\nTotal time taken for integral transformation: %.f seconds' % (time.time()-t)
-print 'Shape of MO integrals %s \n' % str(MO.shape)
+print 'Shape of MO integrals: %s \n' % str(MO.shape)
 
-# Calculate energy denominators and MP2 energy
-epsilon = 1/(Eocc.reshape(-1,1,1,1) - Evirt.reshape(-1,1,1) + Eocc.reshape(-1,1) - Evirt)
 
-MP2corr_OS = np.einsum('iajb,iajb,iajb->', MO, MO, epsilon)
-MP2corr_SS = np.einsum('iajb,iajb,iajb->', MO - MO.swapaxes(1,3), MO, epsilon)
+# Compute energy denominators- must store as a 4-D array
+Eocc = eps[:ndocc]
+Evirt = eps[ndocc:]
+e_denom = (Eocc.reshape(-1, 1, 1, 1) - Evirt.reshape(-1, 1, 1) + Eocc.reshape(-1, 1) - Evirt)
+
+# Exactly the same as MP.dat, just written in a different way
+MP2corr_OS = np.einsum('iajb,iajb,iajb->', MO, MO, e_denom)
+MP2corr_SS = np.einsum('iajb,iajb,iajb->', MO - MO.swapaxes(1,3), MO, e_denom)
 
 MP2corr_E = MP2corr_SS + MP2corr_OS
 MP2_E = SCF_E + MP2corr_E
@@ -214,5 +103,4 @@ print 'MP2 total energy:       %.8f' % MP2_E
 
 print '\nSCS-MP2 correlation energy: %.8f' % MP2corr_SS
 print 'SCS-MP2 total energy:       %.8f' % SCS_MP2_E
-
 
