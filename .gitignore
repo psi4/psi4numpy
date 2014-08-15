@@ -57,3 +57,4 @@ docs/_build/
 psi.timer.dat
 psi.clean
 *.swp
+Test/
