@@ -131,5 +131,7 @@ print 'Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t)
 
 print 'Final SCF energy: %.8f hartree' % SCF_E
 SCF_E_psi = energy('scf')
-compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
+compare_values(SCF_E_psi, SCF_E, E_conv, 'SCF Energy')
+
+
 

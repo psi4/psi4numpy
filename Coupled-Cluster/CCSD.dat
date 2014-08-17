@@ -11,7 +11,10 @@ import time
 import numpy as np
 from scipy import linalg as SLA
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
-memory 8 GB
+
+memory 2 GB
+
+numpy_memory = 2
 
 def pexit():
     clean()
@@ -37,132 +40,47 @@ scf_type pk
 guess core
 mp2_type conv
 freeze_core false
-e_convergence 1e-10
+e_convergence 1e-8
+d_convergence 1e-8
 }
 
-# Set defaults
-maxiter = 20
-E_conv  = 1.0E-10
+E_conv = 1e-6
 
-# Integral generation from Psi4 MintsHelper
-t=time.time()
+print '\nStarting RHF and integral build...'
+t = time.time()
+
+# First compute RHF energy using Psi4
+energy('RHF')
+
+# Grab data from wavfunction class 
+wfn = wavefunction()
+# Coefficient Matrix
+C = np.array(wfn.Ca())
+# Double occupied orbitals
+ndocc = wfn.doccpi()[0]
+# Number of molecular orbitals
+nmo = wfn.nmo()
+# SCF energy
+SCF_E = wfn.energy()
+# Orbital energies
+eps = wfn.epsilon_a()
+eps = np.array([eps.get(x) for x in range(C.shape[0])])
+
+# Compute size of ERI tensor in GB
+ERI_Size = (nmo**4)*8.0 / 1E9
+print "Size of the ERI tensor will be %4.2f GB." % ERI_Size
+memory_footprint = ERI_Size*2.5
+if memory_footprint > numpy_memory:
+    clean()
+    raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
+
+# Integral generation from Psi4's MintsHelper
 mints = MintsHelper()
-S = mints.ao_overlap()
-T = mints.ao_potential()
-V = mints.ao_kinetic()
-I = mints.ao_eri()
-print '\nTotal time taken for integrals: %.3f seconds' % (time.time()-t)
+I = np.array(mints.ao_eri())
+I = I.reshape(nmo, nmo, nmo, nmo)
+H = np.array(mints.ao_potential()) + np.array(mints.ao_kinetic())
 
-# Get nbf and ndocc for closed shell molecules
-t=time.time()
-Z = 0
-for A in range(mol.natom()):
-    Z += mol.Z(A)
-ndocc = int(Z / 2)
-nbf = S.rows(0)
-
-print '\nNumber of occupied orbitals: %d' % ndocc
-print 'Number of basis functions: %d' % nbf
-
-# Build H_core
-H = np.matrix(np.array(T)+np.array(V))
-
-# Build I and reshape to rank 4 tensor
-I = np.array(I).reshape(nbf,nbf,nbf,nbf)
-
-# Orthogonalizer A
-A = np.matrix(SLA.sqrtm(S)).I.real
-
-# Calculate initial core guess
-Hp = A*H*A
-e,C2 = SLA.eigh(Hp)
-C = A*C2 
-D = C[:,:ndocc]*C[:,:ndocc].T
-
-print '\nTotal time taken for setup: %.3f seconds' % (time.time()-t)
-
-print('\nStart RHF iterations:\n')
-t=time.time()
-E    = 0.0
-Enuc = mol.nuclear_repulsion_energy()
-Eold = 0.0
-
-# Lists for DIIS extrapolations
-ei = []
-fi = []
-
-for SCF_iter in range(1, maxiter + 1):
-
-    # Build fock matrix
-    J = np.einsum('pqrs,rs', I, D) 
-    K = np.einsum('pqrs,qs', I, D)
-    F = H + J*2 - K
-
-    # DIIS error build
-    diis_e = F*D*S - S*D*F
-    ei = [diis_e] + ei
-    fi = [F] + fi
-
-    # SCF energy and update
-    SCF_E = np.einsum('ij,ij->', F+H, D) + Enuc
-
-    print 'RHF Iteration %3d: Energy = %.16f   dE = %.5E' % (SCF_iter, SCF_E, (SCF_E - Eold))
-    if (abs(SCF_E - Eold) < E_conv):
-        break
-
-    Eold = SCF_E
-
-    # Diagonalize Fock matrix
-    if SCF_iter <=2:
-        Fp = A*F*A
-        e,C2 = SLA.eigh(Fp)
-        C = A*C2
-        D  = C[:, :ndocc]*C[:, :ndocc].T
-
-    # Update using DIIS
-    else:
-        # Make sure DIIS vector is not to large
-        e_cnt = len(ei)
-        if e_cnt>6:
-            e_cnt = 6
-
-        # Build error matrix B
-        B = np.ones((e_cnt+1, e_cnt+1))*-1
-        B[-1, -1] = 0
-        for num1, e1 in enumerate(ei[:e_cnt]):
-            for num2, e2 in enumerate(ei[:e_cnt]):
-                val = np.einsum('ij,ij->', e1, e2)
-                B[num1, num2] = val
-
-        # Build residual vector
-        resid = np.zeros(e_cnt + 1)
-        resid[-1] = -1
-
-        # Solve pulay equations
-        ci = SLA.solve(B,resid)
-
-        # Calculate new fock matrix as linear 
-        # combination of previous fock matrices
-        F = np.zeros_like(fi[0])
-        for num,c in enumerate(ci[:-1]):
-            F += c*fi[num]
-
-        # Diagonalize new Fock matrix
-        Fp = A*F*A
-        e, C2 = SLA.eigh(Fp)
-        C = A*C2
-        D  = C[:, :ndocc] * C[:, :ndocc].T
-
-print 'Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t)
-
-print 'Final SCF energy: %.8f hartree' % SCF_E
-SCF_E_psi = energy('scf')
-compare_values(SCF_E_psi, SCF_E, 8, 'SCF Energy')
-
-
-print '\n' + '--'*40
-print 'Begining CCSD\n'
-
+print '..total time taken for RHF and ERI integrals: %.3f seconds.' % (time.time()-t)
 #Make spin-orbital MO
 t=time.time()
 print 'Starting AO -> spatial-orbital MO transformation...'
@@ -176,10 +94,10 @@ MO = np.repeat(MO, 2, axis=0)
 MO = np.repeat(MO, 2, axis=1)
 MO = np.repeat(MO, 2, axis=2)
 MO = np.repeat(MO, 2, axis=3)
-p = np.arange(nbf * 2, dtype=np.int).reshape(-1, 1, 1, 1) % 2
-q = np.arange(nbf * 2, dtype=np.int).reshape(-1, 1, 1) % 2
-r = np.arange(nbf * 2, dtype=np.int).reshape(-1, 1) % 2
-s = np.arange(nbf * 2, dtype=np.int) % 2
+p = np.arange(nmo * 2, dtype=np.int).reshape(-1, 1, 1, 1) % 2
+q = np.arange(nmo * 2, dtype=np.int).reshape(-1, 1, 1) % 2
+r = np.arange(nmo * 2, dtype=np.int).reshape(-1, 1) % 2
+s = np.arange(nmo * 2, dtype=np.int) % 2
 
 
 mask1 = (p == r) * (q == s)
@@ -201,9 +119,9 @@ nocc = ndocc * 2
 nvirt = MO.shape[0] - nocc
 
 #Extend eigenvalues
-e = np.repeat(e, 2)
-Eocc = e[:nocc]
-Evirt = e[nocc:]
+eps = np.repeat(eps, 2)
+Eocc = eps[:nocc]
+Evirt = eps[nocc:]
 
 
 # DPD approach to CCSD equations
@@ -322,15 +240,15 @@ def build_Wmbej(t1, t2):
 # Update Hcore
 # Also turn H remove np.matrix class by using H.A
 # np.matrix is no longer required anywhere
-#H = np.einsum('uj,vi,uv', C, C, H)
-#H = np.repeat(H, 2, axis=0)
-#H = np.repeat(H, 2, axis=1)
-#p = np.arange(H.shape[0], dtype=np.int).reshape(-1, 1) % 2
-#q = np.arange(H.shape[0], dtype=np.int) % 2
-#H *= (p==q)
-#F = H + np.einsum('pmqm->pq', MO[:, :nocc, :, :nocc])
+H = np.einsum('uj,vi,uv', C, C, H)
+H = np.repeat(H, 2, axis=0)
+H = np.repeat(H, 2, axis=1)
+p = np.arange(H.shape[0], dtype=np.int).reshape(-1, 1) % 2
+q = np.arange(H.shape[0], dtype=np.int) % 2
+H *= (p==q)
+F = H + np.einsum('pmqm->pq', MO[:, :nocc, :, :nocc])
 
-F = np.diag(e)
+#F = np.diag(eps)
 
 # Build D matrices
 
