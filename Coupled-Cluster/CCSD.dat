@@ -249,8 +249,8 @@ print 'MP2 total energy:       %.8f' % MP2_E
 compare_values(energy('mp2'), MP2_E, 6, 'MP2 Energy')
 
 ### Start Iterations
-E_conv = 1.e-11
-maxiter = 20
+E_conv = 1.e-15
+maxiter = 30
 CCSDcorr_E_old = 0.0
 
 for CCSD_iter in range(1, maxiter + 1):
