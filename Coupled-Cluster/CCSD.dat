@@ -26,14 +26,23 @@ def pexit():
 # }
 
 molecule mol {
-H
-H 1 0.73257098
+O   0.000000000000  -0.143225816552   0.000000000000
+H   1.638036840407   1.136548822547  -0.000000000000
+H  -1.638036840407   1.136548822547  -0.000000000000
+units bohr
 symmetry c1
 }
 
+# molecule mol {
+# H
+# H 1 0.73257098
+# symmetry c1
+# }
+
 
 set {
-basis cc-pVDZ
+print 20
+basis sto-3g
 scf_type pk
 guess core
 mp2_type conv
@@ -123,41 +132,43 @@ Evirt = eps[nocc:]
 #Bulid Eqn 9: tilde{\Tau}) 
 def build_tilde_tau(t1, t2):
     ttau = t2.copy()
-    ttau += 0.5 * np.einsum('ia,jb->ijab', t1, t1)
-    ttau -= 0.5 * np.einsum('ib,ja->ijab', t1, t1)
+    tmp = 0.5 * np.einsum('ia,jb->ijab', t1, t1)
+    ttau += tmp
+    ttau -= tmp.swapaxes(2, 3)
     return ttau
 
 
 #Build Eqn 10: \Tau) 
 def build_tau(t1, t2):
     ttau = t2.copy()
-    ttau += np.einsum('ia,jb->ijab', t1, t1)
-    ttau -= np.einsum('ib,ja->ijab', t1, t1)
+    tmp = np.einsum('ia,jb->ijab', t1, t1)
+    ttau += tmp
+    ttau -= tmp.swapaxes(2, 3)
     return ttau
 
 
 #Build Eqn 3:
 def build_Fae(t1, t2):
-    tmp_tau = build_tilde_tau(t1, t2)
-
     Fae = F[nocc:, nocc:].copy()
     Fae[np.diag_indices_from(Fae)] = 0
 
     Fae -= 0.5 * np.einsum('me,ma->ae', F[:nocc, nocc:], t1)
     Fae += np.einsum('mf,mafe->ae', t1, MO[:nocc, nocc:, nocc:, nocc:])
+
+    tmp_tau = build_tilde_tau(t1, t2)
     Fae -= 0.5 * np.einsum('mnaf,mnef->ae', tmp_tau, MO[:nocc, :nocc, nocc:, nocc:])
     return Fae
 
 
 #Build Eqn 4:
 def build_Fmi(t1, t2):
-    tmp_tau = build_tilde_tau(t1, t2)
-
     Fmi = F[:nocc, :nocc].copy()
     Fmi[np.diag_indices_from(Fmi)] = 0
 
     Fmi += 0.5 * np.einsum('ie,me->mi', t1, F[:nocc, nocc:])
     Fmi += np.einsum('ne,mnie->mi', t1, MO[:nocc, :nocc:, :nocc, nocc:])
+
+    tmp_tau = build_tilde_tau(t1, t2)
     Fmi += 0.5 * np.einsum('inef,mnef->mi', tmp_tau, MO[:nocc, :nocc, nocc:, nocc:])
     return Fmi
 
@@ -171,28 +182,26 @@ def build_Fme(t1, t2):
 
 #Build Eqn 6:
 def build_Wmnij(t1, t2):
-    tmp_tau = build_tau(t1, t2)
-
     Wmnij = MO[:nocc, :nocc, :nocc, :nocc].copy()
 
     Pij = np.einsum('je,mnie->mnij', t1, MO[:nocc, :nocc, :nocc, nocc:])
     Wmnij += Pij
     Wmnij -= Pij.swapaxes(2, 3)
 
+    tmp_tau = build_tau(t1, t2)
     Wmnij += 0.25 * np.einsum('ijef,mnef->mnij', tmp_tau, MO[:nocc, :nocc, nocc:, nocc:])
     return Wmnij
 
 
 #Build Eqn 7:
 def build_Wabef(t1, t2):
-    tmp_tau = build_tau(t1, t2)
-
     Wabef = MO[nocc:, nocc:, nocc:, nocc:].copy()
 
     Pab = np.einsum('mb,amef->abef', t1, MO[nocc:, :nocc, nocc:, nocc:])
     Wabef -= Pab
     Wabef += Pab.swapaxes(0, 1)
 
+    tmp_tau = build_tau(t1, t2)
     Wabef += 0.25 * np.einsum('mnab,mnef->abef', tmp_tau, MO[:nocc, :nocc, nocc:, nocc:])
     return Wabef
 
@@ -200,9 +209,7 @@ def build_Wabef(t1, t2):
 #Build Eqn 8:
 def build_Wmbej(t1, t2):
     Wmbej = MO[:nocc, nocc:, nocc:, :nocc].copy()
-
     Wmbej += np.einsum('jf,mbef->mbej', t1, MO[:nocc, nocc:, nocc:, nocc:])
-
     Wmbej -= np.einsum('nb,mnej->mbej', t1, MO[:nocc, :nocc, nocc:, :nocc])
 
     tmp = (0.5 * t2) + np.einsum('jf,nb->jnfb', t1, t1)
@@ -234,14 +241,13 @@ Dijab = Focc.reshape(-1, 1, 1, 1) + Focc.reshape(-1, 1, 1) - Fvirt.reshape(-1, 1
 ### Construct initial guess
 
 # t^a_i
-t1 = np.zeros((nocc, nvirt))
-
+T1 = np.zeros((nocc, nvirt))
 # t^{ab}_{ij}
 MOijab = MO[:nocc, :nocc, nocc:, nocc:]
-t2 = MOijab / Dijab
+T2 = MOijab / Dijab
 
 ### Compute MP2 in MO basis set to make sure the transformation was correct
-MP2corr_E = np.einsum('ijab,ijab->', MOijab, t2)/4
+MP2corr_E = np.einsum('ijab,ijab->', MOijab, T2)/4
 MP2_E = SCF_E + MP2corr_E
 
 print 'MO based MP2 correlation energy: %.8f' % MP2corr_E
@@ -249,52 +255,53 @@ print 'MP2 total energy:       %.8f' % MP2_E
 compare_values(energy('mp2'), MP2_E, 6, 'MP2 Energy')
 
 ### Start Iterations
-E_conv = 1.e-15
-maxiter = 30
+E_conv = 1.e-12
+maxiter = 50
 CCSDcorr_E_old = 0.0
 
 for CCSD_iter in range(1, maxiter + 1):
-
+    
     ### Build intermediates
-    Fae = build_Fae(t1, t2) 
-    Fmi = build_Fmi(t1, t2) 
-    Fme = build_Fme(t1, t2) 
-    Wmnij = build_Wmnij(t1, t2) 
-    Wabef = build_Wabef(t1, t2) 
-    Wmbej = build_Wmbej(t1, t2) 
+    Fae = build_Fae(T1, T2) 
+    Fmi = build_Fmi(T1, T2) 
+    Fme = build_Fme(T1, T2) 
+
+    Wmnij = build_Wmnij(T1, T2) 
+    Wabef = build_Wabef(T1, T2) 
+    Wmbej = build_Wmbej(T1, T2) 
 
     #### Build RHS side of T1 equations
-    rhs_T1 = F[:nocc, nocc:].copy()
-    rhs_T1 += np.einsum('ie,ae->ia', t1, Fae)
-    rhs_T1 -= np.einsum('ma,mi->ia', t1, Fmi)
-    rhs_T1 += np.einsum('imae,me->ia', t2, Fme)
-    rhs_T1 -= np.einsum('nf,naif->ia', t1, MO[:nocc, nocc:, :nocc, nocc:])
-    rhs_T1 -= 0.5 * np.einsum('imef,maef->ia', t2, MO[:nocc, nocc:, nocc:, nocc:])
-    rhs_T1 -= 0.5 * np.einsum('mnae,nmei->ia', t2, MO[:nocc, :nocc, nocc:, :nocc])
+    rhs_T1  = F[:nocc, nocc:].copy()
+    rhs_T1 += np.einsum('ie,ae->ia', T1, Fae)
+    rhs_T1 -= np.einsum('ma,mi->ia', T1, Fmi)
+    rhs_T1 += np.einsum('imae,me->ia', T2, Fme)
+    rhs_T1 -= np.einsum('nf,naif->ia', T1, MO[:nocc, nocc:, :nocc, nocc:])
+    rhs_T1 -= 0.5 * np.einsum('imef,maef->ia', T2, MO[:nocc, nocc:, nocc:, nocc:])
+    rhs_T1 -= 0.5 * np.einsum('mnae,nmei->ia', T2, MO[:nocc, :nocc, nocc:, :nocc])
 
     ### Build RHS side of T2 equations
     rhs_T2 = MO[:nocc, :nocc, nocc:, nocc:].copy()
 
     # P_(ab) t_ijae (F_be - 0.5 t_mb F_me)
-    tmp = Fae - 0.5 * np.einsum('mb,me->be', t1, Fme)
-    Pab = np.einsum('ijae,be->ijab', t2, tmp)
+    tmp = Fae - 0.5 * np.einsum('mb,me->be', T1, Fme)
+    Pab = np.einsum('ijae,be->ijab', T2, tmp)
     rhs_T2 += Pab
     rhs_T2 -= Pab.swapaxes(2, 3)
 
     # P_(ij) t_imab (F_mj + 0.5 t_je F_me) 
-    tmp = Fmi + 0.5 * np.einsum('je,me->mj', t1, Fme)
-    Pij = np.einsum('imab,mj->ijab', t2, tmp)
+    tmp = Fmi + 0.5 * np.einsum('je,me->mj', T1, Fme)
+    Pij = np.einsum('imab,mj->ijab', T2, tmp)
     rhs_T2 -= Pij
     rhs_T2 += Pij.swapaxes(0, 1)
 
-    rhs_T2 += 0.5 * np.einsum('mnab,mnij->ijab', t2, Wmnij)
-    rhs_T2 += 0.5 * np.einsum('ijef,abef->ijab', t2, Wabef)
+    rhs_T2 += 0.5 * np.einsum('mnab,mnij->ijab', T2, Wmnij)
+    rhs_T2 += 0.5 * np.einsum('ijef,abef->ijab', T2, Wabef)
 
     # P_(ij) * P_(ab)
     # (ij - ji) * (ab - ba)
     # ijab - ijba -jiab + jiba
-    tmp = np.einsum('ie,ma,mbej->ijab', t1, t1, MO[:nocc, nocc:, nocc:, :nocc])
-    Pijab = np.einsum('imae,mbej->ijab', t2, Wmbej)
+    tmp = np.einsum('ie,ma,mbej->ijab', T1, T1, MO[:nocc, nocc:, nocc:, :nocc])
+    Pijab = np.einsum('imae,mbej->ijab', T2, Wmbej)
     Pijab -= tmp
 
     rhs_T2 += Pijab
@@ -302,50 +309,52 @@ for CCSD_iter in range(1, maxiter + 1):
     rhs_T2 -= Pijab.swapaxes(0, 1)
     rhs_T2 += Pijab.swapaxes(0, 1).swapaxes(2, 3)
 
-    Pij = np.einsum('ie,abej->ijab', t1, MO[nocc:, nocc:, nocc:, :nocc])
+    Pij = np.einsum('ie,abej->ijab', T1, MO[nocc:, nocc:, nocc:, :nocc])
     rhs_T2 += Pij
     rhs_T2 -= Pij.swapaxes(0, 1)
 
-    Pab = np.einsum('ma,mbij->ijab', t1, MO[:nocc, nocc:, :nocc, :nocc])
+    Pab = np.einsum('ma,mbij->ijab', T1, MO[:nocc, nocc:, :nocc, :nocc])
     rhs_T2 -= Pab
     rhs_T2 += Pab.swapaxes(2, 3)
 
+    ### Update T1 and T2 amplitudes
+    T1 = rhs_T1 / Dia
+    T2 = rhs_T2 / Dijab
+
     ### Compute CCSD correlation energy
-    CCSDcorr_E = np.einsum('ia,ia->', F[:nocc, nocc:], t1)
-    CCSDcorr_E += 0.25 * np.einsum('ijab,ijab->', MO[:nocc, :nocc, nocc:, nocc:], t2)
-    CCSDcorr_E += 0.5 * np.einsum('ijab,ia,jb->', MO[:nocc, :nocc, nocc:, nocc:], t1, t1)
+    CCSDcorr_E = np.einsum('ia,ia->', F[:nocc, nocc:], T1)
+    CCSDcorr_E += 0.25 * np.einsum('ijab,ijab->', MO[:nocc, :nocc, nocc:, nocc:], T2)
+    CCSDcorr_E += 0.5 * np.einsum('ijab,ia,jb->', MO[:nocc, :nocc, nocc:, nocc:], T1, T1)
 
     ### Print CCSD correlation energy
-    print 'CCSD Iteration %3d: Correlation Energy = %.12f   dE = %.5E' % (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old))
+    print 'CCSD Iteration %3d: CCSD correlation = %.12f   dE = %.5E' % (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old))
     if (abs(CCSDcorr_E - CCSDcorr_E_old) < E_conv):
         break
 
     CCSDcorr_E_old = CCSDcorr_E
 
-    ### Update T1 and T2 amplitudes
-    t1 = rhs_T1 / Dia
-    t2 = rhs_T2 / Dijab
 
 CCSD_E = SCF_E + CCSDcorr_E
 
 print '\nFinal CCSD correlation energy:     %10.16f' % CCSDcorr_E
 print 'Total CCSD energy:                 %10.16f' % CCSD_E
 
-t2_args = np.abs(t2).ravel().argsort()[-5:][::-1]
-t1_args = np.abs(t1).ravel().argsort()[-5:][::-1]
+# [::4] take every 4th, [-5:] take last 5, [::-1] reverse order
+T2_args = np.abs(T2).ravel().argsort()[::2][-5:][::-1]
+T1_args = np.abs(T1).ravel().argsort()[::4][-5:][::-1]
 
 print '\nLargest T1 amplitudes'
-for pos in t1_args:
-    value = t1.flat[pos]
-    inds = np.unravel_index(pos, t1.shape)
+for pos in T1_args:
+    value = T1.flat[pos]
+    inds = np.unravel_index(pos, T1.shape)
     print '%4d  %4d |   % 5.10f' % (inds[0], inds[1], value)
 
 print '\nLargest T2 amplitudes'
-for pos in t2_args:
-    value = t2.flat[pos]
-    inds = np.unravel_index(pos, t2.shape)
+for pos in T2_args:
+    value = T2.flat[pos]
+    inds = np.unravel_index(pos, T2.shape)
     print '%4d  %4d  %4d  %4d |   % 5.10f' % (inds[0], inds[1], inds[2], inds[3], value)
 
 
-print energy('CCSD')
+#print energy('CCSD')
 
