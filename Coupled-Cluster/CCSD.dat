@@ -41,7 +41,6 @@ symmetry c1
 
 
 set {
-print 20
 basis sto-3g
 scf_type pk
 guess core
@@ -256,7 +255,7 @@ compare_values(energy('mp2'), MP2_E, 6, 'MP2 Energy')
 
 ### Start Iterations
 E_conv = 1.e-12
-maxiter = 50
+maxiter = 40
 CCSDcorr_E_old = 0.0
 
 for CCSD_iter in range(1, maxiter + 1):
@@ -294,8 +293,9 @@ for CCSD_iter in range(1, maxiter + 1):
     rhs_T2 -= Pij
     rhs_T2 += Pij.swapaxes(0, 1)
 
-    rhs_T2 += 0.5 * np.einsum('mnab,mnij->ijab', T2, Wmnij)
-    rhs_T2 += 0.5 * np.einsum('ijef,abef->ijab', T2, Wabef)
+    tmp_tau = build_tau(T1, T2)
+    rhs_T2 += 0.5 * np.einsum('mnab,mnij->ijab', tmp_tau, Wmnij)
+    rhs_T2 += 0.5 * np.einsum('ijef,abef->ijab', tmp_tau, Wabef)
 
     # P_(ij) * P_(ab)
     # (ij - ji) * (ab - ba)
