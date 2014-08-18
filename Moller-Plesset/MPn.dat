@@ -1,0 +1,188 @@
+# A simple Psi 4 input script to compute MP3
+# Focus on auto generating einsum expressions
+# Requirements scipy 0.13.0+ and numpy 1.7.2+
+#
+# Algorithms were taken directly from Daniel Crawford's programming website:
+# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+# Special thanks to Rob Parrish for initial assistance with libmints
+#
+# Created by: Daniel G. A. Smith
+# Date: 7/29/14
+# License: GPL v3.0
+#
+
+import time
+import numpy as np
+from scipy import linalg as SLA
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
+
+# Memory for Psi4 in GB
+memory 2 GB
+
+# Memory for numpy in GB
+numpy_memory = 2
+
+
+molecule mol {
+O
+H 1 1.1
+H 1 1.1 2 104
+symmetry c1
+}
+
+
+set {
+basis aug-cc-pVDZ
+scf_type pk
+guess core
+mp2_type conv
+freeze_core false
+e_convergence 1e-8
+d_convergence 1e-8
+}
+
+# First compute RHF energy using Psi4
+energy('RHF')
+
+# Grab data from 
+wfn = wavefunction()
+# Coefficient Matrix
+C = np.array(wfn.Ca())
+# Double occupied orbitals
+ndocc = wfn.doccpi()[0]
+# Number of molecular orbitals
+nmo = wfn.nmo()
+# SCF energy
+SCF_E = wfn.energy()
+# Orbital energies
+eps = wfn.epsilon_a()
+eps = np.array([eps.get(x) for x in range(C.shape[0])])
+
+# Compute size of ERI tensor in GB
+ERI_Size = (nmo**4)*8.0 / 1E9
+print "Size of the ERI tensor will be %4.2f GB." % ERI_Size
+memory_footprint = ERI_Size*2.5
+if memory_footprint > numpy_memory:
+    clean()
+    raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
+
+# Integral generation from Psi4's MintsHelper
+t = time.time()
+mints = MintsHelper()
+I = np.array(mints.ao_eri())
+I = I.reshape(nmo, nmo, nmo, nmo)
+
+print '\nTotal time taken for ERI integrals: %.3f seconds.' % (time.time()-t)
+
+t=time.time()
+
+# Complete the AOpqrs -> MOiajb step
+MO = np.einsum('rJ,pqrs->pqJs', C, I)
+MO = np.einsum('pI,pqJs->IqJs', C, MO)
+MO = np.einsum('sB,IqJs->IqJB', C, MO)
+MO = np.einsum('qA,IqJB->IAJB', C, MO)
+
+# (pq|rs) -> <ps|rq>
+MO = MO.swapaxes(1, 2)
+
+print '\nTotal time taken for integral transformation: %.f seconds' % (time.time()-t)
+print 'Shape of MO integrals %s \n' % str(MO.shape)
+
+
+# Build epsilon tensor
+eocc = eps[:ndocc]
+evirt = eps[ndocc:]
+epsilon = 1/(eocc.reshape(-1, 1, 1, 1) + eocc.reshape(-1, 1, 1) - evirt.reshape(-1, 1) - evirt)
+
+
+
+def MP_term(n, h, l, factor, string):
+    """
+    n = MPn order of theory
+    h = number of holes
+    l = number of loops
+    factor = symmetry considerations
+    string = summation string MO tensor than energy denominators
+    """   
+    def get_slice(char):
+        """Returns either occupied or virtual slice"""
+        if char in 'abcdefgh':
+            return slice(0, ndocc)
+        else:
+            return slice(ndocc, MO.shape[0])
+ 
+    # Compute prefactor
+    pref = (-1)**(h+l) * (2**l) * float(factor)
+
+    # Get slices
+    slices = string.split(',')
+    if len(slices)!=(n*2-1):
+        clean()
+        raise Exception('Number of terms does not match the order of pertubation theory')
+
+    # Create views
+    views = []
+    
+    # MO views
+    for term in range(n):
+        tmp_slice = slices[term]
+        tmp_slice = [get_slice(x) for x in tmp_slice]
+        views.append(MO[tmp_slice[0], tmp_slice[1], tmp_slice[2], tmp_slice[3]])
+    
+    # Epsilon views 
+    for term in range(n-1):
+        views.append(epsilon)
+    
+    # Compute term!
+    string += '->'
+    term = np.einsum(string, *views)
+    term *= pref
+    return term
+
+### MP2
+
+MP2corr_E = MP_term(2, 2, 2, 0.5, 'abrs,rsab,abrs')
+MP2corr_E += MP_term(2, 2, 1, 0.5, 'abrs,rsba,abrs')
+MP2total_E = SCF_E + MP2corr_E
+print 'MP2 correlation energy: %.8f' % MP2corr_E
+print 'MP2 total energy:       %.8f' % MP2total_E
+compare_values(energy('MP2'), MP2total_E, 6, 'MP2 Energy')
+
+
+### MP3
+
+# MP3 Eqn 1
+MP3corr_E =  MP_term(3, 2, 2, 0.5, 'abru,ruts,tsab,abru,abts') 
+# MP3 Eqn 2
+MP3corr_E += MP_term(3, 4, 2, 0.5, 'adrs,cbad,rscb,adrs,cbrs')
+# MP3 Eqn 3
+MP3corr_E += MP_term(3, 3, 2, 1.0, 'acrt,rbsc,stab,acrt,abst')
+# MP3 Eqn 4
+MP3corr_E += MP_term(3, 3, 2, 1.0, 'bcrt,rasb,stac,bcrt,acst')
+# MP3 Eqn 5
+MP3corr_E += MP_term(3, 3, 3, 1.0, 'acrt,btsc,rsab,acrt,abrs')
+# MP3 Eqn 6
+MP3corr_E += MP_term(3, 3, 1, 1.0, 'cbrt,atsc,rsab,cbrt,abrs')
+# MP3 Eqn 7
+MP3corr_E += MP_term(3, 4, 1, 0.5, 'acrs,dbac,srdb,acrs,dbrs')
+# MP3 Eqn 8
+MP3corr_E += MP_term(3, 2, 1, 0.5, 'abrt,trus,usab,abtr,abus')
+# MP3 Eqn 9
+MP3corr_E += MP_term(3, 3, 1, 1.0, 'bcrt,arbs,tsac,cbrt,acst')
+# MP3 Eqn 10
+MP3corr_E += MP_term(3, 3, 1, 1.0, 'cbrt,rasb,stac,cbrt,acst')
+# MP3 Eqn 11
+MP3corr_E += MP_term(3, 3, 2, 1.0, 'abrs,scat,rtbc,abrs,cbrt')
+# MP3 Eqn 12
+MP3corr_E += MP_term(3, 3, 2, 1.0, 'bcrt,atsc,rsab,bctr,abrs')
+
+print '...took %.3f seconds to compute MP3 correlation energy.\n' % (time.time()-t)
+
+print 'Third order energy:     %.8f' % MP3corr_E
+MP3corr_E += MP2corr_E
+MP3total_E = SCF_E + MP3corr_E
+print 'MP3 correlation energy: %.8f' % MP3corr_E
+print 'MP3 total energy:       %.8f' % MP3total_E
+compare_values(energy('MP3'), MP3total_E, 6, 'MP3 Energy')
+
+
