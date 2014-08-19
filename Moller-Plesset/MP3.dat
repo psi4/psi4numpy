@@ -101,8 +101,8 @@ v = slice(ndocc, MO.shape[0])
 MP2corr_E = 2 * np.einsum('abrs,rsab,abrs', MO[o, o, v, v], MO[v, v, o, o], epsilon)
 MP2corr_E -= np.einsum('abrs,rsba,abrs', MO[o, o, v, v], MO[v, v, o, o], epsilon)
 MP2total_E = SCF_E + MP2corr_E
-print 'MP2 correlation energy: %.8f' % MP2corr_E
-print 'MP2 total energy:       %.8f' % MP2total_E
+print 'MP2 correlation energy: %16.8f' % MP2corr_E
+print 'MP2 total energy:       %16.8f' % MP2total_E
 compare_values(energy('MP2'), MP2total_E, 6, 'MP2 Energy')
 
 print '\n Starting MP3 energy...'
@@ -135,11 +135,11 @@ MP3corr_E += -4.0 * np.einsum('bcrt,atsc,rsab,bctr,abrs', MO[o, o, v, v], MO[o, 
 
 print '...took %.3f seconds to compute MP3 correlation energy.\n' % (time.time()-t)
 
-print 'Third order energy:     %.8f' % MP3corr_E
+print 'Third order energy:     %16.8f' % MP3corr_E
 MP3corr_E += MP2corr_E
 MP3total_E = SCF_E + MP3corr_E
-print 'MP3 correlation energy: %.8f' % MP3corr_E
-print 'MP3 total energy:       %.8f' % MP3total_E
+print 'MP3 correlation energy: %16.8f' % MP3corr_E
+print 'MP3 total energy:       %16.8f' % MP3total_E
 compare_values(energy('MP3'), MP3total_E, 6, 'MP3 Energy')
 
 
