@@ -125,16 +125,8 @@ for SCF_ITER in range(1, maxiter + 1):
     Eold = SCF_E
     Dold = D
 
-    # Diagonalize Fock matrix
-    if SCF_ITER <=2:
-        Fp = A*F*A
-        e, C2 = SLA.eigh(Fp)
-        C = A*C2
-        Cocc = C[:, :ndocc]
-        D = Cocc*Cocc.T
-
     # Update using DIIS
-    else:
+    if SCF_ITER >=3:
 
         # Limit size of DIIS vector
         e_cnt = len(ei)
@@ -162,12 +154,12 @@ for SCF_ITER in range(1, maxiter + 1):
         for num,c in enumerate(ci[:-1]):
             F += c*fi[num]
 
-        # Diagonalize new Fock matrix
-        Fp = A*F*A
-        e,C2 = SLA.eigh(Fp)
-        C = A*C2
-        Cocc = C[:, :ndocc]
-        D = Cocc*Cocc.T
+    # Diagonalize new Fock matrix
+    Fp = A*F*A
+    e,C2 = SLA.eigh(Fp)
+    C = A*C2
+    Cocc = C[:, :ndocc]
+    D = Cocc*Cocc.T
 
     if SCF_ITER==maxiter:
         clean()
