@@ -267,19 +267,19 @@ print 'Maximum DIIS vector size is %d.\n' % max_diis
 
 ### Start Iterations
 E_conv = 1.e-12
-maxiter = 4
+maxiter = 5
 CCSDcorr_E_old = 0.0
 
 for CCSD_iter in range(1, maxiter + 1):
     
     # Add DIIS vector
     diis_vals = [np.concatenate((t1.ravel(), t2.ravel()))] + diis_vals
-    if CCSD_iter >=2:
+    if CCSD_iter >= 2:
         diis_diffs = [diis_vals[0] - diis_vals[1]] + diis_diffs
 
     if CCSD_iter >= 3:
         # Limit size of DIIS vector
-        if len(diis_diffs) > 5:
+        if (len(diis_diffs) > max_diis) or (len(diis_diffs) > 10):
             del diis_vals[-1]
             del diis_diffs[-1]
 
@@ -305,14 +305,15 @@ for CCSD_iter in range(1, maxiter + 1):
 
         # Calculate new fock matrix as linear 
         # combination of previous fock matrices
-        amps = np.zeros_like(diis_vals[0])
+        T = np.zeros_like(diis_vals[0])
         for num in range(diis_size):
-            amps += diis_ci[num] * diis_vals[num + 1]
+            T += diis_ci[num] * diis_vals[num]
         
         t1_size = nocc * nvirt
-        t1 = amps[:t1_size].reshape(nocc, nvirt)
-        t2 = amps[t1_size:].reshape(nocc, nocc, nvirt, nvirt)
-   
+        t1 = T[:t1_size].reshape(nocc, nvirt)
+        t2 = T[t1_size:].reshape(nocc, nocc, nvirt, nvirt)
+
+#    print t1   
     ### Build intermediates
     Fae = build_Fae(t1, t2) 
     Fmi = build_Fmi(t1, t2) 
