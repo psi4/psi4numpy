@@ -8,7 +8,7 @@
 import time
 import numpy as np
 from scipy import linalg as SLA
-np.set_printoptions(precision=5, linewidth=200, suppress=True)
+np.set_printoptions(precision=8, linewidth=200, suppress=True)
 
 memory 2 GB
 
@@ -254,8 +254,10 @@ print 'MP2 total energy:       %.8f' % MP2_E
 compare_values(energy('mp2'), MP2_E, 6, 'MP2 Energy')
 
 ### Setup DIIS
-diis_vals = []
-diis_diffs = []
+diis_vals_t1 = [t1]
+diis_vals_t2 = [t2]
+
+#diis_vals = [np.concatenate((t1.ravel(), t2.ravel()))]
 diis_size = numpy_memory - memory_footprint
 max_diis = int(diis_size / ((t1.nbytes + t2.nbytes) / 1E9)) 
 if max_diis < 4:
@@ -267,32 +269,34 @@ print 'Maximum DIIS vector size is %d.\n' % max_diis
 
 ### Start Iterations
 E_conv = 1.e-12
-maxiter = 5
+maxiter = 7
 CCSDcorr_E_old = 0.0
 
 for CCSD_iter in range(1, maxiter + 1):
     
-    # Add DIIS vector
-    diis_vals = [np.concatenate((t1.ravel(), t2.ravel()))] + diis_vals
-    if CCSD_iter >= 2:
-        diis_diffs = [diis_vals[0] - diis_vals[1]] + diis_diffs
-
     if CCSD_iter >= 3:
         # Limit size of DIIS vector
-        if (len(diis_diffs) > max_diis) or (len(diis_diffs) > 10):
-            del diis_vals[-1]
-            del diis_diffs[-1]
+        # if (len(diis_vals) > max_diis) or (len(diis_vals) > 10):
+        #     del diis_vals[-1]
+
+        # Build amplitude differences
+        diis_diffs_t1 = []
+        diis_diffs_t2 = []
+        for x in range(len(diis_vals_t1)-1):
+            diis_diffs_t1.append(diis_vals_t1[x] - diis_vals_t1[x+1])
+            diis_diffs_t2.append(diis_vals_t2[x] - diis_vals_t2[x+1])
 
         # Build error matrix B
-        diis_size = len(diis_diffs)
-
-        #Build B matrices
+        diis_size = len(diis_diffs_t1)
         B = np.ones((diis_size + 1, diis_size + 1)) * -1
         B[-1, -1] = 0
 
+        # diis_diffs_t1.reverse() 
+        # diis_diffs_t2.reverse() 
         for n1 in range(diis_size):
             for n2 in range(diis_size):
-                B[n1, n2] = np.einsum('i,i->', diis_diffs[n1], diis_diffs[n2])
+                B[n1, n2] = np.einsum('ia,ia->', diis_diffs_t1[n1], diis_diffs_t1[n2])
+                B[n1, n2] += np.einsum('ijab,ijab->', diis_diffs_t2[n1], diis_diffs_t2[n2])
 
         B[:-1, :-1] /= np.abs(B[:-1, :-1]).max()
 
@@ -301,19 +305,15 @@ for CCSD_iter in range(1, maxiter + 1):
         resid[-1] = -1
 
         # Solve pulay equations
-        diis_ci = SLA.solve(B, resid)
-
+        ci = SLA.solve(B, resid)
         # Calculate new fock matrix as linear 
         # combination of previous fock matrices
-        T = np.zeros_like(diis_vals[0])
+        t1 = np.zeros_like(t1)
+        t2 = np.zeros_like(t2)
         for num in range(diis_size):
-            T += diis_ci[num] * diis_vals[num]
-        
-        t1_size = nocc * nvirt
-        t1 = T[:t1_size].reshape(nocc, nvirt)
-        t2 = T[t1_size:].reshape(nocc, nocc, nvirt, nvirt)
+            t1 += ci[num] * diis_vals_t1[num]
+            t2 += ci[num] * diis_vals_t2[num]
 
-#    print t1   
     ### Build intermediates
     Fae = build_Fae(t1, t2) 
     Fmi = build_Fmi(t1, t2) 
@@ -374,6 +374,10 @@ for CCSD_iter in range(1, maxiter + 1):
     ### Update t1 and t2 amplitudes
     t1 = rhs_T1 / Dia
     t2 = rhs_T2 / Dijab
+
+    # Add DIIS vectors
+    diis_vals_t1 = [t1] + diis_vals_t1
+    diis_vals_t2 = [t2] + diis_vals_t2
 
     ### Compute CCSD correlation energy
     CCSDcorr_E = np.einsum('ia,ia->', F[:nocc, nocc:], t1)
