@@ -1,0 +1,147 @@
+# A simple Psi 4 input script to compute EP2 using spin-orbitals 
+# From Szabo and Ostlund page 390
+# Requirements scipy 0.13.0+ and numpy 1.7.2+
+#
+# Algorithms were taken directly from Daniel Crawford's programming website:
+# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+# Special thanks to Rob Parrish for initial assistance with libmints
+#
+# Created by: Daniel G. A. Smith
+# Date: 7/29/14
+# License: GPL v3.0
+#
+import itertools as it
+import time
+import numpy as np
+from scipy import linalg as SLA
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
+
+# Memory for Psi4 in GB
+memory 2 GB
+
+# Memory for numpy in GB
+numpy_memory = 2
+
+# Number of orbitals below the HOMO to compute
+num_orbs = 5
+
+molecule mol {
+O
+H 1 1.1
+H 1 1.1 2 104
+symmetry c1
+}
+
+
+set {
+basis aug-cc-pVDZ
+scf_type pk
+mp2_type conv
+freeze_core false
+e_convergence 1e-8
+d_convergence 1e-8
+}
+
+# First compute RHF energy using Psi4
+energy('RHF')
+
+# Grab data from 
+wfn = wavefunction()
+# Coefficient Matrix
+C = np.array(wfn.Ca())
+# Double occupied orbitals
+ndocc = wfn.doccpi()[0]
+# Number of molecular orbitals
+nmo = wfn.nmo()
+# SCF energy
+SCF_E = wfn.energy()
+# Orbital energies
+eps = wfn.epsilon_a()
+eps = np.array([eps.get(x) for x in range(C.shape[0])])
+
+
+# Compute size of SO-ERI tensor in GB
+ERI_Size = (nmo**4)*(2**4)*8.0 / 1E9
+print "\nSize of the SO ERI tensor will be %4.2f GB." % ERI_Size
+memory_footprint = ERI_Size*2.2
+if memory_footprint > numpy_memory:
+    clean()
+    raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
+
+# Integral generation from Psi4's MintsHelper
+t = time.time()
+mints = MintsHelper()
+I = np.array(mints.ao_eri())
+I = I.reshape(nmo, nmo, nmo, nmo)
+
+print '\nTotal time taken for ERI integrals: %.3f seconds.\n' % (time.time()-t)
+
+
+#Make spin-orbital MO
+t=time.time()
+print 'Starting AO -> MO transformation...'
+MO = np.einsum('rJ,pqrs->pqJs', C, I)
+MO = np.einsum('pI,pqJs->IqJs', C, MO)
+MO = np.einsum('sB,IqJs->IqJB', C, MO)
+MO = np.einsum('qA,IqJB->IAJB', C, MO)
+
+# (pq|rs) -> <ps|rq>
+MO = MO.swapaxes(1, 2)
+print '..finished transformation in %.3f seconds.\n' % (time.time()-t)
+
+# Update ndocc and nvirt
+nvirt = MO.shape[0] - ndocc
+
+# Build epsilon tensor
+eocc = eps[:ndocc]
+evirt = eps[ndocc:]
+
+# Create occupied and virtual slices
+o = slice(0, ndocc)
+v = slice(ndocc, MO.shape[0])
+
+if num_orbs > ndocc:
+    num_orbs = ndocc
+
+ep2_arr = []
+for orbital in range(ndocc-num_orbs, ndocc):
+    E = eps[orbital]
+    for ep_iter in range(50):
+        Eold = E
+    
+        # Build energy denominators
+        epsilon1 = 1/(E + eocc.reshape(-1, 1, 1) - evirt.reshape(-1, 1) - evirt)
+        epsilon2 = 1/(E + evirt.reshape(-1, 1, 1) - eocc.reshape(-1, 1) - eocc)
+    
+        # Compute sigma's
+        tmp1 = (2*MO[orbital, o, v, v] - MO[o, orbital, v, v])
+        sigma1 = np.einsum('rsa,ars,ars->', MO[v, v, orbital, o], tmp1, epsilon1)
+
+        tmp2 = (2*MO[orbital, v, o, o] - MO[v, orbital, o, o])
+        sigma2 = np.einsum('abr,rab,rab->', MO[o, o, orbital, v], tmp2, epsilon2)
+
+        # Build derivatives    
+        sigma_deriv1 = -2 * np.einsum('rsa,ars,ars->', MO[v, v, orbital, o], tmp1, np.power(epsilon1, 2))
+        sigma_deriv2 = -2 * np.einsum('abr,rab,rab->', MO[o, o, orbital, v], tmp2, np.power(epsilon2, 2))
+        deriv = 1 - sigma_deriv1 - sigma_deriv2
+    
+        # Newton-Raphson update
+        E = Eold - (E - eps[orbital] - sigma1 - sigma2) / deriv
+
+        # Break if below threshold
+        if abs(E - Eold) < 1.e-6:
+            ep2_arr.append(E * 27.21138505)
+            break
+
+print "KP - Koopmans' Theorem"
+print "EP2 - Electron Propagator 2\n"
+print "HOMO - n         KP (eV)              EP2 (eV)"
+print "----------------------------------------------"
+
+KP_arr = eps[:ndocc]*27.21138505
+
+for orbital in range(0, len(ep2_arr)):
+    print "% 4d     % 16.4f    % 16.4f" % ((len(ep2_arr)-orbital-1), KP_arr[orbital], ep2_arr[orbital])
+
+
+
