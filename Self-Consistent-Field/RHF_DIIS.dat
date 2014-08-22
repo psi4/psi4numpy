@@ -141,6 +141,8 @@ for SCF_ITER in range(1, maxiter + 1):
                 val = np.einsum('ij,ij->', e1, e2)
                 B[num1, num2] = val
 
+        B[:-1, :-1] /= np.abs(B[:-1, :-1]).max()
+
         # Build residual vector
         resid = np.zeros(e_cnt+1)
         resid[-1] = -1

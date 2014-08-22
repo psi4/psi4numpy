@@ -269,7 +269,7 @@ print 'Maximum DIIS vector size is %d.\n' % max_diis
 
 ### Start Iterations
 E_conv = 1.e-12
-maxiter = 7
+maxiter = 5 
 CCSDcorr_E_old = 0.0
 
 for CCSD_iter in range(1, maxiter + 1):
@@ -279,20 +279,19 @@ for CCSD_iter in range(1, maxiter + 1):
         # if (len(diis_vals) > max_diis) or (len(diis_vals) > 10):
         #     del diis_vals[-1]
 
+        diis_size = len(diis_vals_t1) - 1
+
         # Build amplitude differences
         diis_diffs_t1 = []
         diis_diffs_t2 = []
-        for x in range(len(diis_vals_t1)-1):
-            diis_diffs_t1.append(diis_vals_t1[x] - diis_vals_t1[x+1])
-            diis_diffs_t2.append(diis_vals_t2[x] - diis_vals_t2[x+1])
+        for x in range(diis_size, 0, -1):
+            diis_diffs_t1 = [diis_vals_t1[x] - diis_vals_t1[x-1]] + diis_diffs_t1
+            diis_diffs_t2 = [diis_vals_t2[x] - diis_vals_t2[x-1]] + diis_diffs_t2
 
         # Build error matrix B
-        diis_size = len(diis_diffs_t1)
         B = np.ones((diis_size + 1, diis_size + 1)) * -1
         B[-1, -1] = 0
 
-        # diis_diffs_t1.reverse() 
-        # diis_diffs_t2.reverse() 
         for n1 in range(diis_size):
             for n2 in range(diis_size):
                 B[n1, n2] = np.einsum('ia,ia->', diis_diffs_t1[n1], diis_diffs_t1[n2])
@@ -306,11 +305,13 @@ for CCSD_iter in range(1, maxiter + 1):
 
         # Solve pulay equations
         ci = SLA.solve(B, resid)
+
         # Calculate new fock matrix as linear 
         # combination of previous fock matrices
         t1 = np.zeros_like(t1)
         t2 = np.zeros_like(t2)
         for num in range(diis_size):
+            print ci[num]
             t1 += ci[num] * diis_vals_t1[num]
             t2 += ci[num] * diis_vals_t2[num]
 
