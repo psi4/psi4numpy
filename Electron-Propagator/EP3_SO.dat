@@ -194,6 +194,12 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
         sigma2 = EP_term(2, orbital, 0.5, 'ipab,abip,pab', [epsilon2])
         Enew = eps[orbital] + sigma1 + sigma2
 
+        # Break if below threshold
+        if abs(Enew - Eold) < 1.e-4:
+            ep2_arr.append(Enew * 27.21138505)
+            ep2_conv = True
+            break
+
         # # Build derivatives    
         sigma_deriv1 = EP_term(2, orbital, -1, 'iapq,pqja,apq', [epsilon1_2])
         sigma_deriv2 = EP_term(2, orbital, -1, 'ipab,abip,pab', [epsilon2_2])
@@ -202,15 +208,10 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
         # Newton-Raphson update
         E = Eold - (E - Enew) / deriv
 
-        # Break if below threshold
-        if abs(E - Eold) < 1.e-6:
-            ep2_arr.append(E * 27.21138505)
-            ep2_conv = True
-            break
 
     if ep2_conv is False:
         ep2_arr.append(E)
-        print 'WARNING: EP2 for orbital HOMO - %d did not converged' % orbital
+        print 'WARNING: EP2 for orbital HOMO - %d did not converged' % (ndocc - orbital/2 - 1)
 
     EP2 = E
     # EP3 
@@ -261,7 +262,7 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
 
     if ep3_conv is False:
         ep3_arr.append(E)
-        print 'WARNING: EP3 for orbital HOMO - %d did not converged' % orbital
+        print 'WARNING: EP3 for orbital HOMO - %d did not converged' % (ndocc - orbital/2 - 1)
 
 
 print "\nKP - Koopmans' Theorem"

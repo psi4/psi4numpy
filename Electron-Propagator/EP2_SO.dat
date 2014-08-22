@@ -123,6 +123,8 @@ if num_orbs > nocc:
 ep2_arr = []
 for orbital in range(nocc-num_orbs*2, nocc, 2):
     E = eps[orbital]
+    ep2_conv = False
+
     for ep_iter in range(50):
         Eold = E
     
@@ -133,6 +135,13 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
         # Compute sigma's
         sigma1 = 0.5 * np.einsum('rsa,ars,ars', MO[v, v, orbital, o], MO[orbital, o, v, v], epsilon1)
         sigma2 = 0.5 * np.einsum('abr,rab,rab', MO[o, o, orbital, v], MO[orbital, v, o, o], epsilon2)
+        Enew = eps[orbital] + sigma1 + sigma2
+
+        # Break if below threshold
+        if abs(Enew - Eold) < 1.e-4:
+            ep2_conv = True
+            ep2_arr.append(Enew * 27.21138505)
+            break
 
         # Build derivatives    
         sigma_deriv1 = -1 * np.einsum('rsa,ars,ars', MO[v, v, orbital, o], MO[orbital, o, v, v], np.power(epsilon1, 2))
@@ -140,12 +149,12 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
         deriv = 1 - sigma_deriv1 - sigma_deriv2
     
         # Newton-Raphson update
-        E = Eold - (E - eps[orbital] - sigma1 - sigma2) / deriv
+        E = Eold - (E - Enew) / deriv
 
-        # Break if below threshold
-        if abs(E - Eold) < 1.e-6:
-            ep2_arr.append(E * 27.21138505)
-            break
+    if ep2_conv is False:
+        ep2_arr.append(Enew * 27.21138505)
+        print 'WARNING: EP2 for orbital HOMO - %d did not converged' % (ndocc - orbital/2 - 1)
+
 
 print "KP - Koopmans' Theorem"
 print "EP2 - Electron Propagator 2\n"
