@@ -110,10 +110,14 @@ print '..finished transformation in %.3f seconds.\n' % (time.time()-t)
 nocc = ndocc * 2
 nvirt = MO.shape[0] - nocc
 
+# Make slices
+o = slice(0, nocc)
+v = slice(nocc, MO.shape[0]) 
+
 #Extend eigenvalues
 eps = np.repeat(eps, 2)
-Eocc = eps[:nocc]
-Evirt = eps[nocc:]
+Eocc = eps[o]
+Evirt = eps[v]
 
 # DPD approach to CCSD equations
 # See: http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
@@ -143,71 +147,71 @@ def build_tau(t1, t2):
 
 #Build Eqn 3:
 def build_Fae(t1, t2):
-    Fae = F[nocc:, nocc:].copy()
+    Fae = F[v, v].copy()
     Fae[np.diag_indices_from(Fae)] = 0
 
-    Fae -= 0.5 * np.einsum('me,ma->ae', F[:nocc, nocc:], t1)
-    Fae += np.einsum('mf,mafe->ae', t1, MO[:nocc, nocc:, nocc:, nocc:])
+    Fae -= 0.5 * np.einsum('me,ma->ae', F[o, v], t1)
+    Fae += np.einsum('mf,mafe->ae', t1, MO[o, v, v, v])
 
     tmp_tau = build_tilde_tau(t1, t2)
-    Fae -= 0.5 * np.einsum('mnaf,mnef->ae', tmp_tau, MO[:nocc, :nocc, nocc:, nocc:])
+    Fae -= 0.5 * np.einsum('mnaf,mnef->ae', tmp_tau, MO[o, o, v, v])
     return Fae
 
 
 #Build Eqn 4:
 def build_Fmi(t1, t2):
-    Fmi = F[:nocc, :nocc].copy()
+    Fmi = F[o, o].copy()
     Fmi[np.diag_indices_from(Fmi)] = 0
 
-    Fmi += 0.5 * np.einsum('ie,me->mi', t1, F[:nocc, nocc:])
-    Fmi += np.einsum('ne,mnie->mi', t1, MO[:nocc, :nocc:, :nocc, nocc:])
+    Fmi += 0.5 * np.einsum('ie,me->mi', t1, F[o, v])
+    Fmi += np.einsum('ne,mnie->mi', t1, MO[o, o, o, v])
 
     tmp_tau = build_tilde_tau(t1, t2)
-    Fmi += 0.5 * np.einsum('inef,mnef->mi', tmp_tau, MO[:nocc, :nocc, nocc:, nocc:])
+    Fmi += 0.5 * np.einsum('inef,mnef->mi', tmp_tau, MO[o, o, v, v])
     return Fmi
 
 
 #Build Eqn 5:
 def build_Fme(t1, t2):
-    Fme = F[:nocc, nocc:].copy()
-    Fme += np.einsum('nf,mnef->me', t1, MO[:nocc, :nocc, nocc:, nocc:])
+    Fme = F[o, v].copy()
+    Fme += np.einsum('nf,mnef->me', t1, MO[o, o, v, v])
     return Fme
 
 
 #Build Eqn 6:
 def build_Wmnij(t1, t2):
-    Wmnij = MO[:nocc, :nocc, :nocc, :nocc].copy()
+    Wmnij = MO[o, o, o, o].copy()
 
-    Pij = np.einsum('je,mnie->mnij', t1, MO[:nocc, :nocc, :nocc, nocc:])
+    Pij = np.einsum('je,mnie->mnij', t1, MO[o, o, o, v])
     Wmnij += Pij
     Wmnij -= Pij.swapaxes(2, 3)
 
     tmp_tau = build_tau(t1, t2)
-    Wmnij += 0.25 * np.einsum('ijef,mnef->mnij', tmp_tau, MO[:nocc, :nocc, nocc:, nocc:])
+    Wmnij += 0.25 * np.einsum('ijef,mnef->mnij', tmp_tau, MO[o, o, v, v])
     return Wmnij
 
 
 #Build Eqn 7:
 def build_Wabef(t1, t2):
-    Wabef = MO[nocc:, nocc:, nocc:, nocc:].copy()
+    Wabef = MO[v, v, v, v].copy()
 
-    Pab = np.einsum('mb,amef->abef', t1, MO[nocc:, :nocc, nocc:, nocc:])
+    Pab = np.einsum('mb,amef->abef', t1, MO[v, o, v, v])
     Wabef -= Pab
     Wabef += Pab.swapaxes(0, 1)
 
     tmp_tau = build_tau(t1, t2)
-    Wabef += 0.25 * np.einsum('mnab,mnef->abef', tmp_tau, MO[:nocc, :nocc, nocc:, nocc:])
+    Wabef += 0.25 * np.einsum('mnab,mnef->abef', tmp_tau, MO[o, o, v, v])
     return Wabef
 
 
 #Build Eqn 8:
 def build_Wmbej(t1, t2):
-    Wmbej = MO[:nocc, nocc:, nocc:, :nocc].copy()
-    Wmbej += np.einsum('jf,mbef->mbej', t1, MO[:nocc, nocc:, nocc:, nocc:])
-    Wmbej -= np.einsum('nb,mnej->mbej', t1, MO[:nocc, :nocc, nocc:, :nocc])
+    Wmbej = MO[o, v, v, o].copy()
+    Wmbej += np.einsum('jf,mbef->mbej', t1, MO[o, v, v, v])
+    Wmbej -= np.einsum('nb,mnej->mbej', t1, MO[o, o, v, o])
 
     tmp = (0.5 * t2) + np.einsum('jf,nb->jnfb', t1, t1)
-    Wmbej -= np.einsum('jnfb,mnef->mbej', tmp, MO[:nocc, :nocc, nocc:, nocc:])
+    Wmbej -= np.einsum('jnfb,mnef->mbej', tmp, MO[o, o, v, v])
     return Wmbej
 
 
@@ -223,7 +227,7 @@ spin_ind = np.arange(H.shape[0], dtype=np.int) % 2
 H *= (spin_ind.reshape(-1, 1) == spin_ind)
 
 # Compute Fock matrix
-F = H + np.einsum('pmqm->pq', MO[:, :nocc, :, :nocc])
+F = H + np.einsum('pmqm->pq', MO[:, o, :, o])
 
 ### Build D matrices
 Focc = F[np.arange(nocc), np.arange(nocc)].flatten()
@@ -237,7 +241,7 @@ Dijab = Focc.reshape(-1, 1, 1, 1) + Focc.reshape(-1, 1, 1) - Fvirt.reshape(-1, 1
 # t^a_i
 t1 = np.zeros((nocc, nvirt))
 # t^{ab}_{ij}
-MOijab = MO[:nocc, :nocc, nocc:, nocc:]
+MOijab = MO[o, o, v, v]
 t2 = MOijab / Dijab
 
 ### Compute MP2 in MO basis set to make sure the transformation was correct
@@ -264,16 +268,16 @@ for CCSD_iter in range(1, maxiter + 1):
     Wmbej = build_Wmbej(t1, t2) 
 
     #### Build RHS side of t1 equations
-    rhs_T1  = F[:nocc, nocc:].copy()
+    rhs_T1  = F[o, v].copy()
     rhs_T1 += np.einsum('ie,ae->ia', t1, Fae)
     rhs_T1 -= np.einsum('ma,mi->ia', t1, Fmi)
     rhs_T1 += np.einsum('imae,me->ia', t2, Fme)
-    rhs_T1 -= np.einsum('nf,naif->ia', t1, MO[:nocc, nocc:, :nocc, nocc:])
-    rhs_T1 -= 0.5 * np.einsum('imef,maef->ia', t2, MO[:nocc, nocc:, nocc:, nocc:])
-    rhs_T1 -= 0.5 * np.einsum('mnae,nmei->ia', t2, MO[:nocc, :nocc, nocc:, :nocc])
+    rhs_T1 -= np.einsum('nf,naif->ia', t1, MO[o, v, o, v])
+    rhs_T1 -= 0.5 * np.einsum('imef,maef->ia', t2, MO[o, v, v, v])
+    rhs_T1 -= 0.5 * np.einsum('mnae,nmei->ia', t2, MO[o, o, v, o])
 
     ### Build RHS side of t2 equations
-    rhs_T2 = MO[:nocc, :nocc, nocc:, nocc:].copy()
+    rhs_T2 = MO[o, o, v, v].copy()
 
     # P_(ab) t_ijae (F_be - 0.5 t_mb F_me)
     tmp = Fae - 0.5 * np.einsum('mb,me->be', t1, Fme)
@@ -294,7 +298,7 @@ for CCSD_iter in range(1, maxiter + 1):
     # P_(ij) * P_(ab)
     # (ij - ji) * (ab - ba)
     # ijab - ijba -jiab + jiba
-    tmp = np.einsum('ie,ma,mbej->ijab', t1, t1, MO[:nocc, nocc:, nocc:, :nocc])
+    tmp = np.einsum('ie,ma,mbej->ijab', t1, t1, MO[o, v, v, o])
     Pijab = np.einsum('imae,mbej->ijab', t2, Wmbej)
     Pijab -= tmp
 
@@ -303,11 +307,11 @@ for CCSD_iter in range(1, maxiter + 1):
     rhs_T2 -= Pijab.swapaxes(0, 1)
     rhs_T2 += Pijab.swapaxes(0, 1).swapaxes(2, 3)
 
-    Pij = np.einsum('ie,abej->ijab', t1, MO[nocc:, nocc:, nocc:, :nocc])
+    Pij = np.einsum('ie,abej->ijab', t1, MO[v, v, v, o])
     rhs_T2 += Pij
     rhs_T2 -= Pij.swapaxes(0, 1)
 
-    Pab = np.einsum('ma,mbij->ijab', t1, MO[:nocc, nocc:, :nocc, :nocc])
+    Pab = np.einsum('ma,mbij->ijab', t1, MO[o, v, o, o])
     rhs_T2 -= Pab
     rhs_T2 += Pab.swapaxes(2, 3)
 
@@ -316,9 +320,9 @@ for CCSD_iter in range(1, maxiter + 1):
     t2 = rhs_T2 / Dijab
 
     ### Compute CCSD correlation energy
-    CCSDcorr_E = np.einsum('ia,ia->', F[:nocc, nocc:], t1)
-    CCSDcorr_E += 0.25 * np.einsum('ijab,ijab->', MO[:nocc, :nocc, nocc:, nocc:], t2)
-    CCSDcorr_E += 0.5 * np.einsum('ijab,ia,jb->', MO[:nocc, :nocc, nocc:, nocc:], t1, t1)
+    CCSDcorr_E = np.einsum('ia,ia->', F[o, v], t1)
+    CCSDcorr_E += 0.25 * np.einsum('ijab,ijab->', MO[o, o, v, v], t2)
+    CCSDcorr_E += 0.5 * np.einsum('ijab,ia,jb->', MO[o, o, v, v], t1, t1)
 
     ### Print CCSD correlation energy
     print 'CCSD Iteration %3d: CCSD correlation = %.12f   dE = %.5E' % (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old))
@@ -350,7 +354,7 @@ Dijkabc = Dijkabc - Fvirt.reshape(-1, 1, 1) - Fvirt.reshape(-1, 1) - Fvirt
 # (ijkabc - ijkbac - ijkcba - jikabc + jikbac + jikcba - kjiabc + kjicac + kjicba)
 
 # Build disconnected t3
-tmp = np.einsum('ia,jkbc->ijkabc', t1, MO[:nocc, :nocc, nocc:, nocc:])
+tmp = np.einsum('ia,jkbc->ijkabc', t1, MO[o, o, v, v])
 t3d = tmp.copy()
 t3d -= np.einsum('ijkabc->ijkbac', tmp) 
 t3d -= np.einsum('ijkabc->ijkcba', tmp) 
@@ -363,8 +367,8 @@ t3d += np.einsum('ijkabc->kjicba', tmp)
 t3d /= Dijkabc
 
 # Build connected t3
-tmp = np.einsum('jkae,eibc->ijkabc', t2, MO[nocc:, :nocc, nocc:, nocc:])
-tmp -= np.einsum('imbc,majk->ijkabc', t2, MO[:nocc, nocc:, :nocc, :nocc])
+tmp = np.einsum('jkae,eibc->ijkabc', t2, MO[v, o, v, v])
+tmp -= np.einsum('imbc,majk->ijkabc', t2, MO[o, v, o, o])
 t3c = tmp.copy()
 t3c -= np.einsum('ijkabc->ijkbac', tmp) 
 t3c -= np.einsum('ijkabc->ijkcba', tmp) 
