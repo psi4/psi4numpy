@@ -1,13 +1,12 @@
 
 Next up:
-- Finish CCSD
-- Add CCSD(T) and CCSD DIIS
 - Move tutorials to wiki and add the following:
     - ndarray views, B = Arr[:, :val]
     - Broadcasting energy denominators, Eocc.reshape(-1, 1) - Evirt
     - In depth einsum guide
 
 Future works:
+- Templates!
 - Determinant based CI
     - CISD
     - MCSCF
@@ -17,13 +16,7 @@ Future works:
     - CPHF
     - SAPT  
 
-Building infrastucture is a slippery slope, many diverse functions
-defeats the purpose of this work. However, it likely worth building a
-reference platform for RHF, maybe UHF and ROHF as well.
-
-Infrastructure improvements:
-- SCF reference
-- Spatial MO integrals
-- Spin MO integrals
+- Density Fitting
+- F12 Methods
 
 

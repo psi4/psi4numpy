@@ -146,10 +146,10 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
         # Build derivatives    
         sigma_deriv1 = -1 * np.einsum('rsa,ars,ars', MO[v, v, orbital, o], MO[orbital, o, v, v], np.power(epsilon1, 2))
         sigma_deriv2 = -1 * np.einsum('abr,rab,rab', MO[o, o, orbital, v], MO[orbital, v, o, o], np.power(epsilon2, 2))
-        deriv = 1 - sigma_deriv1 - sigma_deriv2
+        deriv = 1 - (sigma_deriv1 + sigma_deriv2)
     
         # Newton-Raphson update
-        E = Eold - (E - Enew) / deriv
+        E = Eold - (Eold - Enew) / deriv
 
     if ep2_conv is False:
         ep2_arr.append(Enew * 27.21138505)
@@ -161,7 +161,7 @@ print "EP2 - Electron Propagator 2\n"
 print "HOMO - n         KP (eV)              EP2 (eV)"
 print "----------------------------------------------"
 
-KP_arr = eps[:nocc][::2]*27.21138505
+KP_arr = eps[:nocc][::2] * 27.21138505
 
 for orbital in range(0, len(ep2_arr)):
     print "% 4d     % 16.4f    % 16.4f" % ((len(ep2_arr)-orbital-1), KP_arr[orbital], ep2_arr[orbital])

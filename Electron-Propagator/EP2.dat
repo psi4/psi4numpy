@@ -32,7 +32,6 @@ H 1 1.1 2 104
 symmetry c1
 }
 
-
 set {
 basis aug-cc-pVDZ
 scf_type pk
@@ -130,12 +129,12 @@ for orbital in range(ndocc-num_orbs, ndocc):
             break
 
         # Build derivatives    
-        sigma_deriv1 = -2 * np.einsum('rsa,ars,ars->', MO[v, v, orbital, o], tmp1, np.power(epsilon1, 2))
-        sigma_deriv2 = -2 * np.einsum('abr,rab,rab->', MO[o, o, orbital, v], tmp2, np.power(epsilon2, 2))
-        deriv = 1 - sigma_deriv1 - sigma_deriv2
+        sigma_deriv1 = -1 * np.einsum('rsa,ars,ars->', MO[v, v, orbital, o], tmp1, np.power(epsilon1, 2))
+        sigma_deriv2 = -1 * np.einsum('abr,rab,rab->', MO[o, o, orbital, v], tmp2, np.power(epsilon2, 2))
+        deriv = 1 - (sigma_deriv1 + sigma_deriv2)
     
         # Newton-Raphson update
-        E = Eold - (E - Enew) / deriv
+        E = Eold - (Eold - Enew) / deriv
 
     if ep2_conv is False:
         ep2_arr.append(E * 27.21138505)
@@ -146,7 +145,7 @@ print "EP2 - Electron Propagator 2\n"
 print "HOMO - n         KP (eV)              EP2 (eV)"
 print "----------------------------------------------"
 
-KP_arr = eps[:ndocc]*27.21138505
+KP_arr = eps[:ndocc] * 27.21138505
 
 for orbital in range(0, len(ep2_arr)):
     print "% 4d     % 16.4f    % 16.4f" % ((len(ep2_arr)-orbital-1), KP_arr[orbital], ep2_arr[orbital])
