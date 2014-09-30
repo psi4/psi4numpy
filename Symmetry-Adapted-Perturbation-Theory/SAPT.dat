@@ -1,0 +1,127 @@
+# A simple Psi 4 input script to compute MP2 from a RHF reference
+# Requirements scipy 0.13.0+ and numpy 1.7.2+
+#
+# Algorithms were taken directly from Daniel Crawford's programming website:
+# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+# Special thanks to Rob Parrish for initial assistance with libmints
+#
+# Created by: Daniel G. A. Smith
+# Date: 7/29/14
+# License: GPL v3.0
+#
+
+import time
+import numpy as np
+from scipy import linalg as SLA
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
+
+# Memory for Psi4 in GB
+memory 2 GB
+
+# Memory for numpy in GB
+numpy_memory = 2
+
+
+# Set molecule to dimer
+molecule dimer {
+Ar   0.000000000   0.000000000   1.608292610
+--
+C    0.000000000   0.667180730  -2.290248250
+C    0.000000000  -0.667180730  -2.290248250
+H   -0.924007680   1.232023330  -2.289752390
+H    0.924007680   1.232023330  -2.289752390
+H   -0.924007680  -1.232023330  -2.289752390
+H    0.924007680  -1.232023330  -2.289752390
+symmetry c1
+}
+
+set {
+basis 6-31G
+scf_type pk
+mp2_type conv
+e_convergence 1e-8
+d_convergence 1e-8
+}
+
+# Set a few crucial attributes
+dimer.reset_point_group('c1')
+dimer.fix_orientation(True)
+dimer.fix_com(True) 
+dimer.update_geometry()
+nfrags = dimer.nfragments()
+if nfrags!=2:
+    clean()
+    raise Exception("Found %d fragments, must be 2." % nfrags)
+
+# Grab monomers
+monomerA = dimer.extract_subsets(1, 2)
+monomerA.set_name('monomerA')
+monomerB = dimer.extract_subsets(2, 1)
+monomerB.set_name('monomerB')
+
+# Compute monomer properties
+activate(monomerA)
+rhf_monomerB = energy('RHF')
+wfn_A = wavefunction()
+
+activate(monomerB)
+rhf_monomerA = energy('RHF')
+wfn_B = wavefunction()
+
+
+class sapt_helper(object):
+    
+    def __init__(self, wfnA, rhfA, wfnB, rhfB, memory=2):
+        
+        # Setup a few variables
+        self.memory = memory
+
+        # Save the wfn objects
+        self.wfn_A = wfnA
+        self.wfn_B = wfnB
+        self.nmo = wfnA.nmo()
+
+        # Monomer A
+        self.e_scf_A = rhfA 
+        self.ndocc_A = wfnA.doccpi()[0]
+        self.nvirt_A = self.nmo - self.ndocc_A
+        self.C_A = np.array(wfnA.Ca())
+        self.eps_A = np.array([wfnA.epsilon_a().get(x) for x in range(self.C_A.shape[0])])
+
+        # Monomer B 
+        self.e_scf_B = rhfB 
+        self.ndocc_B = wfnB.doccpi()[0]
+        self.nvirt_B = self.nmo - self.ndocc_B
+        self.C_B = np.array(wfnB.Ca())
+        self.eps_B = np.array([wfnB.epsilon_a().get(x) for x in range(self.C_B.shape[0])])
+
+        # Compute size of ERI tensor in GB
+        ERI_Size = (self.nmo**4)*8.0 / 1E9
+        print "Size of the ERI tensor will be %4.2f GB." % ERI_Size
+        memory_footprint = ERI_Size*2.5
+        if memory_footprint > self.memory:
+            clean()
+            raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
+        
+        # Integral generation from Psi4's MintsHelper
+        mints = MintsHelper()
+        self.I = np.array(mints.ao_eri()).reshape(self.nmo, self.nmo, self.nmo, self.nmo)
+        self.T = np.array(mints.ao_kinetic())
+        self.V = np.array(mints.ao_potential())
+        self.S = mints.ao_overlap()     
+
+
+        # Add additional rank 2 tensors
+        self.V_A = np.einsum('uj,vi,uv', self.C_A, self.C_A, self.V)
+        self.V_B = np.einsum('uj,vi,uv', self.C_B, self.C_B, self.V)
+
+
+    # def compute_V(string):
+    # """ Compute \\tilde{v}^{\lambda, \kappa}_{\mu, \\nu}"""
+
+
+
+obj = sapt_helper(wfn_A, rhf_monomerA, wfn_B, rhf_monomerB)
+
+print obj.I.shape
+print obj.e_scf_B
