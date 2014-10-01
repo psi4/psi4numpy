@@ -1,9 +1,6 @@
-# A simple Psi 4 input script to compute MP2 from a RHF reference
+# A simple Psi 4 input script to compute SAPT interaction energies
 # Requirements scipy 0.13.0+ and numpy 1.7.2+
 #
-# Algorithms were taken directly from Daniel Crawford's programming website:
-# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
-# Special thanks to Rob Parrish for initial assistance with libmints
 #
 # Created by: Daniel G. A. Smith
 # Date: 7/29/14
@@ -108,7 +105,7 @@ class sapt_helper(object):
         self.I = np.array(mints.ao_eri()).reshape(self.nmo, self.nmo, self.nmo, self.nmo)
         self.T = np.array(mints.ao_kinetic())
         self.V = np.array(mints.ao_potential())
-        self.S = mints.ao_overlap()     
+        self.S = np.array(mints.ao_overlap()) 
 
 
         # Add additional rank 2 tensors
@@ -125,3 +122,5 @@ obj = sapt_helper(wfn_A, rhf_monomerA, wfn_B, rhf_monomerB)
 
 print obj.I.shape
 print obj.e_scf_B
+print obj.eps_A
+print obj.eps_B
