@@ -4,6 +4,11 @@
 # Algorithms were taken directly from Daniel Crawford's programming website:
 # http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
 # Special thanks to Lori Burns for integral help
+#
+# Created by: Daniel G. A. Smith
+# Date: 7/29/14
+# License: GPL v3.0
+#
 
 # !!! This is a work in progress !!!
 
@@ -207,7 +212,11 @@ def build_Wabef(t1, t2):
     Wabef += Pab.swapaxes(0, 1)
 
     tmp_tau = build_tau(t1, t2)
-    Wabef += 0.25 * np.einsum('mnab,mnef->abef', tmp_tau, MO[o, o, v, v])
+    Wabef += 0.25 * np.einsum('mnab,efmn->abef', tmp_tau, MO[v, v, o, o])
+
+    # Rate limiting step
+    # The above is ~4 times faster, but the below is consistent with the paper
+    # Wabef += 0.25 * np.einsum('mnab,mnef->abef', tmp_tau, MO[o, o, v, v])
     return Wabef
 
 
