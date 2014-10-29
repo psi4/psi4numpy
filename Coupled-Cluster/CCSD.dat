@@ -86,10 +86,10 @@ t=time.time()
 print 'Starting AO -> spin-orbital MO transformation...'
 nso = nmo * 2
 
-MO = np.einsum('rJ,pqrs->pqJs', C, I)
-MO = np.einsum('pI,pqJs->IqJs', C, MO)
-MO = np.einsum('sB,IqJs->IqJB', C, MO)
-MO = np.einsum('qA,IqJB->IAJB', C, MO)
+MO = np.einsum('iP,ijkl->Pjkl', C, I)
+MO = np.einsum('jQ,Pjkl->PQkl', C, MO)
+MO = np.einsum('kR,PQkl->PQRl', C, MO)
+MO = np.einsum('lS,PQRl->PQRS', C, MO)
 
 # Tile MO array so that we have alternating alpha/beta spin orbitals
 MO = np.repeat(MO, 2, axis=0)
