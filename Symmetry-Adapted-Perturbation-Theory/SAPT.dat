@@ -10,7 +10,7 @@
 import time
 import numpy as np
 from scipy import linalg as SLA
-np.set_printoptions(precision=5, linewidth=200, suppress=True)
+np.set_printoptions(precision=5, linewidth=200, threshold=2000, suppress=True)
 
 # Memory for Psi4 in GB
 memory 2 GB
@@ -21,16 +21,21 @@ numpy_memory = 2
 
 # Set molecule to dimer
 molecule dimer {
-Ar   0.000000000   0.000000000   1.608292610
+He   0.000000000   0.000000000   1.608292610
 --
-C    0.000000000   0.667180730  -2.290248250
-C    0.000000000  -0.667180730  -2.290248250
-H   -0.924007680   1.232023330  -2.289752390
-H    0.924007680   1.232023330  -2.289752390
-H   -0.924007680  -1.232023330  -2.289752390
-H    0.924007680  -1.232023330  -2.289752390
-symmetry c1
+He   0.000000000   0.000000000   -1.608292610
 }
+# molecule dimer {
+# Ar   0.000000000   0.000000000   1.608292610
+# --
+# C    0.000000000   0.667180730  -2.290248250
+# C    0.000000000  -0.667180730  -2.290248250
+# H   -0.924007680   1.232023330  -2.289752390
+# H    0.924007680   1.232023330  -2.289752390
+# H   -0.924007680  -1.232023330  -2.289752390
+# H    0.924007680  -1.232023330  -2.289752390
+# symmetry c1
+# }
 
 set {
 basis 6-31G
@@ -39,6 +44,7 @@ mp2_type conv
 e_convergence 1e-8
 d_convergence 1e-8
 }
+# energy('SAPT2')
 
 # Set a few crucial attributes
 dimer.reset_point_group('c1')
@@ -50,25 +56,33 @@ if nfrags!=2:
     clean()
     raise Exception("Found %d fragments, must be 2." % nfrags)
 
-# Grab monomers
-monomerA = dimer.extract_subsets(1, 2)
-monomerA.set_name('monomerA')
-monomerB = dimer.extract_subsets(2, 1)
-monomerB.set_name('monomerB')
-
-# Compute monomer properties
-activate(monomerA)
-rhf_monomerB = energy('RHF')
-wfn_A = wavefunction()
-
-activate(monomerB)
-rhf_monomerA = energy('RHF')
-wfn_B = wavefunction()
 
 
 class sapt_helper(object):
     
-    def __init__(self, wfnA, rhfA, wfnB, rhfB, memory=2):
+    def __init__(self, dimer, memory=2):
+        print("\nInializing SAPT object...\n")
+        t = time.time()
+
+        # Grab monomers
+        monomerA = dimer.extract_subsets(1, 2)
+        monomerA.set_name('monomerA')
+        monomerB = dimer.extract_subsets(2, 1)
+        monomerB.set_name('monomerB')
+
+        # Compute monomer properties
+        activate(monomerA)
+        self.V_A = np.array(MintsHelper().ao_potential())
+        rhfA = energy('RHF')
+        wfnA = wavefunction()
+        print("RHF for monomer A finished.")
+        
+        activate(monomerB)
+        self.V_B = np.array(MintsHelper().ao_potential())
+        rhfB = energy('RHF')
+        wfnB = wavefunction()
+        print("RHF for monomer B finished.")
+
         
         # Setup a few variables
         self.memory = memory
@@ -80,19 +94,31 @@ class sapt_helper(object):
 
         # Monomer A
         self.e_scf_A = rhfA 
+        self.nuc_rep_A = monomerA.nuclear_repulsion_energy() 
         self.ndocc_A = wfnA.doccpi()[0]
         self.nvirt_A = self.nmo - self.ndocc_A
         self.C_A = np.array(wfnA.Ca())
+        self.Co_A = self.C_A[:, :self.ndocc_A]
+        self.Cv_A = self.C_A[:, self.ndocc_A:]
+        self.D_A = np.einsum('ui,vi->uv', self.Co_A, self.Co_A)
         self.eps_A = np.array([wfnA.epsilon_a().get(x) for x in range(self.C_A.shape[0])])
 
         # Monomer B 
         self.e_scf_B = rhfB 
+        self.nuc_rep_B = monomerB.nuclear_repulsion_energy() 
         self.ndocc_B = wfnB.doccpi()[0]
         self.nvirt_B = self.nmo - self.ndocc_B
         self.C_B = np.array(wfnB.Ca())
+        self.Co_B = self.C_B[:, :self.ndocc_B]
+        self.Cv_B = self.C_B[:, self.ndocc_B:]
+        self.D_B = np.einsum('ui,vi->uv', self.Co_B, self.Co_B)
         self.eps_B = np.array([wfnB.epsilon_a().get(x) for x in range(self.C_B.shape[0])])
 
+        # Dimer 
+        self.nuc_rep = dimer.nuclear_repulsion_energy() - self.nuc_rep_A - self.nuc_rep_B 
+
         # Compute size of ERI tensor in GB
+        activate(dimer)
         ERI_Size = (self.nmo**4)*8.0 / 1E9
         print "Size of the ERI tensor will be %4.2f GB." % ERI_Size
         memory_footprint = ERI_Size*2.5
@@ -104,23 +130,46 @@ class sapt_helper(object):
         mints = MintsHelper()
         self.I = np.array(mints.ao_eri()).reshape(self.nmo, self.nmo, self.nmo, self.nmo)
         self.T = np.array(mints.ao_kinetic())
-        self.V = np.array(mints.ao_potential())
         self.S = np.array(mints.ao_overlap()) 
 
 
         # Add additional rank 2 tensors
-        self.V_A = np.einsum('uj,vi,uv', self.C_A, self.C_A, self.V)
-        self.V_B = np.einsum('uj,vi,uv', self.C_B, self.C_B, self.V)
+        self.V_A = np.einsum('uj,vi,uv', self.C_A, self.C_A, self.V_A)
+        self.V_B = np.einsum('uj,vi,uv', self.C_B, self.C_B, self.V_B)
 
+        self.S_AB = np.einsum('uj,vi,uv', self.C_A, self.C_B, self.S)
+
+        print("\n...finished inializing SAPT object in %5.2f seconds.\n" % (time.time()-t))
+
+        
 
     # def compute_V(string):
     # """ Compute \\tilde{v}^{\lambda, \kappa}_{\mu, \\nu}"""
 
+obj = sapt_helper(dimer)
 
+MO = np.einsum('rJ,pqrs->pqJs', obj.Co_B, obj.I)
+MO = np.einsum('pI,pqJs->IqJs', obj.Co_A, MO)
+MO = np.einsum('sB,IqJs->IqJB', obj.Co_B, MO)
+MO = np.einsum('qA,IqJB->IAJB', obj.Co_A, MO)
 
-obj = sapt_helper(wfn_A, rhf_monomerA, wfn_B, rhf_monomerB)
+print np.sum(MO)
+print np.einsum('ii->', obj.V_A[:1, :1])
+print np.einsum('ii->', obj.V_B[:1, :1])
+print obj.nuc_rep
 
-print obj.I.shape
-print obj.e_scf_B
-print obj.eps_A
-print obj.eps_B
+#    Elst10,r            =    -0.000318368869 H
+#    Exch10 (S^2)        =     0.000008674903 H
+#    Exch10              =     0.000008674929 H
+#    Ind20,r (A<-B)      =    -0.000000048183 H
+#    Ind20,r (B<-A)      =    -0.000000048183 H
+#    Ind20,r             =    -0.000000096366 H
+#    Exch-Ind20,r (A<-B) =     0.000000062223 H
+#    Exch-Ind20,r (B<-A) =     0.000000062223 H
+#    Exch-Ind20,r        =     0.000000124446 H
+#    Disp20              =    -0.000000033479 H
+#    Exch-Disp20         =     0.000000007613 H
+#    Elst12,r            =     0.000005135885 H
+#    Exch11              =    -0.000000148104 H
+#    Exch12              =     0.000000789271 H
+#    Ind22               =    -0.000000016619 H
