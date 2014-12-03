@@ -38,8 +38,8 @@ e_convergence 1e-8
 
 # Set defaults
 maxiter = 40
-E_conv = 1.0E-8
-D_conv = 1.0E-5
+E_conv = 1.0E-6
+D_conv = 1.0E-3
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
@@ -56,8 +56,8 @@ if I_Size > numpy_memory:
     clean()
     raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
 
-T = mints.ao_potential()
-V = mints.ao_kinetic()
+V = mints.ao_potential()
+T = mints.ao_kinetic()
 I = mints.ao_eri()
 
 print '\nTotal time taken for integrals: %.3f seconds.' % (time.time()-t)
