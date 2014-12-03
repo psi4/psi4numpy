@@ -21,7 +21,7 @@ numpy_memory = 2
 
 # Set molecule to dimer
 molecule dimer {
-He   0.000000000   0.000000000   1.608292610
+Ne   0.000000000   0.000000000   1.608292610
 --
 He   0.000000000   0.000000000   -1.608292610
 }
@@ -40,7 +40,6 @@ He   0.000000000   0.000000000   -1.608292610
 set {
 basis 6-31G
 scf_type pk
-mp2_type conv
 e_convergence 1e-8
 d_convergence 1e-8
 }
@@ -97,6 +96,7 @@ class sapt_helper(object):
         self.nuc_rep_A = monomerA.nuclear_repulsion_energy() 
         self.ndocc_A = wfnA.doccpi()[0]
         self.nvirt_A = self.nmo - self.ndocc_A
+
         self.C_A = np.array(wfnA.Ca())
         self.Co_A = self.C_A[:, :self.ndocc_A]
         self.Cv_A = self.C_A[:, self.ndocc_A:]
@@ -108,68 +108,264 @@ class sapt_helper(object):
         self.nuc_rep_B = monomerB.nuclear_repulsion_energy() 
         self.ndocc_B = wfnB.doccpi()[0]
         self.nvirt_B = self.nmo - self.ndocc_B
+
         self.C_B = np.array(wfnB.Ca())
         self.Co_B = self.C_B[:, :self.ndocc_B]
         self.Cv_B = self.C_B[:, self.ndocc_B:]
         self.D_B = np.einsum('ui,vi->uv', self.Co_B, self.Co_B)
-        self.eps_B = np.array([wfnB.epsilon_a().get(x) for x in range(self.C_B.shape[0])])
+        self.eps_B = np.array([wfnB.epsilon_b().get(x) for x in range(self.C_B.shape[0])])
 
         # Dimer 
         self.nuc_rep = dimer.nuclear_repulsion_energy() - self.nuc_rep_A - self.nuc_rep_B 
+
+        # Make some dicts
+        self.slices =   {'a' : slice(0, self.ndocc_A),
+                         'r' : slice(self.ndocc_A, None),
+                         'b' : slice(0, self.ndocc_B),
+                         's' : slice(self.ndocc_B, None)
+                         }
+        self.orbitals = {'a' : self.Co_A,     
+                         'r' : self.Cv_A,     
+                         'b' : self.Co_B,     
+                         's' : self.Cv_B
+                         }
+        self.sizes =    {'a' : self.ndocc_A,     
+                         'r' : self.nvirt_A,     
+                         'b' : self.ndocc_B,     
+                         's' : self.nvirt_B
+                         }
 
         # Compute size of ERI tensor in GB
         activate(dimer)
         ERI_Size = (self.nmo**4)*8.0 / 1E9
         print "Size of the ERI tensor will be %4.2f GB." % ERI_Size
-        memory_footprint = ERI_Size*2.5
+        memory_footprint = ERI_Size*5
         if memory_footprint > self.memory:
             clean()
             raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
         
         # Integral generation from Psi4's MintsHelper
         mints = MintsHelper()
-        self.I = np.array(mints.ao_eri()).reshape(self.nmo, self.nmo, self.nmo, self.nmo)
-        self.T = np.array(mints.ao_kinetic())
+        self.I = np.array(mints.ao_eri()).reshape(self.nmo, self.nmo, self.nmo, self.nmo).swapaxes(1,2)
         self.S = np.array(mints.ao_overlap()) 
 
+        # Save additional rank 2 tensors
+        self.V_A_BB = np.einsum('uj,vi,uv->ij', self.C_B, self.C_B, self.V_A)
+        self.V_B_AA = np.einsum('uj,vi,uv->ij', self.C_A, self.C_A, self.V_B)
 
-        # Add additional rank 2 tensors
-        self.V_A = np.einsum('uj,vi,uv', self.C_A, self.C_A, self.V_A)
-        self.V_B = np.einsum('uj,vi,uv', self.C_B, self.C_B, self.V_B)
+        #self.S_AB = np.einsum('ui,vj->ij', self.C_A, self.C_B)
+        self.S_AB = np.einsum('uj,vi,uv->ij', self.C_A, self.C_B, self.S)
 
-        self.S_AB = np.einsum('uj,vi,uv', self.C_A, self.C_B, self.S)
+        # Build V matrix for tilde V. diag() grabs the diagonal a diaganol matrix
+        self.V_A_BB_vt = self.V_A_BB / (2 * self.ndocc_A)
+        self.V_B_AA_vt = self.V_B_AA / (2 * self.ndocc_B)
+        # self.V_A_BB_vt = np.diag(self.V_A_BB) / (2 * self.ndocc_A)
+        # self.V_B_AA_vt = np.diag(self.V_B_AA) / (2 * self.ndocc_B)
+
 
         print("\n...finished inializing SAPT object in %5.2f seconds.\n" % (time.time()-t))
 
-        
+    # Compute v on the fly
+    def v(self, string):
+        if len(string)!=4:
+            print 'Compute V: string %s does not have 4 elements'
+            exit()
 
-    # def compute_V(string):
-    # """ Compute \\tilde{v}^{\lambda, \kappa}_{\mu, \\nu}"""
+        v = np.einsum('iP,ijkl->Pjkl', self.orbitals[string[0]], self.I)
+        v = np.einsum('jQ,Pjkl->PQkl', self.orbitals[string[1]], v)
+        v = np.einsum('kR,PQkl->PQRl', self.orbitals[string[2]], v)
+        v = np.einsum('lS,PQRl->PQRS', self.orbitals[string[3]], v)
+        return v
 
-obj = sapt_helper(dimer)
+    # Grab S
+    def s(self, string):
+        if len(string)!=2:
+            print 'Grab S: string %s does not have 2 elements'
+            exit()
 
-MO = np.einsum('rJ,pqrs->pqJs', obj.Co_B, obj.I)
-MO = np.einsum('pI,pqJs->IqJs', obj.Co_A, MO)
-MO = np.einsum('sB,IqJs->IqJB', obj.Co_B, MO)
-MO = np.einsum('qA,IqJB->IAJB', obj.Co_A, MO)
+        if (string[0]==string[1]):
+            return np.diag(np.ones(self.sizes[string[0]]))
 
-print np.sum(MO)
-print np.einsum('ii->', obj.V_A[:1, :1])
-print np.einsum('ii->', obj.V_B[:1, :1])
-print obj.nuc_rep
+        elif (string[0]=='b') or (string[0]=='s'):
+            return self.S_AB[self.slices[string[1]], self.slices[string[0]]].T
 
-#    Elst10,r            =    -0.000318368869 H
-#    Exch10 (S^2)        =     0.000008674903 H
-#    Exch10              =     0.000008674929 H
-#    Ind20,r (A<-B)      =    -0.000000048183 H
-#    Ind20,r (B<-A)      =    -0.000000048183 H
-#    Ind20,r             =    -0.000000096366 H
-#    Exch-Ind20,r (A<-B) =     0.000000062223 H
-#    Exch-Ind20,r (B<-A) =     0.000000062223 H
-#    Exch-Ind20,r        =     0.000000124446 H
-#    Disp20              =    -0.000000033479 H
-#    Exch-Disp20         =     0.000000007613 H
-#    Elst12,r            =     0.000005135885 H
-#    Exch11              =    -0.000000148104 H
-#    Exch12              =     0.000000789271 H
-#    Ind22               =    -0.000000016619 H
+        else:
+            return self.S_AB[self.slices[string[0]], self.slices[string[1]]]
+
+    # Grab eps:
+    def eps(self, string, dim=1):
+        if len(string)!=1:
+            print 'Grab Epsilon: string %s does not have 1 elements'
+            exit()
+
+        shape = (-1,) + tuple([1]*(dim-1))
+
+        if (string=='b') or (string=='s'):
+            return self.eps_B[self.slices[string]].reshape(shape)
+        else:
+            return self.eps_A[self.slices[string]].reshape(shape)
+
+
+    # Compute V tilde, Index as V_(1,2)^(3,4)
+    # v0123 + V_a13 s02 / Na + V_b02 s13 / Nb
+    def vt(self, string):
+        if len(string)!=4:
+            print 'Compute tilde{V}: string %s does not have 4 elements'
+            exit()
+
+        # ERI term
+        V = self.v(string)
+
+        # Potential A
+        if string[0]==string[2]:
+            nd = np.diag(np.ones(self.sizes[string[0]]))
+            V_A = self.V_A_BB_vt[self.slices[string[1]], self.slices[string[3]]]
+            #print np.einsum(string, np.einsum('ik,jl->ijkl', nd, V_A))
+            V += np.einsum('ik,jl->ijkl', nd, V_A)
+
+        # Potential B
+        if string[1]==string[3]:
+            nd = np.diag(np.ones(self.sizes[string[1]]))
+            V_B = self.V_B_AA_vt[self.slices[string[0]], self.slices[string[2]]]
+            #print np.einsum(string, np.einsum('ik,jl->ijkl', V_B, nd))
+            V += np.einsum('ik,jl->ijkl', V_B, nd)
+
+        # Nuclear- needs some help
+        if (string[0]==string[2]) and (string[1]==string[3]):
+            nd_a = np.diag(np.ones(self.ndocc_A))
+            nd_b = np.diag(np.ones(self.ndocc_B))
+            coef = self.nuc_rep / (4 * self.ndocc_A * self.ndocc_B)
+            V += np.einsum('ik,jl->ijkl', nd_a, nd_b) * coef
+
+        return V
+
+# End SAPT helper
+
+sapt = sapt_helper(dimer)
+
+# Elst10
+Elst10 = 4 * np.einsum('abab', sapt.vt('abab'))
+print 'Elst10: %1.6e' % Elst10
+# Ne-Ne     Electrostatic Energy            :-5.63802265D-06
+# He-Ne     Electrostatic Energy            :-2.55515593D-06
+# He-He     Electrostatic Energy            :-8.95597318D-07
+
+
+# E100 Exch
+vt_abba = sapt.vt('abba')
+vt_abaa = sapt.vt('abaa')
+vt_abbb = sapt.vt('abbb')
+vt_abab = sapt.vt('abab')
+s_ab = sapt.s('ab')
+
+print '------'
+Exch100 = np.einsum('abba', vt_abba)
+print 'VEXCH1', Exch100 * -2
+
+tmp = 2*vt_abaa - vt_abaa.swapaxes(2, 3)
+print 'VEXCH2', np.einsum('Ab,abaA', s_ab, tmp) * -2
+Exch100 += np.einsum('Ab,abaA', s_ab, tmp)
+
+tmp = 2*vt_abbb - vt_abbb.swapaxes(2,3)
+print 'VEXCH3', np.einsum('Ba,abBb', s_ab.T, tmp) * -2
+Exch100 += np.einsum('Ba,abBb', s_ab.T, tmp)
+
+print 'VEXCH4', 2 * np.einsum('Ab,BA,abaB', s_ab, s_ab.T, vt_abab) * -2 
+print 'VEXCH5', 2 * np.einsum('AB,Ba,abAb', s_ab, s_ab.T, vt_abab) * -2
+print 'VEXCH6', np.einsum('Ab,Ba,abAB', s_ab, s_ab.T, vt_abab) * -2
+Exch100 -= 2 * np.einsum('Ab,BA,abaB', s_ab, s_ab.T, vt_abab)
+Exch100 -= 2 * np.einsum('AB,Ba,abAb', s_ab, s_ab.T, vt_abab)
+Exch100 += np.einsum('Ab,Ba,abAB', s_ab, s_ab.T, vt_abab)
+
+Exch100 *= -2
+print '------'
+
+# He Ne
+# print 'VEXCH1= -0.13398D-04' 
+# print 'VEXCH2= -0.51297D-10' 
+# print 'VEXCH3=  0.16525D-10' 
+# print 'VEXCH4=  0.16973D-04' 
+# print 'VEXCH5=  0.16395D-04'
+# print 'VEXCH6= -0.50068D-05'
+
+# Ne Ne    
+print 'VEXCH1= -0.17771D-04' 
+print 'VEXCH2= -0.17345D-10' 
+print 'VEXCH3= -0.17345D-10' 
+print 'VEXCH4=  0.22518D-04' 
+print 'VEXCH5=  0.22518D-04'
+print 'VEXCH6= -0.58976D-05'
+
+#He He
+# print 'VEXCH1= -7.7678D-06' 
+# print 'VEXCH2= -1.0403D-11'
+# print 'VEXCH3= -1.0403D-11'
+# print 'VEXCH4=  9.5267D-06'
+# print 'VEXCH5=  9.5267D-06'
+# print 'VEXCH6= -0.3205D-05'
+print '------'
+
+print 'Exch10: %1.6e' % Exch100
+# Ne-Ne
+#     E^{(10)}_{exch}            2.1367266D-5 
+#     E^{(10)}_{exch}{S^2}       2.1367088D-5
+
+# He-Ne
+#     E^{(10)}_{exch}            1.4962503D-5
+#     E^{(10)}_{exch}{S^2}       1.4962407D-5
+# He-He 
+#     E^{(10)}_{exch}            8.080475D-6
+#     E^{(10)}_{exch}{S^2}       8.080448D-6
+
+# 
+# 
+# E200 Diap
+v_abrs = sapt.v('abrs')
+v_rsab = sapt.v('rsab')
+e_rsab = 1/(-sapt.eps('r', dim=4) - sapt.eps('s', dim=3) + sapt.eps('a', dim=2) + sapt.eps('b'))
+
+Disp200 = 4 * np.einsum('rsab,rsab,abrs->', e_rsab, v_rsab, v_abrs)
+print 'Disp20: %1.6e' % Disp200
+# Ne-Ne  e200 Dispersion energy          :-2.38502329D-06 Mem:      2765 CPU:     0.0
+# Ne-He  e200 Dispersion energy          :-1.02755829D-07 Mem:      2751 CPU:     0.0
+# He-He  e200 Dispersion energy          :-3.35699162D-08 Mem:      2737 CPU:     0.0
+
+n = sapt.ndocc_A * sapt.nvirt_A
+
+W = 2 * np.einsum('rbab->ra', sapt.v('rbab'))
+W += sapt.V_B_AA[sapt.slices['r'], sapt.slices['a']]
+
+eps = sapt.eps('r', dim=2) - sapt.eps('a')
+unrel_t = W/eps
+
+print np.sum(unrel_t * W)
+
+vrAaR = 2 * sapt.v('raar') - sapt.v('rara').swapaxes(2, 3)
+vrRaA = 2 * sapt.v('rraa') - sapt.v('rraa').swapaxes(2, 3)
+total = vrAaR + vrRaA.swapaxes(1, 3)
+arAR = total.swapaxes(2, 3)
+
+
+nd = np.zeros_like(W)
+nd[np.diag_indices(np.min(nd.shape))] = 1
+arAR += np.einsum('ra,RA->raRA', eps, nd)
+
+print unrel_t
+t = np.linalg.solve(arAR.reshape(n,n), W.reshape(n))
+#t = t.reshape(sapt.nvirt_A, sapt.ndocc_A)
+t = t.reshape(sapt.ndocc_A, sapt.nvirt_A).T
+
+print t
+print np.sum(W*t)
+# 
+# print total.shape
+# print W.shape
+# print np.linalg.solve(total, W).reshape(sapt.ndocc_A, sapt.nvirt_A).T
+# 
+# 
+
+
+#      Induction of A ---> B Type      :-0.140283005D-05
+#      Induction of B ---> A Type      :-0.140283005D-05
+
+
