@@ -2,13 +2,21 @@ import numpy as np
 import time
 
 
-class sapt_helper(object):
+class helper_SAPT(object):
     
     def __init__(self, psi, energy, dimer, memory=2):
         print("\nInializing SAPT object...\n")
         t = time.time()
 
-        # Grab mints
+        # Set a few crucial attributes
+        dimer.reset_point_group('c1')
+        dimer.fix_orientation(True)
+        dimer.fix_com(True) 
+        dimer.update_geometry()
+        nfrags = dimer.nfragments()
+        if nfrags!=2:
+            clean()
+            raise Exception("Found %d fragments, must be 2." % nfrags)
 
         # Grab monomers
         monomerA = dimer.extract_subsets(1, 2)
@@ -100,14 +108,7 @@ class sapt_helper(object):
         self.V_A_AB = np.einsum('ui,vj,uv->ij', self.C_A, self.C_B, self.V_A)
         self.V_B_AB = np.einsum('ui,vj,uv->ij', self.C_A, self.C_B, self.V_B)
 
-        #self.S_AB = np.einsum('ui,vj->ij', self.C_A, self.C_B)
         self.S_AB = np.einsum('ui,vj,uv->ij', self.C_A, self.C_B, self.S)
-
-        # Build V matrix for tilde V. diag() grabs the diagonal a diaganol matrix
-        self.V_A_BB_vt = self.V_A_BB / (2 * self.ndocc_A)
-        self.V_B_AA_vt = self.V_B_AA / (2 * self.ndocc_B)
-        # self.V_A_BB_vt = np.diag(self.V_A_BB) / (2 * self.ndocc_A)
-        # self.V_B_AA_vt = np.diag(self.V_B_AA) / (2 * self.ndocc_B)
 
 
         print("\n...finished inializing SAPT object in %5.2f seconds.\n" % (time.time()-t))
@@ -130,22 +131,22 @@ class sapt_helper(object):
             print 'Grab S: string %s does not have 2 elements'
             exit()
 
-
         s1 = string[0]
         s2 = string[1]
 
-#        return np.einsum('ui,vj,uv->ij', self.orbitals[string[0]], self.orbitals[string[1]], self.S)
+        # Compute on the fly
+        # return np.einsum('ui,vj,uv->ij', self.orbitals[string[0]], self.orbitals[string[1]], self.S)
 
         # Same monomer and index- return diaganol
         if (s1==s2):
             return np.diag(np.ones(self.sizes[s1]))
 
-        # Same monomer, but O-V or V-0 means zeros
+        # Same monomer, but O-V or V-O means zeros array
         elif (s1 in self.idx_A) and (s2 in self.idx_A):
-            return np.zeros(self.sizes[s1], self.size[s2])
+            return np.zeros((self.sizes[s1], self.sizes[s2]))
 
         elif (s1 in self.idx_B) and (s2 in self.idx_B):
-            return np.zeros(self.sizes[s1], self.size[s2])
+            return np.zeros((self.sizes[s1], self.sizes[s2]))
 
         # Return S_AB
         elif (s1 in self.idx_B):
@@ -168,39 +169,39 @@ class sapt_helper(object):
             return self.eps_A[self.slices[string]].reshape(shape)
 
     # Grab MO potential
-    def pot(self, string, side):
+    def potential(self, string, side):
         monA = ['a','r']
         monB = ['b','s']
 
         s1 = string[0]
         s2 = string[1]
 
+        # Two seperate cases
         if side=='A':
-            # print string, 'A'
-            # tmp = np.einsum('ui,vj,uv->ij', self.orbitals[s1], self.orbitals[s2], self.V_A) / (2 * self.ndocc_A)
-            # return tmp
+            # Compute on the fly
+            # return np.einsum('ui,vj,uv->ij', self.orbitals[s1], self.orbitals[s2], self.V_A) / (2 * self.ndocc_A)
 
-            if (s1 in monB) and (s2 in monB):
+            if (s1 in self.idx_B) and (s2 in self.idx_B):
                 return self.V_A_BB[self.slices[s1], self.slices[s2]] / (2 * self.ndocc_A)
-            elif (s1 in monA) and (s2 in monB):
+            elif (s1 in self.idx_A) and (s2 in self.idx_B):
                 return self.V_A_AB[self.slices[s1], self.slices[s2]] / (2 * self.ndocc_A)
-            elif (s1 in monB) and (s2 in monA):
+            elif (s1 in self.idx_B) and (s2 in self.idx_A):
                 return self.V_A_AB[self.slices[s2], self.slices[s1]].T / (2 * self.ndocc_A)
             else:
-                print 'Something is wrong!'
+                print 'No match for %s indices in sapt.potential' % string
+
         if side=='B':
-            # print string, 'B'
+            # Compute on the fly
             # return np.einsum('ui,vj,uv->ij', self.orbitals[s1], self.orbitals[s2], self.V_B) / (2 * self.ndocc_B)
 
-            if (s1 in monA) and (s2 in monA):
+            if (s1 in self.idx_A) and (s2 in self.idx_A):
                 return self.V_B_AA[self.slices[s1], self.slices[s2]] / (2 * self.ndocc_B)
-            elif (s1 in monA) and (s2 in monB):
+            elif (s1 in self.idx_A) and (s2 in self.idx_B):
                 return self.V_B_AB[self.slices[s1], self.slices[s2]] / (2 * self.ndocc_B)
-            elif (s1 in monB) and (s2 in monA):
+            elif (s1 in self.idx_B) and (s2 in self.idx_A):
                 return self.V_B_AB[self.slices[s2], self.slices[s1]].T / (2 * self.ndocc_B)
             else:
-                print 'Something is wrong!'
-
+                print 'No match for %s indices in sapt.potential' % string
 
 
     # Compute V tilde, Index as V_(1,2)^(3,4)
@@ -215,21 +216,18 @@ class sapt_helper(object):
 
         # Potential A
         S_A = self.s(string[0] + string[2])
-        V_A = self.pot(string[1] + string[3], 'A') 
-        print np.sum(V_A)
+        V_A = self.potential(string[1] + string[3], 'A') 
         V += np.einsum('ik,jl->ijkl', S_A, V_A)
 
         # Potential B
         S_B = self.s(string[1] + string[3])
-        V_B = self.pot(string[0] + string[2], 'B') 
-        print np.sum(V_B)
+        V_B = self.potential(string[0] + string[2], 'B') 
         V += np.einsum('ik,jl->ijkl', V_B, S_B)
 
         # Nuclear- needs some help
         coef = self.nuc_rep / (4 * self.ndocc_A * self.ndocc_B)
         V += np.einsum('ik,jl->ijkl', S_A, S_B) * coef
 
-        print '----'
         return V
 
 # End SAPT helper
