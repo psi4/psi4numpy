@@ -11,7 +11,7 @@ import time
 import numpy as np
 from scipy import linalg as SLA
 from helper_SAPT import *
-np.set_printoptions(precision=5, linewidth=200, threshold=2000, suppress=True)
+#np.set_printoptions(precision=5, linewidth=200, threshold=2000, suppress=True)
 
 
 # Memory for numpy in GB
@@ -19,39 +19,34 @@ numpy_memory = 2
 
 # Set molecule to dimer
 molecule dimer {
-Ne   0.000000000   0.000000000   1.608292610
+O   -0.066999140   0.000000000   1.494354740
+H    0.815734270   0.000000000   1.865866390
+H    0.068855100   0.000000000   0.539142770
 --
-He   0.000000000   0.000000000   -1.608292610
+O    0.062547750   0.000000000  -1.422632080
+H   -0.406965400  -0.760178410  -1.771744500
+H   -0.406965400   0.760178410  -1.771744500
+symmetry c1
 }
-# molecule dimer {
-# Ar   0.000000000   0.000000000   1.608292610
-# --
-# C    0.000000000   0.667180730  -2.290248250
-# C    0.000000000  -0.667180730  -2.290248250
-# H   -0.924007680   1.232023330  -2.289752390
-# H    0.924007680   1.232023330  -2.289752390
-# H   -0.924007680  -1.232023330  -2.289752390
-# H    0.924007680  -1.232023330  -2.289752390
-# symmetry c1
-# }
 
 set {
-basis 6-31G
-scf_type pk
+basis cc-pVDZ
 e_convergence 1e-8
 d_convergence 1e-8
 }
-# energy('SAPT2')
+# psi_sapt0 = energy('SAPT0')
 
 
-sapt = helper_SAPT(psi4, energy, dimer)
+sapt = helper_SAPT(psi4, energy, dimer, memory=8)
 
 ### Start E100 Electostatics
+elst_timer = sapt_timer('electrostatics')
 Elst10 = 4 * np.einsum('abab', sapt.vt('abab'))
-print 'Elst10: %1.6e' % Elst10
+elst_timer.stop()
 ### End E100 Electrostatics
 
 ### Start E100 Exchange
+exch_timer = sapt_timer('exchange')
 vt_abba = sapt.vt('abba')
 vt_abaa = sapt.vt('abaa')
 vt_abbb = sapt.vt('abbb')
@@ -71,16 +66,16 @@ Exch100 -= 2 * np.einsum('AB,Ba,abAb', s_ab, s_ab.T, vt_abab)
 Exch100 += np.einsum('Ab,Ba,abAB', s_ab, s_ab.T, vt_abab)
 
 Exch100 *= -2
-print 'Exch10 (S^2): %1.6e' % Exch100
+exch_timer.stop()
 ### End E100 (S^2) Exchange
 
 ### Start E200 Disp
+disp_timer = sapt_timer('dispersion')
 v_abrs = sapt.v('abrs')
 v_rsab = sapt.v('rsab')
 e_rsab = 1/(-sapt.eps('r', dim=4) - sapt.eps('s', dim=3) + sapt.eps('a', dim=2) + sapt.eps('b'))
 
 Disp200 = 4 * np.einsum('rsab,rsab,abrs->', e_rsab, v_rsab, v_abrs)
-print 'Disp20: %1.6e' % Disp200
 ### End E200 Disp
 
 ### Start E200 Exchange-Dispersion
@@ -108,90 +103,118 @@ h_abrs += np.einsum('Br,abBs->abrs', sapt.s('br'), tmp)
 
 # Build q_abrs
 vt_abas = sapt.vt('abas')
-q_abrs =      np.einsum('br,AB,aBAs', sapt.s('br'), sapt.s('ab'), vt_abas) 
-q_abrs -= 2 * np.einsum('Br,AB,abAs', sapt.s('br'), sapt.s('ab'), vt_abas) 
-q_abrs -= 2 * np.einsum('br,aB,ABAs', sapt.s('br'), sapt.s('ab'), vt_abas) 
-q_abrs += 4 * np.einsum('Br,aB,AbAs', sapt.s('br'), sapt.s('ab'), vt_abas) 
+q_abrs =      np.einsum('br,AB,aBAs->abrs', sapt.s('br'), sapt.s('ab'), vt_abas) 
+q_abrs -= 2 * np.einsum('Br,AB,abAs->abrs', sapt.s('br'), sapt.s('ab'), vt_abas) 
+q_abrs -= 2 * np.einsum('br,aB,ABAs->abrs', sapt.s('br'), sapt.s('ab'), vt_abas) 
+q_abrs += 4 * np.einsum('Br,aB,AbAs->abrs', sapt.s('br'), sapt.s('ab'), vt_abas) 
 
 vt_abrb = sapt.vt('abrb')
-q_abrs -= 2 * np.einsum('as,bA,ABrB', sapt.s('as'), sapt.s('ba'), vt_abrb) 
-q_abrs += 4 * np.einsum('As,bA,aBrB', sapt.s('as'), sapt.s('ba'), vt_abrb) 
-q_abrs +=     np.einsum('as,BA,AbrB', sapt.s('as'), sapt.s('ba'), vt_abrb) 
-q_abrs -= 2 * np.einsum('As,BA,abrB', sapt.s('as'), sapt.s('ba'), vt_abrb) 
+q_abrs -= 2 * np.einsum('as,bA,ABrB->abrs', sapt.s('as'), sapt.s('ba'), vt_abrb) 
+q_abrs += 4 * np.einsum('As,bA,aBrB->abrs', sapt.s('as'), sapt.s('ba'), vt_abrb) 
+q_abrs +=     np.einsum('as,BA,AbrB->abrs', sapt.s('as'), sapt.s('ba'), vt_abrb) 
+q_abrs -= 2 * np.einsum('As,BA,abrB->abrs', sapt.s('as'), sapt.s('ba'), vt_abrb) 
 
 vt_abas = sapt.vt('abab')
-q_abrs +=     np.einsum('Br,As,abAB', sapt.s('br'), sapt.s('as'), vt_abab) 
-q_abrs -= 2 * np.einsum('br,As,aBAB', sapt.s('br'), sapt.s('as'), vt_abab) 
-q_abrs -= 2 * np.einsum('Br,as,AbAB', sapt.s('br'), sapt.s('as'), vt_abab) 
+q_abrs +=     np.einsum('Br,As,abAB->abrs', sapt.s('br'), sapt.s('as'), vt_abab) 
+q_abrs -= 2 * np.einsum('br,As,aBAB->abrs', sapt.s('br'), sapt.s('as'), vt_abab) 
+q_abrs -= 2 * np.einsum('Br,as,AbAB->abrs', sapt.s('br'), sapt.s('as'), vt_abab) 
 
 vt_abrs = sapt.vt('abrs')
-q_abrs +=     np.einsum('bA,aB,ABrs', sapt.s('ba'), sapt.s('ab'), vt_abrs) 
-q_abrs -= 2 * np.einsum('bA,AB,aBrs', sapt.s('ba'), sapt.s('ab'), vt_abrs) 
-q_abrs -= 2 * np.einsum('BA,aB,Abrs', sapt.s('ba'), sapt.s('ab'), vt_abrs) 
+q_abrs +=     np.einsum('bA,aB,ABrs->abrs', sapt.s('ba'), sapt.s('ab'), vt_abrs) 
+q_abrs -= 2 * np.einsum('bA,AB,aBrs->abrs', sapt.s('ba'), sapt.s('ab'), vt_abrs) 
+q_abrs -= 2 * np.einsum('BA,aB,Abrs->abrs', sapt.s('ba'), sapt.s('ab'), vt_abrs) 
 
 # Sum it all together
 xd_absr = sapt.vt('absr')
 xd_absr += h_abrs.swapaxes(2, 3)
 xd_absr += q_abrs.swapaxes(2, 3)
+ExchDisp20 = -2 * np.einsum('absr,rsab->', xd_absr, t_rsab)
 
-print xd_absr.shape
-print t_rsab.shape
-print np.einsum('absr,rsab->', xd_absr, t_rsab)
-
-
+disp_timer.stop()
 ### End E200 Exchange-Dispersion
 
-n = sapt.ndocc_A * sapt.nvirt_A
 
-W = 2 * np.einsum('rbab->ra', sapt.v('rbab'))
-W += sapt.V_B_AA[sapt.slices['r'], sapt.slices['a']]
+### Start E200 Induction and Exchange-Induction
 
-eps = (sapt.eps('a', dim=2) - sapt.eps('r')).T
-s = W/eps
+# E200Induction and CPHF orbitals
+ind_timer = sapt_timer('induction')
 
-print np.sum(s * W) * 2
+CPHF_ra, Ind20_ba = sapt.chf('B', ind=True)
+print 'Ind20,r (A<-B):      % 16.12f H' % Ind20_ba
 
-# W = 2 * np.einsum('saba->sb', sapt.v('saba'))
-# W += sapt.V_A_BB[sapt.slices['s'], sapt.slices['b']]
-# 
-# eps = (sapt.eps('b', dim=2) - sapt.eps('s')).T
-# s = W/eps
-# 
-# print np.sum(s * W) * 2
+CPHF_sb, Ind20_ab = sapt.chf('A', ind=True)
+print 'Ind20,r (A->B):      % 16.12f H' % Ind20_ab
 
+Ind20r = Ind20_ba + Ind20_ab
 
-print s
-vrAaR = 2 * sapt.v('raar') - sapt.v('rara').swapaxes(2, 3)
-vrRaA = 2 * sapt.v('rraa') - sapt.v('rraa').swapaxes(2, 3)
-rAaR = vrAaR + vrRaA.swapaxes(1, 3)
-arAR = rAaR.swapaxes(1, 2).swapaxes(0,1)
+# Exchange-Induction
 
-nd = np.zeros_like(W)
-nd[np.diag_indices(np.min(nd.shape))] = 1
-arAR += np.einsum('ra,RA->arAR', eps, nd)
+print '\nStarting Exchange-Induction...'
+# A <-- B
+vt_abra = sapt.vt('abra')
+vt_abar = sapt.vt('abar')
+ExchInd20_ab  =     np.einsum('ra,abbr', CPHF_ra, sapt.vt('abbr')) 
+ExchInd20_ab += 2 * np.einsum('rA,Ab,abar', CPHF_ra, sapt.s('ab'), vt_abar) 
+ExchInd20_ab += 2 * np.einsum('ra,Ab,abrA', CPHF_ra, sapt.s('ab'), vt_abra) 
+ExchInd20_ab -=     np.einsum('rA,Ab,abra', CPHF_ra, sapt.s('ab'), vt_abra) 
 
-# print unrel_t
-t = np.linalg.solve(arAR.reshape(n,n), W.reshape(n))
-#t = t.reshape(sapt.nvirt_A, sapt.ndocc_A)
-t = t.reshape(sapt.ndocc_A, sapt.nvirt_A).T
-print t
-print np.sum(t * W)
+vt_abbb = sapt.vt('abbb')
+vt_abab = sapt.vt('abab')
+ExchInd20_ab -=     np.einsum('ra,Ab,abAr', CPHF_ra, sapt.s('ab'), vt_abar) 
+ExchInd20_ab += 2 * np.einsum('ra,Br,abBb', CPHF_ra, sapt.s('br'), vt_abbb) 
+ExchInd20_ab -=     np.einsum('ra,Br,abbB', CPHF_ra, sapt.s('br'), vt_abbb) 
+ExchInd20_ab -= 2 * np.einsum('rA,Ab,Br,abaB', CPHF_ra, sapt.s('ab'), sapt.s('br'), vt_abab) 
 
-# 
-# print total.shape
-# print W.shape
-#print np.linalg.solve(total, W).reshape(sapt.ndocc_A, sapt.nvirt_A).T
-# 
-# 
+vt_abrb = sapt.vt('abrb')
+ExchInd20_ab -= 2 * np.einsum('ra,Ab,BA,abrB', CPHF_ra, sapt.s('ab'), sapt.s('ba'), vt_abrb) 
+ExchInd20_ab -= 2 * np.einsum('ra,AB,Br,abAb', CPHF_ra, sapt.s('ab'), sapt.s('br'), vt_abab) 
+ExchInd20_ab -= 2 * np.einsum('rA,AB,Ba,abrb', CPHF_ra, sapt.s('ab'), sapt.s('ba'), vt_abrb) 
 
+ExchInd20_ab +=     np.einsum('ra,Ab,Br,abAB', CPHF_ra, sapt.s('ab'), sapt.s('br'), vt_abab) 
+ExchInd20_ab +=     np.einsum('rA,Ab,Ba,abrB', CPHF_ra, sapt.s('ab'), sapt.s('ba'), vt_abrb) 
 
-#     Second Order Induction Interaction:
-#
-#     Induction of A ---> B Type      :-0.138853408D-06
-#     Induction of B ---> A Type      :-0.721471006D-06
+ExchInd20_ab *= -2
+print 'Exch-Ind20,r (A<-B): % 16.12f H' % ExchInd20_ab
 
-#      Second Order Induction Interaction:
-# 
-#      Induction of A ---> B Type      :-0.157736322D-06
-#      Induction of B ---> A Type      :-0.787115448D-06
+# B <-- A
+vt_abbs = sapt.vt('abbs')
+vt_absb = sapt.vt('absb')
+ExchInd20_ba  =     np.einsum('sb,absa', CPHF_sb, sapt.vt('absa')) 
+ExchInd20_ba += 2 * np.einsum('sB,Ba,absb', CPHF_sb, sapt.s('ba'), vt_absb) 
+ExchInd20_ba += 2 * np.einsum('sb,Ba,abBs', CPHF_sb, sapt.s('ba'), vt_abbs) 
+ExchInd20_ba -=     np.einsum('sB,Ba,abbs', CPHF_sb, sapt.s('ba'), vt_abbs) 
 
+vt_abaa = sapt.vt('abaa')
+vt_abab = sapt.vt('abab')
+ExchInd20_ba -=     np.einsum('sb,Ba,absB', CPHF_sb, sapt.s('ba'), vt_absb) 
+ExchInd20_ba += 2 * np.einsum('sb,As,abaA', CPHF_sb, sapt.s('as'), vt_abaa) 
+ExchInd20_ba -=     np.einsum('sb,As,abAa', CPHF_sb, sapt.s('as'), vt_abaa) 
+ExchInd20_ba -= 2 * np.einsum('sB,Ba,As,abAb', CPHF_sb, sapt.s('ba'), sapt.s('as'), vt_abab) 
+
+vt_abas = sapt.vt('abas')
+ExchInd20_ba -= 2 * np.einsum('sb,Ba,AB,abAs', CPHF_sb, sapt.s('ba'), sapt.s('ab'), vt_abas) 
+ExchInd20_ba -= 2 * np.einsum('sb,BA,As,abaB', CPHF_sb, sapt.s('ba'), sapt.s('as'), vt_abab) 
+ExchInd20_ba -= 2 * np.einsum('sB,BA,Ab,abas', CPHF_sb, sapt.s('ba'), sapt.s('ab'), vt_abas) 
+
+ExchInd20_ba +=     np.einsum('sb,Ba,As,abAB', CPHF_sb, sapt.s('ba'), sapt.s('as'), vt_abab) 
+ExchInd20_ba +=     np.einsum('sB,Ba,Ab,abAs', CPHF_sb, sapt.s('ba'), sapt.s('ab'), vt_abas) 
+
+ExchInd20_ba *= -2
+print 'Exch-Ind20,r (A->B): % 16.12f H' % ExchInd20_ba
+ExchInd20r = ExchInd20_ba + ExchInd20_ab
+
+ind_timer.stop()
+### End E200 Induction and Exchange-Induction
+
+print '\nSAPT0 Results'
+print '-'*70
+sapt_printer('Exch10 (S^2):', Exch100)
+sapt_printer('Elst10', Elst10)
+sapt_printer('Disp20', Disp200)
+sapt_printer('Exch-Disp20', ExchDisp20)
+sapt_printer('Ind20,r', Ind20r)
+sapt_printer('Exch-Ind20,r', ExchInd20r)
+
+print '-'*70
+sapt0 = Exch100 + Elst10 + Disp200 + ExchDisp20 + Ind20r + ExchInd20r
+sapt_printer('Total SAPT0', sapt0)

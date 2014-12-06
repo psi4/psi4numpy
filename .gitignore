@@ -54,8 +54,7 @@ docs/_build/
 
 # Psi4 output files
 *.out
-psi.*.clean
-psi.timer.dat
-psi.clean
+*clean
+*timer.dat
 *.swp
 Test/
