@@ -3,7 +3,7 @@
 #
 #
 # Created by: Daniel G. A. Smith
-# Date: 7/29/14
+# Date: 12/1/14
 # License: GPL v3.0
 #
 
@@ -30,7 +30,7 @@ symmetry c1
 }
 
 set {
-basis cc-pVDZ
+basis jun-cc-pVDZ
 e_convergence 1e-8
 d_convergence 1e-8
 }
@@ -208,7 +208,7 @@ ind_timer.stop()
 
 print '\nSAPT0 Results'
 print '-'*70
-sapt_printer('Exch10 (S^2):', Exch100)
+sapt_printer('Exch10 (S^2)', Exch100)
 sapt_printer('Elst10', Elst10)
 sapt_printer('Disp20', Disp200)
 sapt_printer('Exch-Disp20', ExchDisp20)
