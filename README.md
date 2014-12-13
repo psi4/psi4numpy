@@ -17,12 +17,10 @@ with the psi4 output.
 If you have comments, questions, or would like to contribute to the project please
 feel free to email [me](mailto:dsmith@auburn.edu).
 
-Most algorithms were taken directly from Daniel Crawford's programming [website](http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming).
-
 A tutorial that covers the basics of numpy can be found [here](http://wiki.scipy.org/Tentative_NumPy_Tutorial).
 
 #####Requirements:
-- [Psi4](psicode.org)
+- [Psi4](https://github.com/psi4/psi4public)
 - [Python](python.org) 2.7+
  - [Numpy](scipy.org) 1.7.2+
  - [Scipy](numpy.scipy.org) 0.13.0+
