@@ -27,14 +27,4 @@ A tutorial that covers the basics of numpy can be found [here](http://wiki.scipy
  - [Numpy](scipy.org) 1.7.2+
  - [Scipy](numpy.scipy.org) 0.13.0+
 
-Conventions that, if possible, should be followed:
-- All 2D numpy arrays will use the matrix class so the * operator is overloaded
-  to perform matrix matrix multiplication.
-  http://docs.scipy.org/doc/numpy/reference/generated/numpy.matrix.html
-
-- All other operations will use einsum for clarity.
-  http://docs.scipy.org/doc/numpy/reference/generated/numpy.einsum.html
-
-- Tensordot should be avoided unless absolutely required.
-  http://docs.scipy.org/doc/numpy/reference/generated/numpy.tensordot.html
 
