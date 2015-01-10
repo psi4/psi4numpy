@@ -1,8 +1,8 @@
-## psi4 input scripts
+## Psi4 input scripts
 
 One of the basic principles of psi4 input scripts is that they are, in essence, python scripts.
-The primary reason that psi4 input scripts are called "psithon" scripts is that there is additional functionality and parsing that convention python scripts do not have.
-On top of this parsing the psithon adds additional modules that are fairly transparent to the user, these are:
+The primary reason that psi4 input scripts are called "psithon" scripts is that there is additional functionality and parsing that conventional python scripts do not have.
+On top of this parsing, psithon adds additional modules that are fairly transparent to the user, these are:
  - psi4 - The main psi4 C++ library that computes integrals, computes methods, etc
  - aliases - A python library that calls psi4 to compute various quantities, a primary example of this is the "energy" function.
  - Other utility modules are loaded, but we can safely avoid discussing them for now.
@@ -20,8 +20,8 @@ set {
 basis sto-3g
 }
 ```
-Running Psi4 verbose mode will print out the actual python script itself belwo the input script.
-This can be accomplished by:  ```psi4 -v input.dat``` and will yield:
+Running Psi4 in verbose mode will print out the actual python script itself below the input script.
+This can be accomplished by typing "```psi4 -v input.dat```" and will yield:
 ```python
 from psi4 import *
 from p4const import *
@@ -40,13 +40,13 @@ psi4.IO.set_default_namespace("mol")
 psi4.set_global_option("basis", "sto-3g")
 ```
 We can see both the additional parsing that is done to the psithon scripts in addition to the additional modules that are loaded.
-The main point here is that all psi4 input scripts are simply python input scripts with additional utilities pre-loaded and expression handeling.
+The main point here is that all psi4 input scripts are simply python input scripts with additional utilities pre-loaded and expression handling.
 Psi4 can be compiled as a shared object that can be imported directly into a generic python scripts; however, this is currently fairly complicated and avoid for now.
 
 ## Using numpy in psi4
 
-For some reason we have the sudden urge to compute the MP2 energy between two helium molecules and fit those points to a Leonnard-Jones-like potential using numpy.
-We can safely treat the output from ```cp('MP2')``` (compute the cp corrected MP2 interaction energy) as a normal python float and import numpy the same way as a generic python script:
+Lets pretend we have the sudden urge to compute the MP2 interaction energy between two helium atoms and fit those points to a Leonnard-Jones-like potential using numpy.
+We can safely treat the output from ```cp('MP2')``` (computes the cp corrected MP2 interaction energy) as a normal python float and import numpy the same way as a generic python script:
 ```python
 import numpy as np
 
@@ -90,7 +90,7 @@ print('Fit energies:  ' + ', '.join('% 2.3f' % x for x in fit_energies))
 
 If the above is difficult to follow one of two things have happened.
 Either the code is confusing or I have not explained something very well.
-If it is the former I would encourage you to try and debug the code just like a generic python script if it is the latter (frankly the more likely of the two) I would strongly encourage you to email me so I can improve this.
+If it is the former I would encourage you to try and debug the code just like a generic python script and if it is the latter (frankly the more likely of the two) I would strongly encourage you to email me so I can improve this.
 
 
 
