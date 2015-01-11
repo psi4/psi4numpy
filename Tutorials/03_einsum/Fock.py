@@ -4,6 +4,7 @@ molecule mol {
 O
 H 1 1.1
 H 1 1.1 2 105
+symmetry c1
 }
 
 set {

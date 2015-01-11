@@ -3,9 +3,11 @@ Numpy has a built-in arbitrary tensor contraction engine called ```np.einsum```.
 Not surprisingly the notation should be given in Einstein summation notation.
 The Fock matrix can built by first building the J (Coulomb matrix) and K (Exchange matrix) quantities:
 
-```J_{pq} = I_{pqrs} * D_{rs}```
-```K_{pq} = I_{prqs} * D_{rs}```
-```F_{pq} = H_{pq} + 2 * J_{pq} - K_{pq}```
+```
+J_{pq} = I_{pqrs} * D_{rs}
+K_{pq} = I_{prqs} * D_{rs}
+F_{pq} = H_{pq} + 2 * J_{pq} - K_{pq}
+```
 
  - H: Two-index one-electron hamiltonian 
  - D: Two-index density matrix
