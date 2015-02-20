@@ -60,7 +60,7 @@ d_convergence 1e-10
 # First compute RHF energy using Psi4
 energy('RHF')
 
-# Grab data from 
+# Grab data from
 wfn = wavefunction()
 # Coefficient Matrix
 C = np.array(wfn.Ca())
@@ -124,7 +124,7 @@ nvirt = MO.shape[0] - nocc
 
 # Make slices
 o = slice(0, nocc)
-v = slice(nocc, MO.shape[0]) 
+v = slice(nocc, MO.shape[0])
 
 #Extend eigenvalues
 eps = np.repeat(eps, 2)
@@ -139,7 +139,7 @@ Evirt = eps[v]
 # all oribitals p, q, r, s, t, u, v
 
 
-#Bulid Eqn 9: tilde{\Tau}) 
+#Bulid Eqn 9: tilde{\Tau})
 def build_tilde_tau(t1, t2):
     ttau = t2.copy()
     tmp = 0.5 * np.einsum('ia,jb->ijab', t1, t1)
@@ -148,7 +148,7 @@ def build_tilde_tau(t1, t2):
     return ttau
 
 
-#Build Eqn 10: \Tau) 
+#Build Eqn 10: \Tau)
 def build_tau(t1, t2):
     ttau = t2.copy()
     tmp = np.einsum('ia,jb->ijab', t1, t1)
@@ -274,21 +274,21 @@ diis_vals_t2 = [t2]
 
 #diis_vals = [np.concatenate((t1.ravel(), t2.ravel()))]
 diis_size = numpy_memory - memory_footprint
-max_diis = int(diis_size / ((t1.nbytes + t2.nbytes) / 1E9)) 
+max_diis = int(diis_size / ((t1.nbytes + t2.nbytes) / 1E9))
 if max_diis < 4:
     clean()
     raise Exception('Require at least %4.2f GB of memory for DIIS' % (4 * ((t1.nbytes + t2.nbytes) / 1E9)) + memory_footprint)
 
 print '\n%4.2f GB reserved for t2 DIIS vectors.' % diis_size
-print 'Maximum DIIS vector size is %d.\n' % max_diis 
+print 'Maximum DIIS vector size is %d.\n' % max_diis
 
 ### Start Iterations
 E_conv = 1.e-12
-maxiter = 5 
+maxiter = 5
 CCSDcorr_E_old = 0.0
 
 for CCSD_iter in range(1, maxiter + 1):
-    
+
     if CCSD_iter >= 3:
         # Limit size of DIIS vector
         # if (len(diis_vals) > max_diis) or (len(diis_vals) > 10):
@@ -321,7 +321,7 @@ for CCSD_iter in range(1, maxiter + 1):
         # Solve pulay equations
         ci = SLA.solve(B, resid)
 
-        # Calculate new fock matrix as linear 
+        # Calculate new fock matrix as linear
         # combination of previous fock matrices
         t1 = np.zeros_like(t1)
         t2 = np.zeros_like(t2)
@@ -331,13 +331,13 @@ for CCSD_iter in range(1, maxiter + 1):
             t2 += ci[num] * diis_vals_t2[num]
 
     ### Build intermediates
-    Fae = build_Fae(t1, t2) 
-    Fmi = build_Fmi(t1, t2) 
-    Fme = build_Fme(t1, t2) 
+    Fae = build_Fae(t1, t2)
+    Fmi = build_Fmi(t1, t2)
+    Fme = build_Fme(t1, t2)
 
-    Wmnij = build_Wmnij(t1, t2) 
-    Wabef = build_Wabef(t1, t2) 
-    Wmbej = build_Wmbej(t1, t2) 
+    Wmnij = build_Wmnij(t1, t2)
+    Wabef = build_Wabef(t1, t2)
+    Wmbej = build_Wmbej(t1, t2)
 
     #### Build RHS side of t1 equations
     rhs_T1  = F[o, v].copy()
@@ -357,7 +357,7 @@ for CCSD_iter in range(1, maxiter + 1):
     rhs_T2 += Pab
     rhs_T2 -= Pab.swapaxes(2, 3)
 
-    # P_(ij) t_imab (F_mj + 0.5 t_je F_me) 
+    # P_(ij) t_imab (F_mj + 0.5 t_je F_me)
     tmp = Fmi + 0.5 * np.einsum('je,me->mj', t1, Fme)
     Pij = np.einsum('imab,mj->ijab', t2, tmp)
     rhs_T2 -= Pij
@@ -423,7 +423,7 @@ print 'Total CCSD energy:                 % 16.10f' % CCSD_E
 #     value = t1.flat[pos]
 #     inds = np.unravel_index(pos, t1.shape)
 #     print '%4d  %4d |   % 5.10f' % (inds[0], inds[1], value)
-# 
+#
 # print '\nLargest t2 amplitudes'
 # for pos in t2_args:
 #     value = t2.flat[pos]

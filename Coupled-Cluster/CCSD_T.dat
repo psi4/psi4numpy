@@ -53,7 +53,7 @@ e_convergence = 1e-10
 # First compute RHF energy using Psi4
 energy('RHF')
 
-# Grab data from 
+# Grab data from
 wfn = wavefunction()
 # Coefficient Matrix
 C = np.array(wfn.Ca())
@@ -117,7 +117,7 @@ nvirt = MO.shape[0] - nocc
 
 # Make slices
 o = slice(0, nocc)
-v = slice(nocc, MO.shape[0]) 
+v = slice(nocc, MO.shape[0])
 
 #Extend eigenvalues
 eps = np.repeat(eps, 2)
@@ -132,7 +132,7 @@ Evirt = eps[v]
 # all oribitals p, q, r, s, t, u, v
 
 
-#Bulid Eqn 9: tilde{\Tau}) 
+#Bulid Eqn 9: tilde{\Tau})
 def build_tilde_tau(t1, t2):
     ttau = t2.copy()
     tmp = 0.5 * np.einsum('ia,jb->ijab', t1, t1)
@@ -141,7 +141,7 @@ def build_tilde_tau(t1, t2):
     return ttau
 
 
-#Build Eqn 10: \Tau) 
+#Build Eqn 10: \Tau)
 def build_tau(t1, t2):
     ttau = t2.copy()
     tmp = np.einsum('ia,jb->ijab', t1, t1)
@@ -267,15 +267,15 @@ maxiter = 60
 CCSDcorr_E_old = 0.0
 
 for CCSD_iter in range(1, maxiter + 1):
-    
-    ### Build intermediates
-    Fae = build_Fae(t1, t2) 
-    Fmi = build_Fmi(t1, t2) 
-    Fme = build_Fme(t1, t2) 
 
-    Wmnij = build_Wmnij(t1, t2) 
-    Wabef = build_Wabef(t1, t2) 
-    Wmbej = build_Wmbej(t1, t2) 
+    ### Build intermediates
+    Fae = build_Fae(t1, t2)
+    Fmi = build_Fmi(t1, t2)
+    Fme = build_Fme(t1, t2)
+
+    Wmnij = build_Wmnij(t1, t2)
+    Wabef = build_Wabef(t1, t2)
+    Wmbej = build_Wmbej(t1, t2)
 
     #### Build RHS side of t1 equations
     rhs_T1  = F[o, v].copy()
@@ -295,7 +295,7 @@ for CCSD_iter in range(1, maxiter + 1):
     rhs_T2 += Pab
     rhs_T2 -= Pab.swapaxes(2, 3)
 
-    # P_(ij) t_imab (F_mj + 0.5 t_je F_me) 
+    # P_(ij) t_imab (F_mj + 0.5 t_je F_me)
     tmp = Fmi + 0.5 * np.einsum('je,me->mj', t1, Fme)
     Pij = np.einsum('imab,mj->ijab', t2, tmp)
     rhs_T2 -= Pij
@@ -366,28 +366,28 @@ Dijkabc = Dijkabc - Fvirt.reshape(-1, 1, 1) - Fvirt.reshape(-1, 1) - Fvirt
 # Build disconnected t3
 tmp = np.einsum('ia,jkbc->ijkabc', t1, MO[o, o, v, v])
 t3d = tmp.copy()
-t3d -= np.einsum('ijkabc->ijkbac', tmp) 
-t3d -= np.einsum('ijkabc->ijkcba', tmp) 
-t3d -= np.einsum('ijkabc->jikabc', tmp) 
-t3d += np.einsum('ijkabc->jikbac', tmp) 
-t3d += np.einsum('ijkabc->jikcba', tmp) 
-t3d -= np.einsum('ijkabc->kjiabc', tmp) 
-t3d += np.einsum('ijkabc->kjibac', tmp) 
-t3d += np.einsum('ijkabc->kjicba', tmp) 
+t3d -= np.einsum('ijkabc->ijkbac', tmp)
+t3d -= np.einsum('ijkabc->ijkcba', tmp)
+t3d -= np.einsum('ijkabc->jikabc', tmp)
+t3d += np.einsum('ijkabc->jikbac', tmp)
+t3d += np.einsum('ijkabc->jikcba', tmp)
+t3d -= np.einsum('ijkabc->kjiabc', tmp)
+t3d += np.einsum('ijkabc->kjibac', tmp)
+t3d += np.einsum('ijkabc->kjicba', tmp)
 t3d /= Dijkabc
 
 # Build connected t3
 tmp = np.einsum('jkae,eibc->ijkabc', t2, MO[v, o, v, v])
 tmp -= np.einsum('imbc,majk->ijkabc', t2, MO[o, v, o, o])
 t3c = tmp.copy()
-t3c -= np.einsum('ijkabc->ijkbac', tmp) 
-t3c -= np.einsum('ijkabc->ijkcba', tmp) 
-t3c -= np.einsum('ijkabc->jikabc', tmp) 
-t3c += np.einsum('ijkabc->jikbac', tmp) 
-t3c += np.einsum('ijkabc->jikcba', tmp) 
-t3c -= np.einsum('ijkabc->kjiabc', tmp) 
-t3c += np.einsum('ijkabc->kjibac', tmp) 
-t3c += np.einsum('ijkabc->kjicba', tmp) 
+t3c -= np.einsum('ijkabc->ijkbac', tmp)
+t3c -= np.einsum('ijkabc->ijkcba', tmp)
+t3c -= np.einsum('ijkabc->jikabc', tmp)
+t3c += np.einsum('ijkabc->jikbac', tmp)
+t3c += np.einsum('ijkabc->jikcba', tmp)
+t3c -= np.einsum('ijkabc->kjiabc', tmp)
+t3c += np.einsum('ijkabc->kjibac', tmp)
+t3c += np.einsum('ijkabc->kjicba', tmp)
 t3c /= Dijkabc
 
 # Compute energy expression

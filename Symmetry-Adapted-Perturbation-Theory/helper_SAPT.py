@@ -11,7 +11,7 @@ import time
 
 
 class helper_SAPT(object):
-    
+
     def __init__(self, psi, energy, dimer, memory=2):
         print("\nInializing SAPT object...\n")
         t = time.time()
@@ -19,10 +19,10 @@ class helper_SAPT(object):
         # Set a few crucial attributes
         dimer.reset_point_group('c1')
         dimer.fix_orientation(True)
-        dimer.fix_com(True) 
+        dimer.fix_com(True)
         dimer.update_geometry()
         nfrags = dimer.nfragments()
-        if nfrags!=2:
+        if nfrags != 2:
             clean()
             raise Exception("Found %d fragments, must be 2." % nfrags)
         psi.set_global_option("SCF_TYPE", "pk")
@@ -39,21 +39,20 @@ class helper_SAPT(object):
         self.rhfA = energy('RHF')
         self.wfnA = psi.wavefunction()
         print("RHF for monomer A finished.")
-        
+
         psi.set_active_molecule(monomerB)
         self.V_B = np.array(psi.MintsHelper().ao_potential())
         self.rhfB = energy('RHF')
         self.wfnB = psi.wavefunction()
         print("RHF for monomer B finished.")
 
-        
         # Setup a few variables
         self.psi = psi
         self.memory = memory
         self.nmo = self.wfnA.nmo()
 
         # Monomer A
-        self.nuc_rep_A = monomerA.nuclear_repulsion_energy() 
+        self.nuc_rep_A = monomerA.nuclear_repulsion_energy()
         self.ndocc_A = self.wfnA.doccpi()[0]
         self.nvirt_A = self.nmo - self.ndocc_A
         self.idx_A = ['a', 'r']
@@ -63,8 +62,8 @@ class helper_SAPT(object):
         self.Cv_A = self.C_A[:, self.ndocc_A:]
         self.eps_A = np.array([self.wfnA.epsilon_a().get(x) for x in range(self.C_A.shape[0])])
 
-        # Monomer B 
-        self.nuc_rep_B = monomerB.nuclear_repulsion_energy() 
+        # Monomer B
+        self.nuc_rep_B = monomerB.nuclear_repulsion_energy()
         self.ndocc_B = self.wfnB.doccpi()[0]
         self.nvirt_B = self.nmo - self.ndocc_B
         self.idx_B = ['b', 's']
@@ -74,26 +73,25 @@ class helper_SAPT(object):
         self.Cv_B = self.C_B[:, self.ndocc_B:]
         self.eps_B = np.array([self.wfnB.epsilon_b().get(x) for x in range(self.C_B.shape[0])])
 
-        # Dimer 
-        self.nuc_rep = dimer.nuclear_repulsion_energy() - self.nuc_rep_A - self.nuc_rep_B 
+        # Dimer
+        self.nuc_rep = dimer.nuclear_repulsion_energy() - self.nuc_rep_A - self.nuc_rep_B
         self.vt_nuc_rep = self.nuc_rep / (4 * self.ndocc_A * self.ndocc_B)
 
         # Make some dicts
-        self.slices =   {'a' : slice(0, self.ndocc_A),
-                         'r' : slice(self.ndocc_A, None),
-                         'b' : slice(0, self.ndocc_B),
-                         's' : slice(self.ndocc_B, None)
-                         }
-        self.orbitals = {'a' : self.Co_A,     
-                         'r' : self.Cv_A,     
-                         'b' : self.Co_B,     
-                         's' : self.Cv_B
-                         }
-        self.sizes =    {'a' : self.ndocc_A,     
-                         'r' : self.nvirt_A,     
-                         'b' : self.ndocc_B,     
-                         's' : self.nvirt_B
-                         }
+        self.slices = {'a': slice(0, self.ndocc_A),
+                       'r': slice(self.ndocc_A, None),
+                       'b': slice(0, self.ndocc_B),
+                       's': slice(self.ndocc_B, None)}
+
+        self.orbitals = {'a': self.Co_A,
+                         'r': self.Cv_A,
+                         'b': self.Co_B,
+                         's': self.Cv_B}
+
+        self.sizes = {'a': self.ndocc_A,
+                      'r': self.nvirt_A,
+                      'b': self.ndocc_B,
+                      's': self.nvirt_B}
 
         # Compute size of ERI tensor in GB
         psi.set_active_molecule(dimer)
@@ -104,11 +102,11 @@ class helper_SAPT(object):
         if memory_footprint > self.memory:
             clean()
             raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
-        
+
         # Integral generation from Psi4's MintsHelper
         # ERI's from mints are of type (11|22)- need <12|12>
-        self.I = np.array(mints.ao_eri()).reshape(self.nmo, self.nmo, self.nmo, self.nmo).swapaxes(1,2)
-        self.S = np.array(mints.ao_overlap()) 
+        self.I = np.array(mints.ao_eri()).reshape(self.nmo, self.nmo, self.nmo, self.nmo).swapaxes(1, 2)
+        self.S = np.array(mints.ao_overlap())
 
         # Save additional rank 2 tensors
         self.V_A_BB = np.einsum('ui,vj,uv->ij', self.C_B, self.C_B, self.V_A)
@@ -122,10 +120,10 @@ class helper_SAPT(object):
 
     # Compute v on the fly
     def v(self, string):
-        if len(string)!=4:
+        if len(string) != 4:
             self.psi.clean()
             raise Exception('v: string %s does not have 4 elements' % string)
-        
+
         # One of the most computationally demanding steps for SAPT0
         # Selectively transforms smallest index first
         # Reduces readability, speed gains of an order of magnitude or more.
@@ -138,7 +136,7 @@ class helper_SAPT(object):
             ein_string = 'ab,' + ''.join(ao) + '->' + ''.join(mo)
             v = np.einsum(ein_string, self.orbitals[string[i]], v)
 
-        # Simple N^5 AO->MO transformation                
+        # Simple N^5 AO->MO transformation
         # v = np.einsum('iP,ijkl->Pjkl', self.orbitals[string[0]], self.I)
         # v = np.einsum('jQ,Pjkl->PQkl', self.orbitals[string[1]], v)
         # v = np.einsum('kR,PQkl->PQRl', self.orbitals[string[2]], v)
@@ -148,7 +146,7 @@ class helper_SAPT(object):
 
     # Grab S
     def s(self, string):
-        if len(string)!=2:
+        if len(string) != 2:
             self.psi.clean()
             raise Exception('S: string %s does not have 2 elements.' % string)
 
@@ -159,7 +157,7 @@ class helper_SAPT(object):
         # return np.einsum('ui,vj,uv->ij', self.orbitals[string[0]], self.orbitals[string[1]], self.S)
 
         # Same monomer and index- return diaganol
-        if (s1==s2):
+        if (s1 == s2):
             return np.diag(np.ones(self.sizes[s1]))
 
         # Same monomer, but O-V or V-O means zeros array
@@ -176,20 +174,20 @@ class helper_SAPT(object):
 
     # Grab eps:
     def eps(self, string, dim=1):
-        if len(string)!=1:
+        if len(string) != 1:
             self.psi.clean()
             raise Exception('Epsilon: string %s does not have 1 element.' % string)
 
-        shape = (-1,) + tuple([1]*(dim-1))
+        shape = (-1,) + tuple([1] * (dim - 1))
 
-        if (string=='b') or (string=='s'):
+        if (string == 'b') or (string == 's'):
             return self.eps_B[self.slices[string]].reshape(shape)
         else:
             return self.eps_A[self.slices[string]].reshape(shape)
 
     # Grab MO potential
     def potential(self, string, side):
-        if len(string)!=2:
+        if len(string) != 2:
             self.psi.clean()
             raise Exception('Potential: string %s does not have 2 elements.' % string)
 
@@ -197,7 +195,7 @@ class helper_SAPT(object):
         s2 = string[1]
 
         # Two seperate cases
-        if side=='A':
+        if side == 'A':
             # Compute on the fly
             # return np.einsum('ui,vj,uv->ij', self.orbitals[s1], self.orbitals[s2], self.V_A) / (2 * self.ndocc_A)
 
@@ -211,7 +209,7 @@ class helper_SAPT(object):
                 self.psi.clean()
                 raise Exception('No match for %s indices in helper_SAPT.potential.' % string)
 
-        elif side=='B':
+        elif side == 'B':
             # Compute on the fly
             # return np.einsum('ui,vj,uv->ij', self.orbitals[s1], self.orbitals[s2], self.V_B) / (2 * self.ndocc_B)
 
@@ -227,11 +225,10 @@ class helper_SAPT(object):
         else:
             self.psi.clean()
             raise Exception('helper_SAPT.potential side must be either A or B, not %s.' % side)
-                
 
     # Compute V tilde, Index as V_{1,2}^{3,4}
     def vt(self, string):
-        if len(string)!=4:
+        if len(string) != 4:
             self.psi.clean()
             raise Exception('Compute tilde{V}: string %s does not have 4 elements' % string)
 
@@ -244,12 +241,12 @@ class helper_SAPT(object):
 
         # Potential A
         S_A = self.s(s_left)
-        V_A = self.potential(s_right, 'A') 
+        V_A = self.potential(s_right, 'A')
         V += np.einsum('ik,jl->ijkl', S_A, V_A)
 
         # Potential B
         S_B = self.s(s_right)
-        V_B = self.potential(s_left, 'B') 
+        V_B = self.potential(s_left, 'B')
         V += np.einsum('ik,jl->ijkl', V_B, S_B)
 
         # Nuclear
@@ -263,11 +260,11 @@ class helper_SAPT(object):
             self.psi.clean()
             raise Exception('%s is not a valid monomer for CHF.' % monomer)
 
-        if monomer=='A':
+        if monomer == 'A':
             # Form electostatic potential
-            w_n = 2 * np.einsum('saba->bs', self.v('saba')) 
+            w_n = 2 * np.einsum('saba->bs', self.v('saba'))
             w_n += self.V_A_BB[self.slices['b'], self.slices['s']]
-            eps_ov = (self.eps('b', dim=2) - self.eps('s'))   
+            eps_ov = (self.eps('b', dim=2) - self.eps('s'))
 
             # Set terms
             v_term1 = 'sbbs'
@@ -275,10 +272,10 @@ class helper_SAPT(object):
             v_term3 = 'ssbb'
             no, nv = self.ndocc_B, self.nvirt_B
 
-        if monomer=='B':
-            w_n = 2 * np.einsum('rbab->ar', self.v('rbab')) 
+        if monomer == 'B':
+            w_n = 2 * np.einsum('rbab->ar', self.v('rbab'))
             w_n += self.V_B_AA[self.slices['a'], self.slices['r']]
-            eps_ov = (self.eps('a', dim=2) - self.eps('r'))   
+            eps_ov = (self.eps('a', dim=2) - self.eps('r'))
             v_term1 = 'raar'
             v_term2 = 'rara'
             v_term3 = 'rraa'
@@ -300,7 +297,7 @@ class helper_SAPT(object):
         B_ov = -1 * w_n.ravel()
         t = np.linalg.solve(A_ovOV, B_ov)
         t = t.reshape(no, nv)
-        
+
         # Our notation wants vo array
         t = t.T
 
@@ -325,7 +322,6 @@ class sapt_timer(object):
 
 
 def sapt_printer(line, value):
-    spacer = ' '*(20- len(line)) 
+    spacer = ' ' * (20 - len(line))
 
-    print line + spacer + '% 16.8f mH  % 16.8f kcal/mol' % (value*1000, value*627.509)
-
+    print line + spacer + '% 16.8f mH  % 16.8f kcal/mol' % (value * 1000, value * 627.509)

@@ -1,4 +1,4 @@
-# A simple Psi 4 input script to compute EP2 using spin-orbitals 
+# A simple Psi 4 input script to compute EP2 using spin-orbitals
 # From Szabo and Ostlund page 390
 # Requirements scipy 0.13.0+ and numpy 1.7.2+
 #
@@ -44,7 +44,7 @@ d_convergence 1e-8
 # First compute RHF energy using Psi4
 energy('RHF')
 
-# Grab data from 
+# Grab data from
 wfn = wavefunction()
 # Coefficient Matrix
 C = np.array(wfn.Ca())
@@ -109,11 +109,11 @@ for orbital in range(ndocc-num_orbs, ndocc):
 
     for ep_iter in range(50):
         Eold = E
-    
+
         # Build energy denominators
         epsilon1 = 1/(E + eocc.reshape(-1, 1, 1) - evirt.reshape(-1, 1) - evirt)
         epsilon2 = 1/(E + evirt.reshape(-1, 1, 1) - eocc.reshape(-1, 1) - eocc)
-    
+
         # Compute sigma's
         tmp1 = (2*MO[orbital, o, v, v] - MO[o, orbital, v, v])
         sigma1 = np.einsum('rsa,ars,ars->', MO[v, v, orbital, o], tmp1, epsilon1)
@@ -128,11 +128,11 @@ for orbital in range(ndocc-num_orbs, ndocc):
             ep2_arr.append(Enew * 27.21138505)
             break
 
-        # Build derivatives    
+        # Build derivatives
         sigma_deriv1 = -1 * np.einsum('rsa,ars,ars->', MO[v, v, orbital, o], tmp1, np.power(epsilon1, 2))
         sigma_deriv2 = -1 * np.einsum('abr,rab,rab->', MO[o, o, orbital, v], tmp2, np.power(epsilon2, 2))
         deriv = 1 - (sigma_deriv1 + sigma_deriv2)
-    
+
         # Newton-Raphson update
         E = Eold - (Eold - Enew) / deriv
 

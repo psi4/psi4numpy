@@ -1,4 +1,4 @@
-# A simple Psi 4 input script to compute EP2 using spin-orbitals 
+# A simple Psi 4 input script to compute EP2 using spin-orbitals
 # From Szabo and Ostlund page 390
 # Requirements scipy 0.13.0+ and numpy 1.7.2+
 #
@@ -51,7 +51,7 @@ d_convergence 1e-8
 # First compute RHF energy using Psi4
 energy('RHF')
 
-# Grab data from 
+# Grab data from
 wfn = wavefunction()
 # Coefficient Matrix
 C = np.array(wfn.Ca())
@@ -188,13 +188,13 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
     # EP2
     for ep_iter in range(50):
         Eold = E
-    
+
         # Build energy denominators
         epsilon1 = 1/(E + eocc.reshape(-1, 1, 1) - evirt.reshape(-1, 1) - evirt)
         epsilon2 = 1/(E + evirt.reshape(-1, 1, 1) - eocc.reshape(-1, 1) - eocc)
-        epsilon1_2 = np.power(epsilon1, 2) 
-        epsilon2_2 = np.power(epsilon2, 2) 
-    
+        epsilon1_2 = np.power(epsilon1, 2)
+        epsilon2_2 = np.power(epsilon2, 2)
+
         # Compute sigma's
         sigma1 = EP_term(2, orbital, 0.5, 'iapq,pqja,apq', [epsilon1])
         sigma2 = EP_term(2, orbital, 0.5, 'ipab,abip,pab', [epsilon2])
@@ -206,11 +206,11 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
             ep2_conv = True
             break
 
-        # # Build derivatives    
+        # # Build derivatives
         sigma_deriv1 = EP_term(2, orbital, -0.5, 'iapq,pqja,apq', [epsilon1_2])
         sigma_deriv2 = EP_term(2, orbital, -0.5, 'ipab,abip,pab', [epsilon2_2])
         deriv = 1 - sigma_deriv1 - sigma_deriv2
-    
+
         # Newton-Raphson update
         E = Eold - (E - Enew) / deriv
 
@@ -220,7 +220,7 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
         print 'WARNING: EP2 for orbital HOMO - %d did not converged' % (ndocc - orbital/2 - 1)
 
     EP2 = E
-    # EP3 
+    # EP3
 
     # EP3 self energy independant terms
     eps_ov = 1/(eocc.reshape(-1, 1) - evirt)
@@ -241,9 +241,9 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
     ep3_const += EP_term(3, orbital, -0.5, 'pqbc,bcaq,iajp,bcpq,ap', [eps_oovv, eps_ov])
 
     # Create KP-EP2 average geuss for EP3
-    E = (EP2 + eps[orbital]) / 2 
+    E = (EP2 + eps[orbital]) / 2
     for ep_iter in range(50):
-        Eold = E        
+        Eold = E
 
         # Compute energy denominators
         eps_eovv = 1/(E + eocc.reshape(-1, 1, 1) - evirt.reshape(-1, 1) - evirt)
@@ -254,7 +254,7 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
 
         Enew = eps[orbital] + ep3_const
         Ederiv = 0
-    
+
         # EP2
         Enew += EP_term(2, orbital, 0.5, 'iapq,pqja,apq', [eps_eovv])
         Ederiv += EP_term(2, orbital, -0.5, 'iapq,pqja,apq', [eps_eovv_2])
@@ -262,48 +262,46 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
         Enew += EP_term(2, orbital, 0.5, 'ipab,abip,pab', [eps_evoo])
         Ederiv += EP_term(2, orbital, -0.5, 'ipab,abip,pab', [eps_evoo_2])
 
-        
+
         #EP3
-        Enew += EP_term(3, orbital,  0.25, 'iaqs,qspr,prja,apr,aqs', [eps_eovv, eps_eovv]) 
-        Ederiv += EP_term(3, orbital,  -0.25, 'iaqs,qspr,prja,apr,aqs', [eps_eovv_2, eps_eovv]) 
-        Ederiv += EP_term(3, orbital,  -0.25, 'iaqs,qspr,prja,apr,aqs', [eps_eovv, eps_eovv_2]) 
+        Enew += EP_term(3, orbital,  0.25, 'iaqs,qspr,prja,apr,aqs', [eps_eovv, eps_eovv])
+        Ederiv += EP_term(3, orbital,  -0.25, 'iaqs,qspr,prja,apr,aqs', [eps_eovv_2, eps_eovv])
+        Ederiv += EP_term(3, orbital,  -0.25, 'iaqs,qspr,prja,apr,aqs', [eps_eovv, eps_eovv_2])
 
-        Enew += EP_term(3, orbital, -1.00, 'iaqr,qbpa,prjb,bpr,aqr', [eps_eovv, eps_eovv]) 
-        Ederiv += EP_term(3, orbital,  1.00, 'iaqr,qbpa,prjb,bpr,aqr', [eps_eovv_2, eps_eovv]) 
-        Ederiv += EP_term(3, orbital,  1.00, 'iaqr,qbpa,prjb,bpr,aqr', [eps_eovv, eps_eovv_2]) 
-
-
-        # Block
-        Enew += EP_term(3, orbital, -1.00, 'iraq,abpr,pqjb,bpq,abpr', [eps_eovv, eps_oovv]) 
-        Enew += EP_term(3, orbital,  0.25, 'icab,abpq,pqjc,cpq,abpq', [eps_eovv, eps_oovv]) 
-        Enew += EP_term(3, orbital, -1.00, 'ibpr,pqab,arjq,bpr,abpq', [eps_eovv, eps_oovv]) 
-        Enew += EP_term(3, orbital,  0.25, 'ibpq,pqac,acjb,bpq,acpq', [eps_eovv, eps_oovv]) 
-
-        Ederiv += EP_term(3, orbital,  1.00, 'iraq,abpr,pqjb,bpq,abpr', [eps_eovv_2, eps_oovv]) 
-        Ederiv += EP_term(3, orbital, -0.25, 'icab,abpq,pqjc,cpq,abpq', [eps_eovv_2, eps_oovv]) 
-        Ederiv += EP_term(3, orbital,  1.00, 'ibpr,pqab,arjq,bpr,abpq', [eps_eovv_2, eps_oovv]) 
-        Ederiv += EP_term(3, orbital, -0.25, 'ibpq,pqac,acjb,bpq,acpq', [eps_eovv_2, eps_oovv]) 
-
+        Enew += EP_term(3, orbital, -1.00, 'iaqr,qbpa,prjb,bpr,aqr', [eps_eovv, eps_eovv])
+        Ederiv += EP_term(3, orbital,  1.00, 'iaqr,qbpa,prjb,bpr,aqr', [eps_eovv_2, eps_eovv])
+        Ederiv += EP_term(3, orbital,  1.00, 'iaqr,qbpa,prjb,bpr,aqr', [eps_eovv, eps_eovv_2])
 
         # Block
-        Enew += EP_term(3, orbital, -0.25, 'iqab,abpr,prjq,qab,prab', [eps_evoo, eps_vvoo]) 
-        Enew += EP_term(3, orbital,  1.00, 'iqac,abpq,pcjb,qac,pqab', [eps_evoo, eps_vvoo]) 
-        Enew += EP_term(3, orbital, -0.25, 'irpq,pqab,abjr,rab,pqab', [eps_evoo, eps_vvoo]) 
-        Enew += EP_term(3, orbital,  1.00, 'icpb,pqac,abjq,qab,pqac', [eps_evoo, eps_vvoo]) 
+        Enew += EP_term(3, orbital, -1.00, 'iraq,abpr,pqjb,bpq,abpr', [eps_eovv, eps_oovv])
+        Enew += EP_term(3, orbital,  0.25, 'icab,abpq,pqjc,cpq,abpq', [eps_eovv, eps_oovv])
+        Enew += EP_term(3, orbital, -1.00, 'ibpr,pqab,arjq,bpr,abpq', [eps_eovv, eps_oovv])
+        Enew += EP_term(3, orbital,  0.25, 'ibpq,pqac,acjb,bpq,acpq', [eps_eovv, eps_oovv])
 
-        Ederiv += EP_term(3, orbital,  0.25, 'iqab,abpr,prjq,qab,prab', [eps_evoo_2, eps_vvoo]) 
-        Ederiv += EP_term(3, orbital, -1.00, 'iqac,abpq,pcjb,qac,pqab', [eps_evoo_2, eps_vvoo]) 
-        Ederiv += EP_term(3, orbital,  0.25, 'irpq,pqab,abjr,rab,pqab', [eps_evoo_2, eps_vvoo]) 
-        Ederiv += EP_term(3, orbital, -1.00, 'icpb,pqac,abjq,qab,pqac', [eps_evoo_2, eps_vvoo]) 
+        Ederiv += EP_term(3, orbital,  1.00, 'iraq,abpr,pqjb,bpq,abpr', [eps_eovv_2, eps_oovv])
+        Ederiv += EP_term(3, orbital, -0.25, 'icab,abpq,pqjc,cpq,abpq', [eps_eovv_2, eps_oovv])
+        Ederiv += EP_term(3, orbital,  1.00, 'ibpr,pqab,arjq,bpr,abpq', [eps_eovv_2, eps_oovv])
+        Ederiv += EP_term(3, orbital, -0.25, 'ibpq,pqac,acjb,bpq,acpq', [eps_eovv_2, eps_oovv])
 
         # Block
-        Enew += EP_term(3, orbital,  1.00, 'ipbc,bqap,acjq,pbc,qac', [eps_evoo, eps_evoo]) 
-        Ederiv += EP_term(3, orbital, -1.00, 'ipbc,bqap,acjq,pbc,qac', [eps_evoo_2, eps_evoo]) 
-        Ederiv += EP_term(3, orbital, -1.00, 'ipbc,bqap,acjq,pbc,qac', [eps_evoo, eps_evoo_2]) 
+        Enew += EP_term(3, orbital, -0.25, 'iqab,abpr,prjq,qab,prab', [eps_evoo, eps_vvoo])
+        Enew += EP_term(3, orbital,  1.00, 'iqac,abpq,pcjb,qac,pqab', [eps_evoo, eps_vvoo])
+        Enew += EP_term(3, orbital, -0.25, 'irpq,pqab,abjr,rab,pqab', [eps_evoo, eps_vvoo])
+        Enew += EP_term(3, orbital,  1.00, 'icpb,pqac,abjq,qab,pqac', [eps_evoo, eps_vvoo])
 
-        Enew += EP_term(3, orbital, -0.25, 'ipbd,bdac,acjp,pbd,pac', [eps_evoo, eps_evoo]) 
-        Ederiv += EP_term(3, orbital,  0.25, 'ipbd,bdac,acjp,pbd,pac', [eps_evoo_2, eps_evoo]) 
-        Ederiv += EP_term(3, orbital,  0.25, 'ipbd,bdac,acjp,pbd,pac', [eps_evoo, eps_evoo_2]) 
+        Ederiv += EP_term(3, orbital,  0.25, 'iqab,abpr,prjq,qab,prab', [eps_evoo_2, eps_vvoo])
+        Ederiv += EP_term(3, orbital, -1.00, 'iqac,abpq,pcjb,qac,pqab', [eps_evoo_2, eps_vvoo])
+        Ederiv += EP_term(3, orbital,  0.25, 'irpq,pqab,abjr,rab,pqab', [eps_evoo_2, eps_vvoo])
+        Ederiv += EP_term(3, orbital, -1.00, 'icpb,pqac,abjq,qab,pqac', [eps_evoo_2, eps_vvoo])
+
+        # Block
+        Enew += EP_term(3, orbital,  1.00, 'ipbc,bqap,acjq,pbc,qac', [eps_evoo, eps_evoo])
+        Ederiv += EP_term(3, orbital, -1.00, 'ipbc,bqap,acjq,pbc,qac', [eps_evoo_2, eps_evoo])
+        Ederiv += EP_term(3, orbital, -1.00, 'ipbc,bqap,acjq,pbc,qac', [eps_evoo, eps_evoo_2])
+
+        Enew += EP_term(3, orbital, -0.25, 'ipbd,bdac,acjp,pbd,pac', [eps_evoo, eps_evoo])
+        Ederiv += EP_term(3, orbital,  0.25, 'ipbd,bdac,acjp,pbd,pac', [eps_evoo_2, eps_evoo])
+        Ederiv += EP_term(3, orbital,  0.25, 'ipbd,bdac,acjp,pbd,pac', [eps_evoo, eps_evoo_2])
 
         # Break if below threshold
         if abs(Enew - Eold) < 1.e-4:
