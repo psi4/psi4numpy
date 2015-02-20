@@ -48,25 +48,27 @@ S = np.asanyarray(mints.ao_overlap())
 nbf = S.shape[0]
 ndocc = sum(mol.Z(A) for A in range(mol.natom())) / 2
 
-print '\nNumber of occupied orbitals: %d' % ndocc
-print 'Number of basis functions: %d' % nbf
+print('\nNumber of occupied orbitals: %d' % ndocc)
+print('Number of basis functions: %d' % nbf)
 
 # Run a quick check to make sure everything will fit into memory
 I_Size = (nbf ** 4) * 8.e-9
-print "\nSize of the ERI tensor will be %4.2f GB." % I_Size
+print("\nSize of the ERI tensor will be %4.2f GB." % I_Size)
 
 # Estimate memory usage
 memory_footprint = I_Size * 1.5
-
 if I_Size > numpy_memory:
     clean()
-    raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
+    raise Exception("Estimated memory utilization (%4.2f GB) exceeds
+                    numpy_memory limit of %4.2f GB." % (memory_footprint,
+                    numpy_memory))
 
+# Compute required quantities for RHF
 V = np.asanyarray(mints.ao_potential())
 T = np.asanyarray(mints.ao_kinetic())
 I = np.asanyarray(mints.ao_eri())
 
-print '\nTotal time taken for integrals: %.3f seconds.' % (time.time()-t)
+print('\nTotal time taken for integrals: %.3f seconds.' % (time.time() - t))
 
 t = time.time()
 
@@ -85,7 +87,7 @@ C = A.dot(C2)
 Cocc = C[:, :ndocc]
 D = np.einsum('pi,qi->pq', Cocc, Cocc)
 
-print '\nTotal time taken for setup: %.3f seconds' % (time.time() - t)
+print('\nTotal time taken for setup: %.3f seconds' % (time.time() - t))
 
 print('\nStart RHF iterations:\n')
 t = time.time()
@@ -94,7 +96,7 @@ Enuc = mol.nuclear_repulsion_energy()
 Eold = 0.0
 Dold = np.zeros_like(D)
 
-Fock_list = [] 
+Fock_list = []
 DIIS_error = []
 
 for RHF_ITER in range(1, maxiter + 1):
@@ -114,7 +116,7 @@ for RHF_ITER in range(1, maxiter + 1):
     dRMS = np.sum(np.power(D - Dold, 2)) ** 0.5
 
     print('RHF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
-            % (RHF_ITER, RHF_E, (RHF_E - Eold), dRMS))
+          % (RHF_ITER, RHF_E, (RHF_E - Eold), dRMS))
     if (abs(RHF_E - Eold) < E_conv) and (dRMS < D_conv):
         break
 
@@ -132,7 +134,7 @@ for RHF_ITER in range(1, maxiter + 1):
             diis_count -= 1
 
         # Build error matrix B
-        B = np.empty((diis_count + 1, diis_count + 1)) 
+        B = np.empty((diis_count + 1, diis_count + 1))
         B[-1, :] = -1
         B[:, -1] = -1
         B[-1, -1] = 0
@@ -153,7 +155,7 @@ for RHF_ITER in range(1, maxiter + 1):
         # Solve pulay equations
         ci = SLA.solve(B, resid)
 
-        # Calculate new fock matrix as linear 
+        # Calculate new fock matrix as linear
         # combination of previous fock matrices
         F = np.zeros_like(F)
         for num, c in enumerate(ci[:-1]):
@@ -168,10 +170,10 @@ for RHF_ITER in range(1, maxiter + 1):
 
     if RHF_ITER == maxiter:
         clean()
-        raise Exception("Maximum number of RHF cycles exceeded without convergence.")
+        raise Exception("Maximum number of RHF cycles exceeded.")
 
-print 'Total time taken for RHF iterations: %.3f seconds \n' % (time.time()-t)
+print('Total time for RHF iterations: %.3f seconds \n' % (time.time() - t))
 
-print 'Final RHF energy: %.8f hartree' % RHF_E
+print('Final RHF energy: %.8f hartree' % RHF_E)
 RHF_E_psi = energy('RHF')
 compare_values(RHF_E_psi, RHF_E, 6, 'RHF Energy')

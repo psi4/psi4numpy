@@ -91,7 +91,7 @@ Enuc = mol.nuclear_repulsion_energy()
 Eold = 0.0
 Dold = np.zeros_like(D)
 
-Fock_list = [] 
+Fock_list = []
 DIIS_error = []
 
 # Build a C matrix and share data with the numpy array npC
@@ -108,7 +108,7 @@ jk.C_left().append(C)
 ei = []
 fi = []
 
-print '\nTotal time taken for setup: %.3f seconds' % (time.time() - t)
+print('\nTotal time taken for setup: %.3f seconds' % (time.time() - t))
 
 print('\nStart RHF iterations:\n')
 t = time.time()
@@ -133,7 +133,7 @@ for RHF_ITER in range(1, maxiter + 1):
     dRMS = np.sum(np.power(D - Dold, 2)) ** 0.5
 
     print('RHF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
-            % (RHF_ITER, RHF_E, (RHF_E - Eold), dRMS))
+          % (RHF_ITER, RHF_E, (RHF_E - Eold), dRMS))
     if (abs(RHF_E - Eold) < E_conv) and (dRMS < D_conv):
         break
 
@@ -151,7 +151,7 @@ for RHF_ITER in range(1, maxiter + 1):
             diis_count -= 1
 
         # Build error matrix B
-        B = np.empty((diis_count + 1, diis_count + 1)) 
+        B = np.empty((diis_count + 1, diis_count + 1))
         B[-1, :] = -1
         B[:, -1] = -1
         B[-1, -1] = 0
@@ -172,12 +172,12 @@ for RHF_ITER in range(1, maxiter + 1):
         # Solve pulay equations
         ci = SLA.solve(B, resid)
 
-        # Calculate new fock matrix as linear 
+        # Calculate new fock matrix as linear
         # combination of previous fock matrices
         F = np.zeros_like(F)
         for num, c in enumerate(ci[:-1]):
             F += c * Fock_list[num]
-    
+
     # Diagonalize Fock matrix
     Fp = A.dot(F).dot(A)
     e, C2 = SLA.eigh(Fp)
@@ -187,10 +187,10 @@ for RHF_ITER in range(1, maxiter + 1):
 
     if RHF_ITER == maxiter:
         clean()
-        raise Exception("Maximum number of RHF cycles exceeded without convergence.")
+        raise Exception("Maximum number of RHF cycles exceeded.")
 
-print 'Total time taken for RHF iterations: %.3f seconds \n' % (time.time() - t)
+print('Total time for RHF iterations: %.3f seconds \n' % (time.time() - t))
 
-print 'Final RHF energy: %.8f hartree' % RHF_E
+print('Final RHF energy: %.8f hartree' % RHF_E)
 RHF_E_psi = energy('RHF')
 compare_values(RHF_E_psi, RHF_E, 6, 'RHF Energy')
