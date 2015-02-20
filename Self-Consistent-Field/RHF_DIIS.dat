@@ -29,67 +29,63 @@ symmetry c1
 }
 
 set {
-basis aug-cc-pVDZ
+basis cc-pVDZ
 scf_type pk
-guess core
-mp2_type conv
 e_convergence 1e-8
 }
 
 # Set defaults
-maxiter = 20
-E_conv = 1.0E-8
-D_conv = 1.0E-8
+maxiter = 40
+E_conv = 1.0E-6
+D_conv = 1.0E-3
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
 mints = MintsHelper()
-S = mints.ao_overlap()
+S = np.asanyarray(mints.ao_overlap())
+
+# Get nbf and ndocc for closed shell molecules
+nbf = S.shape[0]
+ndocc = sum(mol.Z(A) for A in range(mol.natom())) / 2
+
+print '\nNumber of occupied orbitals: %d' % ndocc
+print 'Number of basis functions: %d' % nbf
 
 # Run a quick check to make sure everything will fit into memory
-I_Size = (np.array(S).shape[0]**4)*8/1.0E9
-print "\nSize of the ERI tensor will be %10.2f GB." % I_Size
+I_Size = (nbf ** 4) * 8.e-9
+print "\nSize of the ERI tensor will be %4.2f GB." % I_Size
 
-memory_footprint = I_Size*2
+# Estimate memory usage
+memory_footprint = I_Size * 1.5
 
 if I_Size > numpy_memory:
     clean()
     raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
 
-T = mints.ao_potential()
-V = mints.ao_kinetic()
-I = mints.ao_eri()
+V = np.asanyarray(mints.ao_potential())
+T = np.asanyarray(mints.ao_kinetic())
+I = np.asanyarray(mints.ao_eri())
 
 print '\nTotal time taken for integrals: %.3f seconds.' % (time.time()-t)
 
-# Get nbf and ndocc for closed shell molecules
 t = time.time()
-Z = 0
-for A in range(mol.natom()):
-    Z += mol.Z(A)
-ndocc = int(Z / 2)
-nbf = S.rows(0)
-
-print '\nNumber of occupied orbitals: %d' % ndocc
-print 'Number of basis functions: %d' % nbf
 
 # Build H_core
-H = np.matrix(T) + np.matrix(V)
-
-# Build I and reshape to rank 4 tensor
-I = np.array(I).reshape(nbf, nbf, nbf, nbf)
+H = T + V
 
 # Orthogonalizer A = S^(-1/2)
-A = np.matrix(SLA.sqrtm(S)).I.real
+A = mints.ao_overlap()
+A.power(-0.5, 1.e-16)
+A = np.asanyarray(A)
 
 # Calculate initial core guess
-Hp = A*H*A
+Hp = A.dot(H).dot(A)
 e, C2 = SLA.eigh(Hp)
-C = A*C2 
+C = A.dot(C2)
 Cocc = C[:, :ndocc]
-D = Cocc*Cocc.T
+D = np.einsum('pi,qi->pq', Cocc, Cocc)
 
-print '\nTotal time taken for setup: %.3f seconds' % (time.time()-t)
+print '\nTotal time taken for setup: %.3f seconds' % (time.time() - t)
 
 print('\nStart RHF iterations:\n')
 t = time.time()
@@ -98,53 +94,60 @@ Enuc = mol.nuclear_repulsion_energy()
 Eold = 0.0
 Dold = np.zeros_like(D)
 
-# Lists for DIIS extrapolations
-ei = []
-fi = []
+Fock_list = [] 
+DIIS_error = []
 
-for SCF_ITER in range(1, maxiter + 1):
+for RHF_ITER in range(1, maxiter + 1):
 
     # Build fock matrix
-    J = np.einsum('pqrs,rs', I, D) 
-    K = np.einsum('pqrs,qs', I, D)
-    F = H + J*2 - K
+    J = np.einsum('pqrs,rs->pq', I, D)
+    K = np.einsum('prqs,rs->pq', I, D)
+    F = H + J * 2 - K
 
     # DIIS error build
-    diis_e = F*D*S - S*D*F
-    ei = [diis_e] + ei
-    fi = [F] + fi
+    diis_e = np.einsum('ij,jk,kl->il', F, D, S) - np.einsum('ij,jk,kl->il', S, D, F)
+    Fock_list.append(F)
+    DIIS_error.append(diis_e)
 
-    # SCF energy and update
-    SCF_E = np.einsum('ij,ij->', F+H, D) + Enuc
-    dRMS = np.sum(np.power(D - Dold, 2))**0.5
+    # RHF energy and update
+    RHF_E = np.einsum('pq,pq->', F + H, D) + Enuc
+    dRMS = np.sum(np.power(D - Dold, 2)) ** 0.5
 
-    print 'RHF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E' % (SCF_ITER, SCF_E, (SCF_E - Eold), dRMS)
-    if (abs(SCF_E - Eold) < E_conv) and (dRMS < D_conv):
+    print('RHF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
+            % (RHF_ITER, RHF_E, (RHF_E - Eold), dRMS))
+    if (abs(RHF_E - Eold) < E_conv) and (dRMS < D_conv):
         break
 
-    Eold = SCF_E
+    Eold = RHF_E
     Dold = D
 
-    # Update using DIIS
-    if SCF_ITER >=3:
+    if RHF_ITER >= 3:
 
         # Limit size of DIIS vector
-        e_cnt = len(ei)
-        if e_cnt > 6:
-            e_cnt = 6
+        diis_count = len(Fock_list)
+        if diis_count > 6:
+            # Remove oldest vector
+            del Fock_list[0]
+            del DIIS_error[0]
+            diis_count -= 1
 
         # Build error matrix B
-        B = np.ones((e_cnt+1, e_cnt+1))*-1
+        B = np.empty((diis_count + 1, diis_count + 1)) 
+        B[-1, :] = -1
+        B[:, -1] = -1
         B[-1, -1] = 0
-        for num1, e1 in enumerate(ei[:e_cnt]):
-            for num2, e2 in enumerate(ei[:e_cnt]):
+        for num1, e1 in enumerate(DIIS_error):
+            for num2, e2 in enumerate(DIIS_error):
+                if num2 > num1: continue
                 val = np.einsum('ij,ij->', e1, e2)
                 B[num1, num2] = val
+                B[num2, num1] = val
 
+        # normalize
         B[:-1, :-1] /= np.abs(B[:-1, :-1]).max()
 
         # Build residual vector
-        resid = np.zeros(e_cnt+1)
+        resid = np.zeros(diis_count + 1)
         resid[-1] = -1
 
         # Solve pulay equations
@@ -152,24 +155,23 @@ for SCF_ITER in range(1, maxiter + 1):
 
         # Calculate new fock matrix as linear 
         # combination of previous fock matrices
-        F = np.zeros_like(fi[0])
-        for num,c in enumerate(ci[:-1]):
-            F += c*fi[num]
+        F = np.zeros_like(F)
+        for num, c in enumerate(ci[:-1]):
+            F += c * Fock_list[num]
 
-    # Diagonalize new Fock matrix
-    Fp = A*F*A
-    e,C2 = SLA.eigh(Fp)
-    C = A*C2
+    # Diagonalize Fock matrix
+    Fp = A.dot(F).dot(A)
+    e, C2 = SLA.eigh(Fp)
+    C = A.dot(C2)
     Cocc = C[:, :ndocc]
-    D = Cocc*Cocc.T
+    D = np.einsum('pi,qi->pq', Cocc, Cocc)
 
-    if SCF_ITER==maxiter:
+    if RHF_ITER == maxiter:
         clean()
-        raise Exception("Maximum number of SCF cycles exceeded without convergence.")
+        raise Exception("Maximum number of RHF cycles exceeded without convergence.")
 
-print 'Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t)
+print 'Total time taken for RHF iterations: %.3f seconds \n' % (time.time()-t)
 
-print 'Final SCF energy: %.8f hartree' % SCF_E
-SCF_E_psi = energy('scf')
-compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
-
+print 'Final RHF energy: %.8f hartree' % RHF_E
+RHF_E_psi = energy('RHF')
+compare_values(RHF_E_psi, RHF_E, 6, 'RHF Energy')

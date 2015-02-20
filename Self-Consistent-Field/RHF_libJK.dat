@@ -21,16 +21,27 @@ memory 2 GB
 # Memory for numpy in GB
 numpy_memory = 2
 
+# Benzene
 molecule mol {
-O
-H 1 1.1
-H 1 1.1 2 104
+C    1.39410    0.00000   0.00000
+C    0.69705   -1.20732   0.00000
+C   -0.69705   -1.20732   0.00000
+C   -1.39410    0.00000   0.00000
+C   -0.69705    1.20732   0.00000
+C    0.69705    1.20732   0.00000
+H    2.47618    0.00000   0.00000
+H    1.23809   -2.14444   0.00000
+H   -1.23809   -2.14444   0.00000
+H   -2.47618    0.00000   0.00000
+H   -1.23809    2.14444   0.00000
+H    1.23809    2.14444   0.00000
+
 symmetry c1
 }
 
 set {
-basis cc-pVDZ
-scf_type pk
+basis aug-cc-pVDZ
+scf_type df
 e_convergence 1e-8
 }
 
@@ -47,24 +58,13 @@ S = np.asanyarray(mints.ao_overlap())
 # Get nbf and ndocc for closed shell molecules
 nbf = S.shape[0]
 ndocc = sum(mol.Z(A) for A in range(mol.natom())) / 2
+ndocc = int(ndocc)
 
 print '\nNumber of occupied orbitals: %d' % ndocc
 print 'Number of basis functions: %d' % nbf
 
-# Run a quick check to make sure everything will fit into memory
-I_Size = (nbf ** 4) * 8.e-9
-print "\nSize of the ERI tensor will be %4.2f GB." % I_Size
-
-# Estimate memory usage
-memory_footprint = I_Size * 1.5
-
-if I_Size > numpy_memory:
-    clean()
-    raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
-
 V = np.asanyarray(mints.ao_potential())
 T = np.asanyarray(mints.ao_kinetic())
-I = np.asanyarray(mints.ao_eri())
 
 print '\nTotal time taken for integrals: %.3f seconds.' % (time.time()-t)
 
@@ -73,7 +73,7 @@ t = time.time()
 # Build H_core
 H = T + V
 
-# Orthogonalizer A = S^(-1/2) using Psi4's matrix power.
+# Orthogonalizer A = S^(-1/2)
 A = mints.ao_overlap()
 A.power(-0.5, 1.e-16)
 A = np.asanyarray(A)
@@ -85,21 +85,48 @@ C = A.dot(C2)
 Cocc = C[:, :ndocc]
 D = np.einsum('pi,qi->pq', Cocc, Cocc)
 
-print '\nTotal time taken for setup: %.3f seconds' % (time.time() - t)
-
-print('\nStart RHF iterations:\n')
 t = time.time()
 E = 0.0
 Enuc = mol.nuclear_repulsion_energy()
 Eold = 0.0
 Dold = np.zeros_like(D)
 
+Fock_list = [] 
+DIIS_error = []
+
+# Build a C matrix and share data with the numpy array npC
+C = Matrix(nbf, ndocc)
+npC = np.asanyarray(C)
+npC[:] = Cocc
+
+# Initialize the JK object
+jk = JK.build_JK()
+jk.initialize()
+jk.C_left().append(C)
+
+# Lists for DIIS extrapolations
+ei = []
+fi = []
+
+print '\nTotal time taken for setup: %.3f seconds' % (time.time() - t)
+
+print('\nStart RHF iterations:\n')
+t = time.time()
+
 for RHF_ITER in range(1, maxiter + 1):
 
+    npC[:] = Cocc
+    jk.compute()
+
     # Build fock matrix
-    J = np.einsum('pqrs,rs->pq', I, D)
-    K = np.einsum('prqs,rs->pq', I, D)
+    J = np.asanyarray(jk.J()[0])
+    K = np.asanyarray(jk.K()[0])
     F = H + J * 2 - K
+
+    # DIIS error build
+    diis_e = F.dot(D).dot(S) - S.dot(D).dot(F)
+    Fock_list.append(F)
+    DIIS_error.append(diis_e)
 
     # RHF energy and update
     RHF_E = np.einsum('pq,pq->', F + H, D) + Enuc
@@ -113,6 +140,44 @@ for RHF_ITER in range(1, maxiter + 1):
     Eold = RHF_E
     Dold = D
 
+    if RHF_ITER >= 3:
+
+        # Limit size of DIIS vector
+        diis_count = len(Fock_list)
+        if diis_count > 6:
+            # Remove oldest vector
+            del Fock_list[0]
+            del DIIS_error[0]
+            diis_count -= 1
+
+        # Build error matrix B
+        B = np.empty((diis_count + 1, diis_count + 1)) 
+        B[-1, :] = -1
+        B[:, -1] = -1
+        B[-1, -1] = 0
+        for num1, e1 in enumerate(DIIS_error):
+            for num2, e2 in enumerate(DIIS_error):
+                if num2 > num1: continue
+                val = np.einsum('ij,ij->', e1, e2)
+                B[num1, num2] = val
+                B[num2, num1] = val
+
+        # normalize
+        B[:-1, :-1] /= np.abs(B[:-1, :-1]).max()
+
+        # Build residual vector
+        resid = np.zeros(diis_count + 1)
+        resid[-1] = -1
+
+        # Solve pulay equations
+        ci = SLA.solve(B, resid)
+
+        # Calculate new fock matrix as linear 
+        # combination of previous fock matrices
+        F = np.zeros_like(F)
+        for num, c in enumerate(ci[:-1]):
+            F += c * Fock_list[num]
+    
     # Diagonalize Fock matrix
     Fp = A.dot(F).dot(A)
     e, C2 = SLA.eigh(Fp)
@@ -124,7 +189,7 @@ for RHF_ITER in range(1, maxiter + 1):
         clean()
         raise Exception("Maximum number of RHF cycles exceeded without convergence.")
 
-print 'Total time taken for RHF iterations: %.3f seconds \n' % (time.time()-t)
+print 'Total time taken for RHF iterations: %.3f seconds \n' % (time.time() - t)
 
 print 'Final RHF energy: %.8f hartree' % RHF_E
 RHF_E_psi = energy('RHF')
