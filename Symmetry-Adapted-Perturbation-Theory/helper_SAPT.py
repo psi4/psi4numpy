@@ -35,13 +35,13 @@ class helper_SAPT(object):
 
         # Compute monomer properties
         psi.set_active_molecule(monomerA)
-        self.V_A = np.array(psi.MintsHelper().ao_potential())
+        self.V_A = np.asanyarray(psi.MintsHelper().ao_potential())
         self.rhfA = energy('RHF')
         self.wfnA = psi.wavefunction()
         print("RHF for monomer A finished.")
 
         psi.set_active_molecule(monomerB)
-        self.V_B = np.array(psi.MintsHelper().ao_potential())
+        self.V_B = np.asanyarray(psi.MintsHelper().ao_potential())
         self.rhfB = energy('RHF')
         self.wfnB = psi.wavefunction()
         print("RHF for monomer B finished.")
@@ -57,10 +57,10 @@ class helper_SAPT(object):
         self.nvirt_A = self.nmo - self.ndocc_A
         self.idx_A = ['a', 'r']
 
-        self.C_A = np.array(self.wfnA.Ca())
+        self.C_A = np.asanyarray(self.wfnA.Ca())
         self.Co_A = self.C_A[:, :self.ndocc_A]
         self.Cv_A = self.C_A[:, self.ndocc_A:]
-        self.eps_A = np.array([self.wfnA.epsilon_a().get(x) for x in range(self.C_A.shape[0])])
+        self.eps_A = np.asanyarray(self.wfnA.epsilon_a())
 
         # Monomer B
         self.nuc_rep_B = monomerB.nuclear_repulsion_energy()
@@ -68,10 +68,10 @@ class helper_SAPT(object):
         self.nvirt_B = self.nmo - self.ndocc_B
         self.idx_B = ['b', 's']
 
-        self.C_B = np.array(self.wfnB.Ca())
+        self.C_B = np.asanyarray(self.wfnB.Ca())
         self.Co_B = self.C_B[:, :self.ndocc_B]
         self.Cv_B = self.C_B[:, self.ndocc_B:]
-        self.eps_B = np.array([self.wfnB.epsilon_b().get(x) for x in range(self.C_B.shape[0])])
+        self.eps_B = np.asanyarray(self.wfnB.epsilon_a())
 
         # Dimer
         self.nuc_rep = dimer.nuclear_repulsion_energy() - self.nuc_rep_A - self.nuc_rep_B
@@ -96,17 +96,23 @@ class helper_SAPT(object):
         # Compute size of ERI tensor in GB
         psi.set_active_molecule(dimer)
         mints = psi.MintsHelper()
+        self.mints = mints 
         ERI_Size = (self.nmo**4)*8.0 / 1E9
-        print "Size of the ERI tensor will be %4.2f GB, %d basis functions." % (ERI_Size, self.nmo)
-        memory_footprint = ERI_Size*5
+        print("Size of the ERI tensor will be %4.2f GB, %d basis functions." % (ERI_Size, self.nmo))
+        memory_footprint = ERI_Size * 5
         if memory_footprint > self.memory:
             clean()
-            raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
+            # raise Exception("Estimated memory utilization (%4.2f GB) exceeds
+            #                 numpy_memory limit of %4.2f GB." % (memory_footprint,
+            #                 numpy_memory))
 
         # Integral generation from Psi4's MintsHelper
         # ERI's from mints are of type (11|22)- need <12|12>
-        self.I = np.array(mints.ao_eri()).reshape(self.nmo, self.nmo, self.nmo, self.nmo).swapaxes(1, 2)
-        self.S = np.array(mints.ao_overlap())
+        #self.I = mints.ao_eri()
+        # Iview = np.asanyarray(self.I)
+        # Iview[:] = Iview.swapaxes(1, 2).copy()
+        self.I = np.asanyarray(mints.ao_eri()).swapaxes(1, 2)
+        self.S = np.asanyarray(mints.ao_overlap())
 
         # Save additional rank 2 tensors
         self.V_A_BB = np.einsum('ui,vj,uv->ij', self.C_B, self.C_B, self.V_A)
@@ -123,6 +129,9 @@ class helper_SAPT(object):
         if len(string) != 4:
             self.psi.clean()
             raise Exception('v: string %s does not have 4 elements' % string)
+
+        #orbitals = [self.orbitals[s] for s in string]
+        #v = np.asanyarray(self.mints.mo_transform(self.I, *orbitals))
 
         # One of the most computationally demanding steps for SAPT0
         # Selectively transforms smallest index first
