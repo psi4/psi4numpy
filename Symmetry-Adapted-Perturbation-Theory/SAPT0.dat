@@ -1,6 +1,4 @@
 # A simple Psi 4 input script to compute SAPT interaction energies
-# Requirements scipy 0.13.0+ and numpy 1.7.2+
-#
 #
 # Created by: Daniel G. A. Smith
 # Date: 12/1/14
@@ -11,11 +9,7 @@ import time
 import numpy as np
 from scipy import linalg as SLA
 from helper_SAPT import *
-#np.set_printoptions(precision=5, linewidth=200, threshold=2000, suppress=True)
-
-
-# Memory for numpy in GB
-numpy_memory = 2
+np.set_printoptions(precision=5, linewidth=200, threshold=2000, suppress=True)
 
 # Set molecule to dimer
 molecule dimer {
@@ -207,7 +201,7 @@ ind_timer.stop()
 ### End E200 Induction and Exchange-Induction
 
 print '\nSAPT0 Results'
-print '-'*70
+print '-' * 70
 sapt_printer('Exch10 (S^2)', Exch100)
 sapt_printer('Elst10', Elst10)
 sapt_printer('Disp20', Disp200)
@@ -215,6 +209,6 @@ sapt_printer('Exch-Disp20', ExchDisp20)
 sapt_printer('Ind20,r', Ind20r)
 sapt_printer('Exch-Ind20,r', ExchInd20r)
 
-print '-'*70
+print '-' * 70
 sapt0 = Exch100 + Elst10 + Disp200 + ExchDisp20 + Ind20r + ExchInd20r
 sapt_printer('Total SAPT0', sapt0)
