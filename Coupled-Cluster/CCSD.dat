@@ -14,14 +14,7 @@ import time
 import numpy as np
 from scipy import linalg as SLA
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
-
-memory 2 GB
-
 numpy_memory = 2
-
-def pexit():
-    clean()
-    raise Exception("Exiting Psi4")
 
 molecule mol {
 O
@@ -30,87 +23,57 @@ H 1 1.1 2 104
 symmetry c1
 }
 
-# molecule mol {
-# H
-# H 1 0.73257098
-# symmetry c1
-# }
-
 
 set {
 basis cc-pVDZ
 scf_type pk
-guess core
 mp2_type conv
 freeze_core false
 e_convergence 1e-10
 d_convergence 1e-10
 }
 
+# CCSD Settings
+E_conv = 1.e-6
+maxiter = 60
+print_amps = False
+
 # First compute RHF energy using Psi4
 energy('RHF')
 
 # Grab data from
 wfn = wavefunction()
-# Coefficient Matrix
-C = np.array(wfn.Ca())
-# Double occupied orbitals
+C = wfn.Ca()
 ndocc = wfn.doccpi()[0]
-# Number of molecular orbitals
 nmo = wfn.nmo()
-# SCF energy
 SCF_E = wfn.energy()
-# Orbital energies
-eps = wfn.epsilon_a()
-eps = np.array([eps.get(x) for x in range(C.shape[0])])
+eps = np.asanyarray(wfn.epsilon_a())
 
 # Compute size of SO-ERI tensor in GB
-ERI_Size = (nmo**4)*(2**4)*8.0 / 1E9
-print "\nSize of the SO ERI tensor will be %4.2f GB." % ERI_Size
-memory_footprint = ERI_Size*5.2
+ERI_Size = (nmo ** 4) * 128e-9
+print('\nSize of the SO ERI tensor will be %4.2f GB.' % ERI_Size)
+memory_footprint = ERI_Size * 5.2
 if memory_footprint > numpy_memory:
     clean()
-    raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
+    raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory \
+                    limit of %4.2f GB." % (memory_footprint, numpy_memory))
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
 mints = MintsHelper()
-I = np.array(mints.ao_eri())
-I = I.reshape(nmo, nmo, nmo, nmo)
-H = np.array(mints.ao_kinetic()) + np.array(mints.ao_potential())
+H = np.asanyarray(mints.ao_kinetic()) + np.asanyarray(mints.ao_potential())
 
-print '\nTotal time taken for ERI integrals: %.3f seconds.\n' % (time.time()-t)
+print('\nTotal time taken for ERI integrals: %.3f seconds.\n' % (time.time() - t))
 
 #Make spin-orbital MO
-t=time.time()
 print 'Starting AO -> spin-orbital MO transformation...'
-nso = nmo * 2
-
-MO = np.einsum('iP,ijkl->Pjkl', C, I)
-MO = np.einsum('jQ,Pjkl->PQkl', C, MO)
-MO = np.einsum('kR,PQkl->PQRl', C, MO)
-MO = np.einsum('lS,PQRl->PQRS', C, MO)
-
-# Tile MO array so that we have alternating alpha/beta spin orbitals
-MO = np.repeat(MO, 2, axis=0)
-MO = np.repeat(MO, 2, axis=1)
-MO = np.repeat(MO, 2, axis=2)
-MO = np.repeat(MO, 2, axis=3)
-
-# Build spin mask
-spin_ind = np.arange(nso, dtype=np.int) % 2
-spin_mask = (spin_ind.reshape(-1, 1, 1, 1) == spin_ind.reshape(-1, 1, 1))
-spin_mask = spin_mask * (spin_ind.reshape(-1, 1) == spin_ind)
-
-# Compute antisymmetrized MO integrals
-MO *= spin_mask
-MO = MO - MO.swapaxes(1, 3)
-MO = MO.swapaxes(1, 2)
-print '..finished transformation in %.3f seconds.\n' % (time.time()-t)
+t = time.time()
+MO = np.asanyarray(mints.mo_spin_eri(C, C))
 
 # Update nocc and nvirt
+nso = nmo * 2
 nocc = ndocc * 2
-nvirt = MO.shape[0] - nocc
+nvirt = nso - nocc
 
 # Make slices
 o = slice(0, nocc)
@@ -121,6 +84,7 @@ eps = np.repeat(eps, 2)
 Eocc = eps[o]
 Evirt = eps[v]
 
+print('..finished transformation in %.3f seconds.\n' % (time.time() - t))
 
 # DPD approach to CCSD equations
 # See: http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
@@ -196,20 +160,21 @@ def build_Wmnij(t1, t2):
 
 #Build Eqn 7:
 def build_Wabef(t1, t2):
+    # Rate limiting step written using tensordot, ~10x faster
+    # The commented out lines are consistent with the paper
+
     Wabef = MO[v, v, v, v].copy()
 
-    Pab = np.einsum('mb,amef->abef', t1, MO[v, o, v, v])
+    Pab = np.einsum('baef->abef', np.tensordot(t1, MO[v, o, v, v], axes=(0, 1)))
+    # Pab = np.einsum('mb,amef->abef', t1, MO[v, o, v, v])
+
     Wabef -= Pab
     Wabef += Pab.swapaxes(0, 1)
 
     tmp_tau = build_tau(t1, t2)
 
-    Wabef += 0.25 * np.einsum('mnab,efmn->abef', tmp_tau, MO[v, v, o, o])
-
-    # Rate limiting step
-    # The above is ~4 times faster, but the below is consistent with the paper
+    Wabef += 0.25 * np.tensordot(tmp_tau, MO[v, v, o, o], axes=((0, 1), (2, 3)))
     # Wabef += 0.25 * np.einsum('mnab,mnef->abef', tmp_tau, MO[o, o, v, v])
-
     return Wabef
 
 
@@ -220,7 +185,9 @@ def build_Wmbej(t1, t2):
     Wmbej -= np.einsum('nb,mnej->mbej', t1, MO[o, o, v, o])
 
     tmp = (0.5 * t2) + np.einsum('jf,nb->jnfb', t1, t1)
-    Wmbej -= np.einsum('jnfb,mnef->mbej', tmp, MO[o, o, v, v])
+
+    Wmbej -= np.einsum('jbme->mbej', np.tensordot(tmp, MO[o, o, v, v], axes=((1, 2), (1, 3))))
+    # Wmbej -= np.einsum('jnfb,mnef->mbej', tmp, MO[o, o, v, v])
     return Wmbej
 
 
@@ -254,18 +221,17 @@ MOijab = MO[o, o, v, v]
 t2 = MOijab / Dijab
 
 ### Compute MP2 in MO basis set to make sure the transformation was correct
-MP2corr_E = np.einsum('ijab,ijab->', MOijab, t2)/4
+MP2corr_E = np.einsum('ijab,ijab->', MOijab, t2) / 4
 MP2_E = SCF_E + MP2corr_E
 
-print 'MO based MP2 correlation energy: %.8f' % MP2corr_E
-print 'MP2 total energy:       %.8f' % MP2_E
+print('MO based MP2 correlation energy: %.8f' % MP2corr_E)
+print('MP2 total energy:       %.8f' % MP2_E)
 compare_values(energy('mp2'), MP2_E, 6, 'MP2 Energy')
 
-### Start Iterations
-E_conv = 1.e-12
-maxiter = 60
+### Start CCSD iterations
+print('\nStarting CCSD iterations')
+ccsd_tstart = time.time()
 CCSDcorr_E_old = 0.0
-
 for CCSD_iter in range(1, maxiter + 1):
 
     ### Build intermediates
@@ -335,7 +301,8 @@ for CCSD_iter in range(1, maxiter + 1):
     CCSDcorr_E += 0.5 * np.einsum('ijab,ia,jb->', MO[o, o, v, v], t1, t1)
 
     ### Print CCSD correlation energy
-    print 'CCSD Iteration %3d: CCSD correlation = %.12f   dE = %.5E' % (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old))
+    print('CCSD Iteration %3d: CCSD correlation = %.12f \
+          dE = %.5E' % (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old)))
     if (abs(CCSDcorr_E - CCSDcorr_E_old) < E_conv):
         break
 
@@ -344,24 +311,23 @@ for CCSD_iter in range(1, maxiter + 1):
 
 CCSD_E = SCF_E + CCSDcorr_E
 
-print '\nFinal CCSD correlation energy:     % 16.10f' % CCSDcorr_E
-print 'Total CCSD energy:                 % 16.10f' % CCSD_E
+print('\nFinal CCSD correlation energy:     % 16.10f' % CCSDcorr_E)
+print('Total CCSD energy:                 % 16.10f' % CCSD_E)
 compare_values(energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
 
-# # [::4] take every 4th, [-5:] take last 5, [::-1] reverse order
-# t2_args = np.abs(t2).ravel().argsort()[::2][-5:][::-1]
-# t1_args = np.abs(t1).ravel().argsort()[::4][-5:][::-1]
+if print_amps:
+    # [::4] take every 4th, [-5:] take last 5, [::-1] reverse order
+    t2_args = np.abs(t2).ravel().argsort()[::2][-5:][::-1]
+    t1_args = np.abs(t1).ravel().argsort()[::4][-5:][::-1]
 
-# print '\nLargest t1 amplitudes'
-# for pos in t1_args:
-#     value = t1.flat[pos]
-#     inds = np.unravel_index(pos, t1.shape)
-#     print '%4d  %4d |   % 5.10f' % (inds[0], inds[1], value)
-#
-# print '\nLargest t2 amplitudes'
-# for pos in t2_args:
-#     value = t2.flat[pos]
-#     inds = np.unravel_index(pos, t2.shape)
-#     print '%4d  %4d  %4d  %4d |   % 5.10f' % (inds[0], inds[1], inds[2], inds[3], value)
+    print('\nLargest t1 amplitudes')
+    for pos in t1_args:
+        value = t1.flat[pos]
+        inds = np.unravel_index(pos, t1.shape)
+        print('%4d  %4d |   % 5.10f' % (inds[0], inds[1], value))
 
-
+    print('\nLargest t2 amplitudes')
+    for pos in t2_args:
+        value = t2.flat[pos]
+        inds = np.unravel_index(pos, t2.shape)
+        print('%4d  %4d  %4d  %4d |   % 5.10f' % (inds[0], inds[1], inds[2], inds[3], value))
