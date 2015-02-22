@@ -12,8 +12,7 @@
 
 import time
 import numpy as np
-from scipy import linalg as SLA
-np.set_printoptions(precision=5, linewidth=200, suppress=True)
+np.set_printoptions(precision=8, linewidth=200, suppress=True)
 numpy_memory = 2
 
 molecule mol {
@@ -22,7 +21,6 @@ H 1 1.1
 H 1 1.1 2 104
 symmetry c1
 }
-
 
 set {
 basis cc-pVDZ
@@ -35,7 +33,7 @@ d_convergence 1e-10
 
 # CCSD Settings
 E_conv = 1.e-6
-maxiter = 60
+maxiter = 20
 print_amps = False
 
 # First compute RHF energy using Psi4
@@ -233,7 +231,6 @@ print('\nStarting CCSD iterations')
 ccsd_tstart = time.time()
 CCSDcorr_E_old = 0.0
 for CCSD_iter in range(1, maxiter + 1):
-
     ### Build intermediates
     Fae = build_Fae(t1, t2)
     Fmi = build_Fmi(t1, t2)
@@ -307,13 +304,13 @@ for CCSD_iter in range(1, maxiter + 1):
         break
 
     CCSDcorr_E_old = CCSDcorr_E
-
+print('CCSD iterations took %.2f seconds.\n' % (time.time() - ccsd_tstart))
 
 CCSD_E = SCF_E + CCSDcorr_E
 
 print('\nFinal CCSD correlation energy:     % 16.10f' % CCSDcorr_E)
 print('Total CCSD energy:                 % 16.10f' % CCSD_E)
-compare_values(energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
+#compare_values(energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
 
 if print_amps:
     # [::4] take every 4th, [-5:] take last 5, [::-1] reverse order

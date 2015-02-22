@@ -12,7 +12,7 @@ import time
 class helper_SAPT(object):
 
     def __init__(self, psi, energy, dimer, memory=2):
-        print("\nInializing SAPT object...\n")
+        print("\nInitalizing SAPT object...\n")
         tinit_start = time.time()
 
         # Set a few crucial attributes
