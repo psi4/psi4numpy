@@ -114,8 +114,10 @@ def ndot(input_string, op1, op2, prefactor=None):
 
 class helper_CCSD(object):
 
-    def __init__(self, psi, energy, mol, memory=2):
+    def __init__(self, psi, energy, mol, freeze_core=False, memory=2):
 
+        if freeze_core:
+            raise Exception("Frozen core doesnt work yet!")
         print("\nInitalizing CCSD object...\n")
 
         # Integral generation from Psi4's MintsHelper
@@ -126,15 +128,45 @@ class helper_CCSD(object):
         psi.set_local_option('SCF', 'SCF_TYPE', 'PK')
         psi.set_local_option('SCF', 'E_CONVERGENCE', 10e-10)
         psi.set_local_option('SCF', 'D_CONVERGENCE', 10e-10)
+
+        # Core is frozen by default
+        if not freeze_core:
+            psi.set_local_option('CCENERGY', 'FREEZE_CORE', 'FALSE')
+
         self.energy_rhf = energy('RHF')
-        print('RHF Final Energy          %.10f' % (self.energy_rhf))
+        print('RHF Final Energy          %.10f\n' % (self.energy_rhf))
 
         self.wfn = psi.wavefunction()
-        self.C = self.wfn.Ca()
-        self.npC = np.asanyarray(self.C)
         self.eps = np.asanyarray(self.wfn.epsilon_a())
         self.ndocc = self.wfn.doccpi()[0]
+        self.nmo = self.wfn.nmo()
         self.memory = memory
+        self.nfzc = 0
+        
+        # Freeze core
+        if freeze_core:
+            Zlist = np.array([mol.Z(x) for x in range(mol.natom())])
+            self.nfzc = np.sum(Zlist > 2)
+            self.nfzc += np.sum(Zlist > 10) * 4
+            if np.any(Zlist > 18):
+                raise Exception("Frozen core for Z > 18 not yet implemented")
+
+            print("Cutting %d core orbitals." % self.nfzc)
+
+            # Copy C
+            oldC = np.array(self.wfn.Ca(), copy=True)
+
+            # Build new C matrix and view, set with numpy slicing
+            self.C = psi.Matrix(self.nmo, self.nmo - self.nfzc)
+            self.npC = np.asanyarray(self.C)
+            self.npC[:] = oldC[:, self.nfzc:]
+        
+            # Update epsilon array
+            self.ndocc -= self.nfzc
+
+        else:
+            self.C = self.wfn.Ca()
+            self.npC = np.asanyarray(self.C)
 
         mints = psi.MintsHelper()
         H = np.asanyarray(mints.ao_kinetic()) + np.asanyarray(mints.ao_potential())
@@ -165,36 +197,38 @@ class helper_CCSD(object):
         
         # Update nocc and nvirt
         self.nso = self.nmo * 2
+        self.nfzc = self.nfzc * 2
         self.nocc = self.ndocc * 2
-        self.nvirt = self.nso - self.nocc
+        self.nvirt = self.nso - self.nocc - self.nfzc * 2
         
         # Make slices
-        self.o = slice(0, self.nocc)
-        self.v = slice(self.nocc, self.nso)
-        self.slice_dict = {'o' : self.o, 'v' : self.v}
+        self.slice_nfzc = slice(0, self.nfzc)
+        self.slice_o = slice(self.nfzc, self.nocc + self.nfzc)
+        self.slice_v = slice(self.nocc + self.nfzc, self.nso)
+        self.slice_dict = {'f': self.slice_nfzc, 'o' : self.slice_o, 'v' : self.slice_v}
         
         #Extend eigenvalues
         self.eps = np.repeat(self.eps, 2)
 
         # Compute Fock matrix
-        self.F = H + np.einsum('pmqm->pq', self.MO[:, self.o, :, self.o])
+        self.F = H + np.einsum('pmqm->pq', self.MO[:, self.slice_o, :, self.slice_o])
 
         ### Build D matrices
-        print('\nBuilding denominator arrays.')
-        Focc = np.diag(self.F)[self.o]
-        Fvir = np.diag(self.F)[self.v]
+        print('\nBuilding denominator arrays...')
+        Focc = np.diag(self.F)[self.slice_o]
+        Fvir = np.diag(self.F)[self.slice_v]
 
         self.Dia = Focc.reshape(-1, 1) - Fvir
         self.Dijab = Focc.reshape(-1, 1, 1, 1) + Focc.reshape(-1, 1, 1) - Fvir.reshape(-1, 1) - Fvir
 
         ### Construct initial guess
-        print('Building initial guess.')
+        print('Building initial guess...')
         # t^a_i
         self.t1 = np.zeros((self.nocc, self.nvirt))
         # t^{ab}_{ij}
-        self.t2 = self.MO[self.o, self.o, self.v, self.v] / self.Dijab
+        self.t2 = self.MO[self.slice_o, self.slice_o, self.slice_v, self.slice_v] / self.Dijab
         
-        print('..initialed CCSD in %.3f seconds.\n' % (time.time() - time_init))
+        print('\n..initialed CCSD in %.3f seconds.\n' % (time.time() - time_init))
 
     # occ orbitals i, j, k, l, m, n
     # virt orbitals a, b, c, d, e, f
@@ -387,6 +421,7 @@ if __name__ == "__main__":
     test_ndot('acbd,cdef->abef', arr4, arr4)
     test_ndot('acbd,cdef->abfe', arr4, arr4)
     test_ndot('mnab,mnij->ijab', arr4, arr4)
+
     test_ndot('cd,cdef->ef', arr2, arr4)
     test_ndot('ce,cdef->df', arr2, arr4)
     test_ndot('nf,naif->ia', arr2, arr4)

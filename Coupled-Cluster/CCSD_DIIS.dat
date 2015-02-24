@@ -15,74 +15,70 @@
 import time
 import numpy as np
 from helper_CC import *
-np.set_printoptions(precision=8, linewidth=200, suppress=True)
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
 
 memory 2 GB
 
-#molecule mol {
-#O
-#H 1 1.1
-#H 1 1.1 2 104
-#symmetry c1
-#}
-
 molecule mol {
-O   0.000000000000  -0.143225816552   0.000000000000
-H   1.638036840407   1.136548822547  -0.000000000000
-H  -1.638036840407   1.136548822547  -0.000000000000
-units bohr
+O
+H 1 1.1
+H 1 1.1 2 104
 symmetry c1
 }
 
 set {
-basis sto-3g
-freeze_core false
+basis cc-pVDZ
 }
 
 # CCSD settings
-E_conv = 1.e-10
-maxiter = 6
-max_diis = 6
+E_conv = 1.e-8
+maxiter = 20
+max_diis = 8
+compare_psi4 = True
+freeze_core = False
 
+# Build CCSD object
 ccsd = helper_CCSD(psi4, energy, mol, memory=2)
 
 ### Setup DIIS
 diis_vals_t1 = [ccsd.t1.copy()]
 diis_vals_t2 = [ccsd.t2.copy()]
+diis_errors = []
 
 ### Start Iterations
 ccsd_tstart = time.time()
+
+# Compute MP2 energy
 CCSDcorr_E_old = ccsd.compute_corr_energy()
+print("CCSD Iteration %3d: CCSD correlation = %.12f   dE = % .5E   \
+DIIS = %d" % (0, CCSDcorr_E_old, -CCSDcorr_E_old, 0))
+
+# Iterate!
+diis_size = 0
 for CCSD_iter in range(1, maxiter + 1):
 
     #if False:
     if CCSD_iter >= 3:
         # Limit size of DIIS vector
         if (len(diis_vals_t1) > max_diis):
-             del diis_vals_t1[0]
-             del diis_vals_t2[0]
+            del diis_vals_t1[0]
+            del diis_vals_t2[0]
+            del diis_errors[0]
 
         diis_size = len(diis_vals_t1) - 1
-
-        # Build amplitude differences
-        diis_errors = []
-        for x in range(diis_size):
-            error_t1 = (diis_vals_t1[x + 1] - diis_vals_t1[x]).ravel()
-            error_t2 = (diis_vals_t2[x + 1] - diis_vals_t2[x]).ravel()
-            diis_errors.append(np.concatenate((error_t1, error_t2)))
 
         # Build error matrix B
         B = np.ones((diis_size + 1, diis_size + 1)) * -1
         B[-1, -1] = 0
 
         for n1, e1 in enumerate(diis_errors):
+            B[n1, n1] = np.dot(e1, e1)
             for n2, e2 in enumerate(diis_errors):
-                if n1 > n2: continue
+                if n1 >= n2: continue
                 B[n1, n2] = np.dot(e1, e2)
                 B[n2, n1] = B[n1, n2]
 
         B[:-1, :-1] /= np.abs(B[:-1, :-1]).max()
-        print B
 
         # Build residual vector
         resid = np.zeros(diis_size + 1)
@@ -90,39 +86,52 @@ for CCSD_iter in range(1, maxiter + 1):
 
         # Solve pulay equations
         ci = np.linalg.solve(B, resid)
-        print ci
 
         # Calculate new amplitudes
-        t1 = np.zeros_like(ccsd.t1) 
-        t2 = np.zeros_like(ccsd.t2)
+        ccsd.t1[:] = 0
+        ccsd.t2[:] = 0
         for num in range(diis_size):
-            print num, num + 1, ci[num]
-            t1 += ci[num] * diis_vals_t1[num + 1]
-            t2 += ci[num] * diis_vals_t2[num + 1]
-        ccsd.t1 = t1
-        ccsd.t2 = t2
+            ccsd.t1 += ci[num] * diis_vals_t1[num + 1]
+            ccsd.t2 += ci[num] * diis_vals_t2[num + 1]
+
     # End DIIS amplitude update
 
+    # Save new amplitudes
+    oldt1 = ccsd.t1.copy()
+    oldt2 = ccsd.t2.copy()
+
     ccsd.update()
+
+    # Compute CCSD correlation energy
+    CCSDcorr_E = ccsd.compute_corr_energy()
+
+    # Print CCSD iteration information
+    print('CCSD Iteration %3d: CCSD correlation = %.12f   dE = % .5E   DIIS = %d' % (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old), diis_size))
+
+    # Check convergence
+    if (abs(CCSDcorr_E - CCSDcorr_E_old) < E_conv):
+        break
 
     # Add DIIS vectors
     diis_vals_t1.append(ccsd.t1.copy())
     diis_vals_t2.append(ccsd.t2.copy())
 
-    ### Compute CCSD correlation energy
-    CCSDcorr_E = ccsd.compute_corr_energy()
+    # Build new error vector
+    error_t1 = (diis_vals_t1[-1] - oldt1).ravel()
+    error_t2 = (diis_vals_t2[-1] - oldt2).ravel()
+    diis_errors.append(np.concatenate((error_t1, error_t2)))
 
-    ### Print CCSD iteration information
-    print 'CCSD Iteration %3d: CCSD correlation = %.12f   dE = % .5E' % (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old))
-    if (abs(CCSDcorr_E - CCSDcorr_E_old) < E_conv):
-        break
-
+    # Update old energy
     CCSDcorr_E_old = CCSDcorr_E
+
+# Finished CCSD iterations
 print('CCSD iterations took %.2f seconds.\n' % (time.time() - ccsd_tstart))
 
 CCSD_E = ccsd.energy_rhf + CCSDcorr_E
 
-print '\nFinal CCSD correlation energy:     % 16.10f' % CCSDcorr_E
-print 'Total CCSD energy:                 % 16.10f' % CCSD_E
-#compare_values(energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
+print('\nFinal CCSD correlation energy:     % 16.10f' % CCSDcorr_E)
+print('Total CCSD energy:                 % 16.10f' % CCSD_E)
+
+if compare_psi4:
+    compare_values(energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
 

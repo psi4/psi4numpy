@@ -35,6 +35,7 @@ d_convergence 1e-10
 E_conv = 1.e-6
 maxiter = 20
 print_amps = False
+compare_psi4 = False
 
 # First compute RHF energy using Psi4
 energy('RHF')
@@ -310,7 +311,8 @@ CCSD_E = SCF_E + CCSDcorr_E
 
 print('\nFinal CCSD correlation energy:     % 16.10f' % CCSDcorr_E)
 print('Total CCSD energy:                 % 16.10f' % CCSD_E)
-#compare_values(energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
+if compare_psi4:
+    compare_values(energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
 
 if print_amps:
     # [::4] take every 4th, [-5:] take last 5, [::-1] reverse order
