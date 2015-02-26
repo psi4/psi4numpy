@@ -46,7 +46,7 @@ C = wfn.Ca()
 ndocc = wfn.doccpi()[0]
 nmo = wfn.nmo()
 SCF_E = wfn.energy()
-eps = np.asanyarray(wfn.epsilon_a())
+eps = np.asarray(wfn.epsilon_a())
 
 # Compute size of SO-ERI tensor in GB
 ERI_Size = (nmo ** 4) * 128e-9
@@ -60,14 +60,14 @@ if memory_footprint > numpy_memory:
 # Integral generation from Psi4's MintsHelper
 t = time.time()
 mints = MintsHelper()
-H = np.asanyarray(mints.ao_kinetic()) + np.asanyarray(mints.ao_potential())
+H = np.asarray(mints.ao_kinetic()) + np.asarray(mints.ao_potential())
 
 print('\nTotal time taken for ERI integrals: %.3f seconds.\n' % (time.time() - t))
 
 #Make spin-orbital MO
 print 'Starting AO -> spin-orbital MO transformation...'
 t = time.time()
-MO = np.asanyarray(mints.mo_spin_eri(C, C))
+MO = np.asarray(mints.mo_spin_eri(C, C))
 
 # Update nocc and nvirt
 nso = nmo * 2

@@ -52,7 +52,7 @@ wfn = wavefunction()
 ndocc = wfn.doccpi()[0]
 nmo = wfn.nmo()
 SCF_E = wfn.energy()
-eps = np.asanyarray(wfn.epsilon_a())
+eps = np.asarray(wfn.epsilon_a())
 
 # Compute size of ERI tensor in GB
 ERI_Size = (nmo ** 4) * 8e-9
@@ -69,7 +69,7 @@ t = time.time()
 mints = MintsHelper()
 Co = wfn.Ca_subset("AO", "OCC")
 Cv = wfn.Ca_subset("AO", "VIR")
-MO = np.asanyarray(mints.mo_eri(Co, Cv, Co, Cv))
+MO = np.asarray(mints.mo_eri(Co, Cv, Co, Cv))
 
 Eocc = eps[:ndocc]
 Evirt = eps[ndocc:]

@@ -134,13 +134,13 @@ class helper_CCSD(object):
             psi.set_local_option('CCENERGY', 'FREEZE_CORE', 'FALSE')
 
         self.rhf_e = energy('RHF')
-        print('RHF Final Energy          %.10f\n' % (self.rhf_e))
+        print('RHF Final Energy                          % 16.10f\n' % (self.rhf_e))
 
         self.ccsd_corr_e = 0.0
         self.ccsd_e = 0.0
 
         self.wfn = psi.wavefunction()
-        self.eps = np.asanyarray(self.wfn.epsilon_a())
+        self.eps = np.asarray(self.wfn.epsilon_a())
         self.ndocc = self.wfn.doccpi()[0]
         self.nmo = self.wfn.nmo()
         self.memory = memory
@@ -161,7 +161,7 @@ class helper_CCSD(object):
 
             # Build new C matrix and view, set with numpy slicing
             self.C = psi.Matrix(self.nmo, self.nmo - self.nfzc)
-            self.npC = np.asanyarray(self.C)
+            self.npC = np.asarray(self.C)
             self.npC[:] = oldC[:, self.nfzc:]
 
             # Update epsilon array
@@ -169,10 +169,10 @@ class helper_CCSD(object):
 
         else:
             self.C = self.wfn.Ca()
-            self.npC = np.asanyarray(self.C)
+            self.npC = np.asarray(self.C)
 
         mints = psi.MintsHelper()
-        H = np.asanyarray(mints.ao_kinetic()) + np.asanyarray(mints.ao_potential())
+        H = np.asarray(mints.ao_kinetic()) + np.asarray(mints.ao_potential())
         self.nmo = H.shape[0]
 
         # Update H, transform to MO basis and tile for alpha/beta spin
@@ -195,7 +195,7 @@ class helper_CCSD(object):
                             limit of %4.2f GB." % (memory_footprint, numpy_memory))
 
         # Integral generation from Psi4's MintsHelper
-        self.MO = np.asanyarray(mints.mo_spin_eri(self.C, self.C))
+        self.MO = np.asarray(mints.mo_spin_eri(self.C, self.C))
         print("Size of the ERI tensor is %4.2f GB, %d basis functions." % (ERI_Size, self.nmo))
 
         # Update nocc and nvirt
@@ -482,7 +482,7 @@ class helper_CCSD(object):
 
             # Check convergence
             if (abs(CCSDcorr_E - CCSDcorr_E_old) < e_conv):
-                print('CCSD has converged!')
+                print('\nCCSD has converged in %.3f seconds!' % (time.time() - ccsd_tstart))
                 return CCSDcorr_E
 
             # Add DIIS vectors

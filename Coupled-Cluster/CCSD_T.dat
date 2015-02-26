@@ -30,21 +30,9 @@ H 1 1.1 2 104
 symmetry c1
 }
 
-# molecule mol {
-# H
-# H 1 0.73257098
-# symmetry c1
-# }
-
 
 set {
-basis 6-31G
-scf_type pk
-guess core
-mp2_type conv
-freeze_core false
-e_convergence 1e-10
-d_convergence 1e-10
+basis cc-pVDZ
 }
 
 # For numpy
@@ -63,7 +51,7 @@ print('Total CCSD energy:                      % 16.10f' % CCSD_E)
 # Triples correction required o^3v^3 storage due the noddy algorithm
 T_Size = (ccsd.nocc ** 3 * ccsd.nvirt ** 3) * 8e-9
 print("\nSize of the T3 tensor will be %4.2f GB." % T_Size)
-memory_footprint = T_Size * 3.2
+memory_footprint = T_Size * 4.2
 if memory_footprint > numpy_memory:
     clean()
     raise Exception("Estimated memory utilization for pertubative triples (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
@@ -79,6 +67,8 @@ Dijkabc = Dijkabc - Fvir.reshape(-1, 1, 1) - Fvir.reshape(-1, 1) - Fvir
 # (ijkabc - ijkbac - ijkcba - jikabc + jikbac + jikcba - kjiabc + kjicac + kjicba)
 
 # Build disconnected t3
+print('\nBuilding disconnected T3...')
+t = time.time()
 tmp = np.einsum('ia,jkbc->ijkabc', ccsd.t1, ccsd.get_MO('oovv'))
 t3d = tmp.copy()
 t3d -= np.einsum('ijkabc->ijkbac', tmp)
@@ -90,10 +80,13 @@ t3d -= np.einsum('ijkabc->kjiabc', tmp)
 t3d += np.einsum('ijkabc->kjibac', tmp)
 t3d += np.einsum('ijkabc->kjicba', tmp)
 t3d /= Dijkabc
+print('...built disconnected T3 in %.3f seconds.' % (time.time() - t))
 
 # Build connected t3
-tmp = np.einsum('jkae,eibc->ijkabc', ccsd.t2, ccsd.get_MO('vovv'))
-tmp -= np.einsum('imbc,majk->ijkabc', ccsd.t2, ccsd.get_MO('ovoo'))
+print('\nBuilding connected T3...')
+t = time.time()
+tmp = ndot('jkae,eibc->ijkabc', ccsd.t2, ccsd.get_MO('vovv')).copy()
+tmp -= ndot('imbc,majk->ijkabc', ccsd.t2, ccsd.get_MO('ovoo'))
 t3c = tmp.copy()
 t3c -= np.einsum('ijkabc->ijkbac', tmp)
 t3c -= np.einsum('ijkabc->ijkcba', tmp)
@@ -104,6 +97,7 @@ t3c -= np.einsum('ijkabc->kjiabc', tmp)
 t3c += np.einsum('ijkabc->kjibac', tmp)
 t3c += np.einsum('ijkabc->kjicba', tmp)
 t3c /= Dijkabc
+print('...built connected T3 in %.3f seconds.' % (time.time() - t))
 
 # Compute energy expression
 tmp = t3c + t3d

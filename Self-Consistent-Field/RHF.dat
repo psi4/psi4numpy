@@ -42,7 +42,7 @@ D_conv = 1.0E-3
 # Integral generation from Psi4's MintsHelper
 t = time.time()
 mints = MintsHelper()
-S = np.asanyarray(mints.ao_overlap())
+S = np.asarray(mints.ao_overlap())
 
 # Get nbf and ndocc for closed shell molecules
 nbf = S.shape[0]
@@ -63,9 +63,9 @@ if I_Size > numpy_memory:
                     limit of %4.2f GB." % (memory_footprint, numpy_memory))
 
 # Compute required quantities for RHF
-V = np.asanyarray(mints.ao_potential())
-T = np.asanyarray(mints.ao_kinetic())
-I = np.asanyarray(mints.ao_eri())
+V = np.asarray(mints.ao_potential())
+T = np.asarray(mints.ao_kinetic())
+I = np.asarray(mints.ao_eri())
 
 print('\nTotal time taken for integrals: %.3f seconds.' % (time.time() - t))
 
@@ -77,7 +77,7 @@ H = T + V
 # Orthogonalizer A = S^(-1/2) using Psi4's matrix power.
 A = mints.ao_overlap()
 A.power(-0.5, 1.e-16)
-A = np.asanyarray(A)
+A = np.asarray(A)
 
 # Calculate initial core guess
 Hp = A.dot(H).dot(A)

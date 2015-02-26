@@ -53,7 +53,7 @@ D_conv = 1.0E-3
 # Integral generation from Psi4's MintsHelper
 t = time.time()
 mints = MintsHelper()
-S = np.asanyarray(mints.ao_overlap())
+S = np.asarray(mints.ao_overlap())
 
 # Get nbf and ndocc for closed shell molecules
 nbf = S.shape[0]
@@ -63,8 +63,8 @@ ndocc = int(ndocc)
 print '\nNumber of occupied orbitals: %d' % ndocc
 print 'Number of basis functions: %d' % nbf
 
-V = np.asanyarray(mints.ao_potential())
-T = np.asanyarray(mints.ao_kinetic())
+V = np.asarray(mints.ao_potential())
+T = np.asarray(mints.ao_kinetic())
 
 print '\nTotal time taken for integrals: %.3f seconds.' % (time.time()-t)
 
@@ -76,7 +76,7 @@ H = T + V
 # Orthogonalizer A = S^(-1/2)
 A = mints.ao_overlap()
 A.power(-0.5, 1.e-16)
-A = np.asanyarray(A)
+A = np.asarray(A)
 
 # Calculate initial core guess
 Hp = A.dot(H).dot(A)
@@ -96,7 +96,7 @@ DIIS_error = []
 
 # Build a C matrix and share data with the numpy array npC
 C = Matrix(nbf, ndocc)
-npC = np.asanyarray(C)
+npC = np.asarray(C)
 npC[:] = Cocc
 
 # Initialize the JK object
@@ -119,8 +119,8 @@ for RHF_ITER in range(1, maxiter + 1):
     jk.compute()
 
     # Build fock matrix
-    J = np.asanyarray(jk.J()[0])
-    K = np.asanyarray(jk.K()[0])
+    J = np.asarray(jk.J()[0])
+    K = np.asarray(jk.K()[0])
     F = H + J * 2 - K
 
     # DIIS error build

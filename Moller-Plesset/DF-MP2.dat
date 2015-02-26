@@ -40,14 +40,14 @@ wfn = wavefunction()
 ndocc = wfn.doccpi()[0]
 
 # Split eigenvectors and eigenvalues into o and v
-eps_occ = np.asanyarray(wfn.epsilon_a_subset("AO", "ACTIVE_OCC"))
-eps_vir = np.asanyarray(wfn.epsilon_a_subset("AO", "ACTIVE_VIR"))
+eps_occ = np.asarray(wfn.epsilon_a_subset("AO", "ACTIVE_OCC"))
+eps_vir = np.asarray(wfn.epsilon_a_subset("AO", "ACTIVE_VIR"))
 
 print('\nBuilding DF ERI tensor Qov...')
 t = time.time()
 df = DFTensor(wfn, "DF_BASIS_SCF") 
 # Transformed MO DF tensor
-Qov = np.asanyarray(df.Qov())
+Qov = np.asarray(df.Qov())
 print('...Qov build in %.3f seconds with a shape of %s, %.3f GB.' \
 % (time.time() - t, str(Qov.shape), np.prod(Qov.shape) * 8.e-9))
 #print('Required memory storage is %.3f GB.' % (np.prod(Qov.shape) * 8.e-9))

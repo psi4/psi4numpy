@@ -34,14 +34,14 @@ class helper_SAPT(object):
         # Compute monomer properties
         tstart = time.time()
         psi.set_active_molecule(monomerA)
-        self.V_A = np.asanyarray(psi.MintsHelper().ao_potential())
+        self.V_A = np.asarray(psi.MintsHelper().ao_potential())
         self.rhfA = energy('RHF')
         self.wfnA = psi.wavefunction()
         print("RHF for monomer A finished in %.2f seconds." % (time.time() - tstart))
 
         tstart = time.time()
         psi.set_active_molecule(monomerB)
-        self.V_B = np.asanyarray(psi.MintsHelper().ao_potential())
+        self.V_B = np.asarray(psi.MintsHelper().ao_potential())
         self.rhfB = energy('RHF')
         self.wfnB = psi.wavefunction()
         print("RHF for monomer B finished in %.2f seconds." % (time.time() - tstart))
@@ -57,10 +57,10 @@ class helper_SAPT(object):
         self.nvirt_A = self.nmo - self.ndocc_A
         self.idx_A = ['a', 'r']
 
-        self.C_A = np.asanyarray(self.wfnA.Ca())
+        self.C_A = np.asarray(self.wfnA.Ca())
         self.Co_A = self.wfnA.Ca_subset("AO", "ACTIVE_OCC")
         self.Cv_A = self.wfnA.Ca_subset("AO", "ACTIVE_VIR")
-        self.eps_A = np.asanyarray(self.wfnA.epsilon_a())
+        self.eps_A = np.asarray(self.wfnA.epsilon_a())
 
         # Monomer B
         self.nuc_rep_B = monomerB.nuclear_repulsion_energy()
@@ -68,10 +68,10 @@ class helper_SAPT(object):
         self.nvirt_B = self.nmo - self.ndocc_B
         self.idx_B = ['b', 's']
 
-        self.C_B = np.asanyarray(self.wfnB.Ca())
+        self.C_B = np.asarray(self.wfnB.Ca())
         self.Co_B = self.wfnB.Ca_subset("AO", "ACTIVE_OCC")
         self.Cv_B = self.wfnB.Ca_subset("AO", "ACTIVE_VIR")
-        self.eps_B = np.asanyarray(self.wfnB.epsilon_a())
+        self.eps_B = np.asarray(self.wfnB.epsilon_a())
 
         # Dimer
         self.nuc_rep = dimer.nuclear_repulsion_energy() - self.nuc_rep_A - self.nuc_rep_B
@@ -111,7 +111,7 @@ class helper_SAPT(object):
         self.I = mints.ao_eri()
         print('...built ERI tensor in %.3f seconds.' % (time.time() - tstart))
         print("Size of the ERI tensor is %4.2f GB, %d basis functions." % (ERI_Size, self.nmo))
-        self.S = np.asanyarray(mints.ao_overlap())
+        self.S = np.asarray(mints.ao_overlap())
 
         # Save additional rank 2 tensors
         self.V_A_BB = np.einsum('ui,vj,uv->ij', self.C_B, self.C_B, self.V_A)
@@ -133,7 +133,7 @@ class helper_SAPT(object):
         orbitals = [self.orbitals[string[0]], self.orbitals[string[2]],
                     self.orbitals[string[1]], self.orbitals[string[3]]]
         v = self.mints.mo_transform(self.I, *orbitals)
-        return np.asanyarray(v).swapaxes(1, 2)
+        return np.asarray(v).swapaxes(1, 2)
 
     # Grab MO overlap matrices
     def s(self, string):
