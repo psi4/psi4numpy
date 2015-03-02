@@ -74,7 +74,7 @@ class helper_HF(object):
         self.DIIS_F = []
 
         scf_type = scf_type.upper()
-        if scf_type not in ['PK', 'DIRECT']:
+        if scf_type not in ['DF', 'PK', 'DIRECT']:
             raise Exception('SCF_TYPE %s not supported' % scf_type)
         psi.set_global_option('SCF_TYPE', scf_type)
         self.jk = psi.JK.build_JK()
