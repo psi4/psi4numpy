@@ -13,7 +13,6 @@
 ### BETA
 import time
 import numpy as np
-from scipy import linalg as SLA
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 
 molecule mol {

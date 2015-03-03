@@ -10,7 +10,6 @@
 
 import time
 import numpy as np
-from scipy import linalg as SLA
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 
 # Memory for Psi4 in GB
