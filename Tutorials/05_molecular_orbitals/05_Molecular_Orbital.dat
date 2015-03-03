@@ -1,0 +1,82 @@
+# A simple Psi 4 input script to compute MP2 from a RHF reference
+# Requirements scipy 0.13.0+ and numpy 1.7.2+
+#
+# Algorithms were taken directly from Daniel Crawford's programming website:
+# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+# Special thanks to Rob Parrish for initial assistance with libmints
+#
+# Created by: Daniel G. A. Smith
+# Date: 7/29/14
+# License: GPL v3.0
+#
+
+import time
+import numpy as np
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
+
+molecule mol {
+O
+H 1 1.1
+H 1 1.1 2 104
+symmetry c1
+}
+
+
+set {
+basis aug-cc-pVDZ
+}
+
+# First compute RHF energy using Psi4
+energy('RHF')
+
+# Grab data from wavfunction class 
+wfn = wavefunction()
+
+# Grab orbitals
+Matrix_C = wfn.Ca()
+C = np.asarray(Matrix_C)
+nbf = C.shape[0]
+
+print("Number as basis functions: %d" % nbf)
+
+# Grab rank 4 ERI
+t = time.time()
+print("\nBuilding AO ERI...")
+mints = MintsHelper()
+Matrix_I = mints.ao_eri()
+I = np.asarray(Matrix_I)
+print("...built AO ERI in %.3f seconds." % (time.time() -t ))
+print("AO ERI size is %.3f GB." % ((nbf ** 4) * 8.e-9))
+
+
+# Psi4's implementation
+print("\nStarting Psi4's AO->MO transformation...")
+t = time.time()
+Psi4_MO = np.asarray(mints.mo_transform(Matrix_I, Matrix_C, Matrix_C, Matrix_C, Matrix_C))
+print("...transformation complete in %.3f seconds." % (time.time() - t))
+
+# Numpy N^5 transformation.
+print("\nStarting Numpy's N^5 AO->MO transformation...")
+t = time.time()
+MO = np.einsum('rJ,pqrs->pqJs', C, I)
+MO = np.einsum('pI,pqJs->IqJs', C, MO)
+MO = np.einsum('sB,IqJs->IqJB', C, MO)
+MO = np.einsum('qA,IqJB->IAJB', C, MO)
+print("...transformation complete in %.3f seconds." % (time.time() - t))
+print("Matches Psi4's implementation: %s" % np.allclose(Psi4_MO, MO))
+
+
+# Numpy N^8 transformation.
+# Transformation is too expensive @ N^8 for N > 20.
+if nbf < 20:
+    print("\nStarting Numpy's N^8 AO->MO transformation...")
+    t = time.time()
+    MO = np.einsum('pI,qJ,pqrs,rK,sL->IJKL', C, C, I, C, C)
+    print("...transformation complete in %.3f seconds." % (time.time() - t))
+    print("Matches Psi4's implementation: %s" % np.allclose(Psi4_MO, MO))
+else:
+    print("\nN^8 algorithm is too expensive... skipping.")
+
+
+
+

@@ -1,0 +1,123 @@
+# A simple Psi 4 input script to compute MP2 from a RHF reference
+# Requirements scipy 0.13.0+ and numpy 1.7.2+
+#
+# Created by: Daniel G. A. Smith
+# Date: 2/27/15
+# License: GPL v3.0
+#
+
+import time
+import numpy as np
+np.set_printoptions(precision=3, linewidth=200, suppress=True)
+from helper_HF import *
+
+# Memory for Psi4 in GB
+memory 2 GB
+
+# Memory for numpy in GB
+numpy_memory = 2
+
+molecule mol {
+O
+H 1 1.1
+H 1 1.1 2 104
+symmetry c1
+}
+
+set {
+basis aug-cc-pVDZ
+}
+
+E_conv = 1.e-6
+D_conv = 1.e-6
+
+hf = helper_HF(psi4, energy, mol, scf_type='DF')
+mints = MintsHelper()
+mI = mints.ao_eri()
+I = np.asarray(mI)
+
+
+print('\nStart RHF iterations:\n')
+t = time.time()
+E = 0.0
+Eold = 0.0
+Dold = 0.0
+iter_type = 'DIAG'
+
+for SCF_ITER in range(1, 20):
+
+    # Build new fock matrix
+    F = hf.build_fock()
+    hf.diis_add(F)
+
+    # SCF energy and update
+    scf_e = hf.compute_hf_energy()
+    dRMS = np.sum(np.power(hf.Da - Dold, 2)) ** 0.5
+    print 'RHF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E   %s' % (SCF_ITER, hf.scf_e, (hf.scf_e - Eold), dRMS, iter_type)
+    if (abs(hf.scf_e - Eold) < E_conv) and (dRMS < D_conv):
+        break
+
+    Eold = hf.scf_e
+    Dold = hf.Da
+
+    if SCF_ITER < 3:
+        e, C = hf.diag(F)
+        hf.set_Cleft(C)
+    elif (dRMS > 0.5):
+        hf.diis_update()
+        iter_type = 'DIIS'
+    else:
+
+        ndocc = hf.ndocc
+        nvirt = hf.nvirt
+        A = hf.A
+        C = hf.Ca
+        moF = np.einsum('ui,vj,uv', C, C, F)
+        gn = 4 * moF[:ndocc, ndocc:]
+        gs = (gn.shape[0] * gn.shape[1])
+    
+        # Only transform occupied on first index, oN^4 <<< N^5
+        mC = Matrix(C.shape[0], C.shape[1])
+        npC = np.asarray(mC)
+        npC[:] = C
+
+        occ_mC = Matrix(C.shape[0], hf.ndocc)
+        occ_npC = np.asarray(occ_mC)
+        occ_npC[:] = C[:, :ndocc]
+
+        # Most expensive step, AO -> MO ERI transform
+        MO = np.asarray(mints.mo_transform(mI, occ_mC, mC, mC, mC))
+
+        # Build electronic hessian
+        Biajb = 4 * np.einsum('ab,ij->iajb', moF[ndocc:, ndocc:], np.diag(np.ones(ndocc)))
+        Biajb -= 4 * np.einsum('ij,ab->iajb', moF[:ndocc:, :ndocc], np.diag(np.ones(nvirt)))
+        Biajb += 16 * MO[:ndocc, ndocc:, ndocc:, :ndocc].swapaxes(2, 3)
+        Biajb -= 4 * MO[:ndocc, ndocc:, :ndocc, ndocc:].swapaxes(0, 2)
+
+        # If first index is only occupied we need to exploit ERI symmetry
+        #Biajb -= 4 * MO[ndocc:, ndocc:, :ndocc, :ndocc].transpose(2, 0, 3, 1)
+        Biajb -= 4 * MO[:ndocc, :ndocc, ndocc:, ndocc:].transpose(1, 3, 0, 2)
+
+        Binv = np.linalg.inv(Biajb.reshape(gs, gs)).reshape(Biajb.shape)
+        
+        x = -np.einsum('iajb,ia->jb', Binv, gn)
+        U = np.zeros_like(C)
+        U[:ndocc, ndocc:] = x
+        U[ndocc:, :ndocc] = -x.T
+        U += 0.5 * np.dot(U, U)
+        U[np.diag_indices_from(A)] += 1
+        U, r = np.linalg.qr(U.T)
+
+        C = C.dot(U)
+        hf.set_Cleft(C)
+        iter_type = 'SOSCF'
+
+print 'Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t)
+
+print 'Final SCF energy:     %.8f hartree' % hf.scf_e
+hf.scf_e_psi = energy('scf')
+print 'Final PSI SCF energy: %.8f hartree' % hf.scf_e_psi
+
+wfn = wavefunction()
+
+#print np.einsum('ui,vj,uv', C, C, F)
