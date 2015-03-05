@@ -1,4 +1,4 @@
-psi4numpy
+![psi4numpy](media/psi4banner_numpy.png)
 =============
 
 #####Author: Daniel G. A. Smith
