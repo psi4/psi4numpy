@@ -36,9 +36,9 @@ basis cc-pVDZ
 }
 
 # For numpy
-compare_psi4 = True
+compare_psi4 = False
 
-# 
+# Compute CCSD
 ccsd = helper_CCSD(psi4, energy, mol, memory=2)
 ccsd.compute_energy()
 
@@ -55,12 +55,6 @@ memory_footprint = T_Size * 4.2
 if memory_footprint > numpy_memory:
     clean()
     raise Exception("Estimated memory utilization for pertubative triples (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
-
-# Construct D3
-Focc = np.diag(ccsd.get_F('oo'))
-Fvir = np.diag(ccsd.get_F('vv'))
-Dijkabc = Focc.reshape(-1, 1, 1, 1, 1, 1) + Focc.reshape(-1, 1, 1, 1, 1) + Focc.reshape(-1, 1, 1, 1)
-Dijkabc = Dijkabc - Fvir.reshape(-1, 1, 1) - Fvir.reshape(-1, 1) - Fvir
 
 # P(i/jk) * P(a/bc)
 # (ijk - jik - kji) * (abc - bac - cba)
@@ -79,7 +73,6 @@ t3d += np.einsum('ijkabc->jikcba', tmp)
 t3d -= np.einsum('ijkabc->kjiabc', tmp)
 t3d += np.einsum('ijkabc->kjibac', tmp)
 t3d += np.einsum('ijkabc->kjicba', tmp)
-t3d /= Dijkabc
 print('...built disconnected T3 in %.3f seconds.' % (time.time() - t))
 
 # Build connected t3
@@ -96,12 +89,20 @@ t3c += np.einsum('ijkabc->jikcba', tmp)
 t3c -= np.einsum('ijkabc->kjiabc', tmp)
 t3c += np.einsum('ijkabc->kjibac', tmp)
 t3c += np.einsum('ijkabc->kjicba', tmp)
-t3c /= Dijkabc
 print('...built connected T3 in %.3f seconds.' % (time.time() - t))
 
-# Compute energy expression
+# Form last intermediate
 tmp = t3c + t3d
-Pert_T = (1.0/36) * np.einsum('ijkabc,ijkabc,ijkabc', t3c, Dijkabc, tmp)
+
+# Construct D3
+Focc = np.diag(ccsd.get_F('oo'))
+Fvir = np.diag(ccsd.get_F('vv'))
+Dijkabc = Focc.reshape(-1, 1, 1, 1, 1, 1) + Focc.reshape(-1, 1, 1, 1, 1) + Focc.reshape(-1, 1, 1, 1)
+Dijkabc = Dijkabc - Fvir.reshape(-1, 1, 1) - Fvir.reshape(-1, 1) - Fvir
+tmp /= Dijkabc
+
+# Compute energy expression
+Pert_T = (1.0/36) * np.einsum('ijkabc,ijkabc', t3c, tmp)
 
 CCSD_T_E = CCSD_E + Pert_T
 
