@@ -22,8 +22,11 @@ memory 2 GB
 # Memory for numpy in GB
 numpy_memory = 2
 
-# Number of orbitals below the HOMO to compute
-num_orbs = 5
+# Orbital to start at
+start_orbs = 2
+
+# Number of orbitals to compute
+num_orbs = 4
 
 molecule mol {
 O
@@ -35,65 +38,51 @@ symmetry c1
 set {
 basis aug-cc-pVDZ
 scf_type pk
-mp2_type conv
-freeze_core false
 e_convergence 1e-8
 d_convergence 1e-8
 }
 
+print('\nStarting RHF and integral build...')
+t = time.time()
+
 # First compute RHF energy using Psi4
 energy('RHF')
 
-# Grab data from
+# Grab data from wavfunction class 
 wfn = wavefunction()
-# Coefficient Matrix
-C = np.array(wfn.Ca())
-# Double occupied orbitals
 ndocc = wfn.doccpi()[0]
-# Number of molecular orbitals
 nmo = wfn.nmo()
-# SCF energy
 SCF_E = wfn.energy()
-# Orbital energies
-eps = wfn.epsilon_a()
-eps = np.array([eps.get(x) for x in range(C.shape[0])])
+eps = np.asarray(wfn.epsilon_a())
 
-
-# Compute size of SO-ERI tensor in GB
-ERI_Size = (nmo**4)*(2**4)*8.0 / 1E9
-print "\nSize of the SO ERI tensor will be %4.2f GB." % ERI_Size
-memory_footprint = ERI_Size*2.2
+# Compute size of ERI tensor in GB
+ERI_Size = (nmo ** 4) * 8e-9
+print('Size of the ERI/MO tensor will be %4.2f GB.' % ERI_Size)
+memory_footprint = ERI_Size * 2.5
 if memory_footprint > numpy_memory:
     clean()
-    raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
+    raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory \
+                    limit of %4.2f GB." % (memory_footprint, numpy_memory))
 
+print('Building MO integrals.')
 # Integral generation from Psi4's MintsHelper
 t = time.time()
 mints = MintsHelper()
-I = np.array(mints.ao_eri())
-I = I.reshape(nmo, nmo, nmo, nmo)
+C = wfn.Ca()
+MO = np.asarray(mints.mo_eri(C, C, C, C))
 
-print '\nTotal time taken for ERI integrals: %.3f seconds.\n' % (time.time()-t)
+# Grab ndocc shape
+ndocc = np.asarray(wfn.Ca_subset("AO", "OCC")).shape[1]
+nvirt = MO.shape[0] - ndocc
 
-
-#Make spin-orbital MO
-t=time.time()
-print 'Starting AO -> MO transformation...'
-MO = np.einsum('rJ,pqrs->pqJs', C, I)
-MO = np.einsum('pI,pqJs->IqJs', C, MO)
-MO = np.einsum('sB,IqJs->IqJB', C, MO)
-MO = np.einsum('qA,IqJB->IAJB', C, MO)
+Eocc = eps[:ndocc]
+Evir = eps[ndocc:]
 
 # (pq|rs) -> <ps|rq>
 MO = MO.swapaxes(1, 2)
-print '..finished transformation in %.3f seconds.\n' % (time.time()-t)
+print('Shape of MO integrals: %s' % str(MO.shape))
+print('\n...finished RHF and integral build in %.3f seconds.\n' % (time.time() - t))
 
-# Update ndocc and nvirt
-nvirt = MO.shape[0] - ndocc
-
-# Build epsilon tensor
-eocc = eps[:ndocc]
-evirt = eps[ndocc:]
 
 # Create occupied and virtual slices
 o = slice(0, ndocc)
@@ -103,22 +92,22 @@ if num_orbs > ndocc:
     num_orbs = ndocc
 
 ep2_arr = []
-for orbital in range(ndocc-num_orbs, ndocc):
+for orbital in range(start_orbs + 1, start_orbs + num_orbs + 1):
     E = eps[orbital]
     ep2_conv = False
 
-    for ep_iter in range(50):
+    for ep_iter in range(20):
         Eold = E
 
         # Build energy denominators
-        epsilon1 = 1/(E + eocc.reshape(-1, 1, 1) - evirt.reshape(-1, 1) - evirt)
-        epsilon2 = 1/(E + evirt.reshape(-1, 1, 1) - eocc.reshape(-1, 1) - eocc)
+        epsilon1 = 1/(E + Eocc.reshape(-1, 1, 1) - Evir.reshape(-1, 1) - Evir)
+        epsilon2 = 1/(E + Evir.reshape(-1, 1, 1) - Eocc.reshape(-1, 1) - Eocc)
 
         # Compute sigma's
-        tmp1 = (2*MO[orbital, o, v, v] - MO[o, orbital, v, v])
+        tmp1 = (2 * MO[orbital, o, v, v] - MO[o, orbital, v, v])
         sigma1 = np.einsum('rsa,ars,ars->', MO[v, v, orbital, o], tmp1, epsilon1)
 
-        tmp2 = (2*MO[orbital, v, o, o] - MO[v, orbital, o, o])
+        tmp2 = (2 * MO[orbital, v, o, o] - MO[v, orbital, o, o])
         sigma2 = np.einsum('abr,rab,rab->', MO[o, o, orbital, v], tmp2, epsilon2)
         Enew = eps[orbital] + sigma1 + sigma2
 
@@ -129,12 +118,12 @@ for orbital in range(ndocc-num_orbs, ndocc):
             break
 
         # Build derivatives
-        sigma_deriv1 = -1 * np.einsum('rsa,ars,ars->', MO[v, v, orbital, o], tmp1, np.power(epsilon1, 2))
-        sigma_deriv2 = -1 * np.einsum('abr,rab,rab->', MO[o, o, orbital, v], tmp2, np.power(epsilon2, 2))
-        deriv = 1 - (sigma_deriv1 + sigma_deriv2)
+        sigma_deriv1 = np.einsum('rsa,ars,ars->', MO[v, v, orbital, o], tmp1, np.power(epsilon1, 2))
+        sigma_deriv2 = np.einsum('abr,rab,rab->', MO[o, o, orbital, v], tmp2, np.power(epsilon2, 2))
+        deriv = -1 * (sigma_deriv1 + sigma_deriv2)
 
         # Newton-Raphson update
-        E = Eold - (Eold - Enew) / deriv
+        E = Eold - (Eold - Enew) / (1 - deriv)
 
     if ep2_conv is False:
         ep2_arr.append(E * 27.21138505)
@@ -145,10 +134,11 @@ print "EP2 - Electron Propagator 2\n"
 print "HOMO - n         KP (eV)              EP2 (eV)"
 print "----------------------------------------------"
 
-KP_arr = eps[:ndocc] * 27.21138505
+KP_arr = eps * 27.21138505
 
 for orbital in range(0, len(ep2_arr)):
-    print "% 4d     % 16.4f    % 16.4f" % ((len(ep2_arr)-orbital-1), KP_arr[orbital], ep2_arr[orbital])
+    kp_orb = start_orbs + orbital + 1
+    print "% 4d     % 16.4f    % 16.4f" % (kp_orb - ndocc + 1, KP_arr[kp_orb], ep2_arr[orbital])
 
 
 
