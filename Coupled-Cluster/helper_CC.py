@@ -190,9 +190,9 @@ class helper_CCSD(object):
         ERI_Size = (self.nmo ** 4) * 128.e-9
         memory_footprint = ERI_Size * 5
         if memory_footprint > self.memory:
-            self.psi.clean()
+            psi.clean()
             raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory \
-                            limit of %4.2f GB." % (memory_footprint, numpy_memory))
+                            limit of %4.2f GB." % (memory_footprint, self.memory))
 
         # Integral generation from Psi4's MintsHelper
         self.MO = np.asarray(mints.mo_spin_eri(self.C, self.C))
