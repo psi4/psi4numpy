@@ -1,0 +1,120 @@
+# A simple Psi 4 input script to compute MP2 from a RHF reference
+#
+# Created by: Daniel G. A. Smith
+# Date: 3/31/15
+# License: GPL v3.0
+#
+
+import time
+import numpy as np
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
+
+# Memory for Psi4 in GB
+memory 2 GB
+
+# Memory for numpy in GB
+numpy_memory = 2
+
+molecule mol {
+0 1
+O
+H 1 1.0
+H 1 1.0 2 104.5
+symmetry c1
+}
+
+set {
+basis aug-cc-pVDZ
+e_convergence 1e-8
+cphf_tasks ['polarizability']
+}
+
+# Set defaults
+maxiter = 40
+E_conv = 1.0E-6
+D_conv = 1.0E-3
+
+# Compute the reference wavefunction and CPHF using Psi 
+energy('SCF')
+energy('CPHF')
+wfn = wavefunction()
+
+C = wfn.Ca()
+Co = wfn.Ca_subset("AO", "OCC")
+Cv = wfn.Ca_subset("AO", "VIR")
+epsilon = np.asarray(wfn.epsilon_a())
+
+nbf = wfn.nmo()
+nocc = wfn.nalpha()
+nvir = nbf - nocc
+
+# Integral generation from Psi4's MintsHelper
+t = time.time()
+mints = MintsHelper()
+S = np.asarray(mints.ao_overlap())
+
+# Get nbf and ndocc for closed shell molecules
+
+print('\nNumber of occupied orbitals: %d' % nocc)
+print('Number of basis functions: %d' % nbf)
+
+# Run a quick check to make sure everything will fit into memory
+I_Size = (nbf ** 4) * 8.e-9
+oNNN_Size = (nocc * nbf ** 3) * 8.e-9
+ovov_Size = (nocc * nocc * nvir * nvir) * 8.e-9
+print("\nTensor sizes:")
+print("ERI tensor           %4.2f GB." % I_Size)
+print("oNNN MO tensor       %4.2f GB." % oNNN_Size)
+print("ovov Hessian tensor  %4.2f GB." % ovov_Size)
+
+# Estimate memory usage
+memory_footprint = I_Size * 1.5
+if I_Size > numpy_memory:
+    clean()
+    raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory \
+                    limit of %4.2f GB." % (memory_footprint, numpy_memory))
+
+# Grab perturbation tensors it MO basis
+nCo = np.asarray(Co)
+nCv = np.asarray(Cv)
+tmp_dipoles = mints.so_dipole()
+dipoles_xyz = []
+for num in range(3):
+    Fso = np.asarray(tmp_dipoles[num])
+    Fia = (nCo.T).dot(Fso).dot(nCv)
+    Fia *= -2
+    dipoles_xyz.append(Fia)
+
+# Compute electronic hessian
+print('\nForming hessian...')
+t = time.time()
+docc = np.diag(np.ones(nocc))
+dvir = np.diag(np.ones(nvir))
+eps_diag = epsilon[nocc:].reshape(-1, 1) - epsilon[:nocc]
+
+# Form oNNN MO tensor, oN^4 cost
+MO = np.asarray(mints.mo_eri(Co, C, C, C))
+
+H = np.einsum('ai,ij,ab->iajb', eps_diag, docc, dvir)
+H += 4 * MO[:, nocc:, :nocc, nocc:]
+H -= MO[:, nocc:, :nocc, nocc:].swapaxes(0, 2)
+H -= MO[:, :nocc, nocc:, nocc:].swapaxes(1, 2)
+
+print('...formed hessian in %.3f seconds.' % (time.time() - t))
+
+# Invert hessian (o^3 v^3)
+print('\nInverting hessian...')
+t = time.time()
+Hinv = np.linalg.inv(H.reshape(nocc * nvir, -1)).reshape(nocc, nvir, nocc, nvir)
+print('...inverted hessian in %.3f seconds.' % (time.time() - t))
+
+# Compute 3x3 polarizability tensor
+polar = np.empty((3, 3))
+for numx in range(3):
+    x = np.einsum('iajb,ia->jb', Hinv, dipoles_xyz[numx])
+    for numf in range(3):
+        polar[numx, numf] = -1 * np.einsum('ia,ia->', x, dipoles_xyz[numf])
+
+print('\nCPHF Dipole Polarizability:')
+print(np.around(polar, 5))
+
