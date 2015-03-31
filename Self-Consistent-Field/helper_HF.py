@@ -96,7 +96,7 @@ class helper_HF(object):
 
     def diag(self, X, set_C=False):
         """
-        Diaganolize with orthogonalizer.
+        Diaganolize with orthogonalizer A.
         """
         Xp = self.A.dot(X).dot(self.A)
         e, C2 = SLA.eigh(Xp)

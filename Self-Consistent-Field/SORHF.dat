@@ -28,14 +28,21 @@ set {
 basis aug-cc-pVDZ
 }
 
-E_conv = 1.e-6
-D_conv = 1.e-6
+E_conv = 1.e-10
+D_conv = 1.e-10
 
 hf = helper_HF(psi4, energy, mol, scf_type='DF')
+ndocc = hf.ndocc
+nvirt = hf.nvirt
 mints = MintsHelper()
 mI = mints.ao_eri()
-I = np.asarray(mI)
 
+# Build Matrix and Numpy arrays that share memory
+# Updating npC changes mC
+mC = Matrix(hf.nbf, hf.nbf)
+npC = np.asarray(mC)
+occ_mC = Matrix(hf.nbf, hf.ndocc)
+occ_npC = np.asarray(occ_mC)
 
 print('\nStart RHF iterations:\n')
 t = time.time()
@@ -60,64 +67,53 @@ for SCF_ITER in range(1, 20):
     Eold = hf.scf_e
     Dold = hf.Da
 
-    if SCF_ITER < 3:
+    if SCF_ITER < 2:
         e, C = hf.diag(F)
         hf.set_Cleft(C)
     elif (dRMS > 0.5):
         hf.diis_update()
         iter_type = 'DIIS'
     else:
-
-        ndocc = hf.ndocc
-        nvirt = hf.nvirt
-        A = hf.A
-        C = hf.Ca
-        moF = np.einsum('ui,vj,uv', C, C, F)
+        # Build MO fock matrix and gradient
+        moF = np.einsum('ui,vj,uv', hf.Ca, hf.Ca, F)
         gn = 4 * moF[:ndocc, ndocc:]
-        gs = (gn.shape[0] * gn.shape[1])
-    
+
+        # AO -> MO ERI transform
         # Only transform occupied on first index, oN^4 <<< N^5
-        mC = Matrix(C.shape[0], C.shape[1])
-        npC = np.asarray(mC)
-        npC[:] = C
-
-        occ_mC = Matrix(C.shape[0], hf.ndocc)
-        occ_npC = np.asarray(occ_mC)
-        occ_npC[:] = C[:, :ndocc]
-
-        # Most expensive step, AO -> MO ERI transform
+        # Update the Psi4 Matrices that these numpy arrays point to
+        npC[:] = hf.Ca
+        occ_npC[:] = hf.Ca[:, :ndocc]
         MO = np.asarray(mints.mo_transform(mI, occ_mC, mC, mC, mC))
 
         # Build electronic hessian
-        Biajb = 4 * np.einsum('ab,ij->iajb', moF[ndocc:, ndocc:], np.diag(np.ones(ndocc)))
-        Biajb -= 4 * np.einsum('ij,ab->iajb', moF[:ndocc:, :ndocc], np.diag(np.ones(nvirt)))
-        Biajb += 16 * MO[:ndocc, ndocc:, ndocc:, :ndocc].swapaxes(2, 3)
-        Biajb -= 4 * MO[:ndocc, ndocc:, :ndocc, ndocc:].swapaxes(0, 2)
+        Biajb  = 4  * np.einsum('ab,ij->iajb', moF[ndocc:, ndocc:], np.diag(np.ones(ndocc)))
+        Biajb -= 4  * np.einsum('ij,ab->iajb', moF[:ndocc:, :ndocc], np.diag(np.ones(nvirt)))
+        Biajb += 16 * MO[:, ndocc:, :ndocc, ndocc:]
+        Biajb -= 4  * MO[:, ndocc:, :ndocc, ndocc:].swapaxes(0, 2)
+        Biajb -= 4  * MO[:, :ndocc, ndocc:, ndocc:].swapaxes(1, 2)
 
-        # If first index is only occupied we need to exploit ERI symmetry
-        #Biajb -= 4 * MO[ndocc:, ndocc:, :ndocc, :ndocc].transpose(2, 0, 3, 1)
-        Biajb -= 4 * MO[:ndocc, :ndocc, ndocc:, ndocc:].transpose(1, 3, 0, 2)
+        # Invert B, (o^3 v^3)
+        Binv = np.linalg.inv(Biajb.reshape(ndocc * nvirt, -1)).reshape(ndocc, nvirt, ndocc, nvirt)
 
-        Binv = np.linalg.inv(Biajb.reshape(gs, gs)).reshape(Biajb.shape)
-        
+        # Build orbital rotation matrix
         x = -np.einsum('iajb,ia->jb', Binv, gn)
-        U = np.zeros_like(C)
+        U = np.zeros_like(hf.Ca)
         U[:ndocc, ndocc:] = x
         U[ndocc:, :ndocc] = -x.T
         U += 0.5 * np.dot(U, U)
-        U[np.diag_indices_from(A)] += 1
+        U[np.diag_indices_from(hf.A)] += 1
+
+        # Easy acess to shmidt orthogonalization
         U, r = np.linalg.qr(U.T)
 
-        C = C.dot(U)
+        # Rotate and set orbitals
+        C = hf.Ca.dot(U)
         hf.set_Cleft(C)
         iter_type = 'SOSCF'
 
 print 'Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t)
 
 print 'Final SCF energy:     %.8f hartree' % hf.scf_e
-hf.scf_e_psi = energy('scf')
-print 'Final PSI SCF energy: %.8f hartree' % hf.scf_e_psi
+RHF_E_psi = energy('RHF')
+compare_values(RHF_E_psi, hf.scf_e, 6, 'RHF Energy')
 
-wfn = wavefunction()
-
-#print np.einsum('ui,vj,uv', C, C, F)
