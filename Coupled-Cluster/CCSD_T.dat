@@ -16,12 +16,7 @@ from helper_CC import *
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 
 memory 2 GB
-
 numpy_memory = 2
-
-def pexit():
-    clean()
-    raise Exception("Exiting Psi4")
 
 molecule mol {
 O
@@ -110,6 +105,4 @@ print('\nPertubative (T) correlation energy:     % 16.10f' % Pert_T)
 print('Total CCSD(T) energy:                   % 16.10f' % CCSD_T_E)
 if compare_psi4:
     compare_values(energy('CCSD(T)'), CCSD_T_E, 6, 'CCSD(T) Energy')
-
-
 

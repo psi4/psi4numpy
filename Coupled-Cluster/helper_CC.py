@@ -84,7 +84,7 @@ def ndot(input_string, op1, op2, prefactor=None):
         new_view = np.dot(op1.reshape(dim_removed, dim_left).T,
                           op2.reshape(dim_removed, dim_right))
 
-    # If we have to transpose vector matrix, einsum is faster
+    # If we have to transpose vector-matrix, einsum is faster
     elif (len(keep_left) == 0) or (len(keep_right) == 0):
         new_view = np.einsum(input_string, op1, op2)
         used_einsum = True
@@ -208,7 +208,9 @@ class helper_CCSD(object):
         self.slice_nfzc = slice(0, self.nfzc)
         self.slice_o = slice(self.nfzc, self.nocc + self.nfzc)
         self.slice_v = slice(self.nocc + self.nfzc, self.nso)
-        self.slice_dict = {'f': self.slice_nfzc, 'o' : self.slice_o, 'v' : self.slice_v}
+        self.slice_a = slice(0, self.nso)
+        self.slice_dict = {'f': self.slice_nfzc, 'o' : self.slice_o, 'v' : self.slice_v,
+                           'a' : self.slice_a}
 
         #Extend eigenvalues
         self.eps = np.repeat(self.eps, 2)
@@ -313,8 +315,6 @@ class helper_CCSD(object):
 
     #Build Eqn 7:
     def build_Wabef(self):
-        # Rate limiting step written using tensordot, ~10x faster
-        # The commented out lines are consistent with the paper
 
         Wabef = self.get_MO('vvvv').copy()
 
@@ -412,7 +412,7 @@ class helper_CCSD(object):
         self.ccsd_e = self.rhf_e + self.ccsd_corr_e
         return CCSDcorr_E
 
-    def compute_energy(self, e_conv=1.e-8, maxiter=20, max_diis=6):
+    def compute_energy(self, e_conv=1.e-8, maxiter=20, max_diis=8):
         ### Setup DIIS
         diis_vals_t1 = [self.t1.copy()]
         diis_vals_t2 = [self.t2.copy()]
@@ -423,14 +423,42 @@ class helper_CCSD(object):
 
         # Compute MP2 energy
         CCSDcorr_E_old = self.compute_corr_energy()
-        print("CCSD Iteration %3d: CCSD correlation = %.12f   dE = % .5E   DIIS = %d" % (0, CCSDcorr_E_old, -CCSDcorr_E_old, 0))
+        print("CCSD Iteration %3d: CCSD correlation = %.12f   dE = % .5E   MP2" % (0, CCSDcorr_E_old, -CCSDcorr_E_old))
 
         # Iterate!
         diis_size = 0
         for CCSD_iter in range(1, maxiter + 1):
 
-            #if False:
-            if CCSD_iter >= 3:
+            # Save new amplitudes
+            oldt1 = self.t1.copy()
+            oldt2 = self.t2.copy()
+
+            self.update()
+
+            # Compute CCSD correlation energy
+            CCSDcorr_E = self.compute_corr_energy()
+
+            # Print CCSD iteration information
+            print('CCSD Iteration %3d: CCSD correlation = %.12f   dE = % .5E   DIIS = %d' % (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old), diis_size))
+
+            # Check convergence
+            if (abs(CCSDcorr_E - CCSDcorr_E_old) < e_conv):
+                print('\nCCSD has converged in %.3f seconds!' % (time.time() - ccsd_tstart))
+                return CCSDcorr_E
+
+            # Add DIIS vectors
+            diis_vals_t1.append(self.t1.copy())
+            diis_vals_t2.append(self.t2.copy())
+
+            # Build new error vector
+            error_t1 = (diis_vals_t1[-1] - oldt1).ravel()
+            error_t2 = (diis_vals_t2[-1] - oldt2).ravel()
+            diis_errors.append(np.concatenate((error_t1, error_t2)))
+
+            # Update old energy
+            CCSDcorr_E_old = CCSDcorr_E
+
+            if CCSD_iter >= 1:
                 # Limit size of DIIS vector
                 if (len(diis_vals_t1) > max_diis):
                     del diis_vals_t1[0]
@@ -467,37 +495,7 @@ class helper_CCSD(object):
                     self.t2 += ci[num] * diis_vals_t2[num + 1]
 
             # End DIIS amplitude update
-
-            # Save new amplitudes
-            oldt1 = self.t1.copy()
-            oldt2 = self.t2.copy()
-
-            self.update()
-
-            # Compute CCSD correlation energy
-            CCSDcorr_E = self.compute_corr_energy()
-
-            # Print CCSD iteration information
-            print('CCSD Iteration %3d: CCSD correlation = %.12f   dE = % .5E   DIIS = %d' % (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old), diis_size))
-
-            # Check convergence
-            if (abs(CCSDcorr_E - CCSDcorr_E_old) < e_conv):
-                print('\nCCSD has converged in %.3f seconds!' % (time.time() - ccsd_tstart))
-                return CCSDcorr_E
-
-            # Add DIIS vectors
-            diis_vals_t1.append(self.t1.copy())
-            diis_vals_t2.append(self.t2.copy())
-
-            # Build new error vector
-            error_t1 = (diis_vals_t1[-1] - oldt1).ravel()
-            error_t2 = (diis_vals_t2[-1] - oldt2).ravel()
-            diis_errors.append(np.concatenate((error_t1, error_t2)))
-
-            # Update old energy
-            CCSDcorr_E_old = CCSDcorr_E
 # End CCSD class
-
 
 if __name__ == "__main__":
     arr4 = np.random.rand(4, 4, 4, 4)
@@ -516,5 +514,3 @@ if __name__ == "__main__":
     test_ndot('cd,cdef->ef', arr2, arr4)
     test_ndot('ce,cdef->df', arr2, arr4)
     test_ndot('nf,naif->ia', arr2, arr4)
-
-
