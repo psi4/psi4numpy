@@ -12,7 +12,6 @@
 
 import time
 import numpy as np
-from scipy import linalg as SLA
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 
 
@@ -62,7 +61,7 @@ class helper_HF(object):
 
         if guess == 'core':
             Xp = self.A.dot(self.H).dot(self.A)
-            e, C2 = SLA.eigh(Xp)
+            e, C2 = np.linalg.eigh(Xp)
             C = self.A.dot(C2)
             self.npC_left[:] = C[:, :self.ndocc]
             self.epsilon = e 
@@ -90,7 +89,7 @@ class helper_HF(object):
             self.Ca = C
             Cocc = C[:, :self.ndocc]
         else:
-            raise Exception("Cocc shape is %s, got %s." % (str(self.npC_left.shape), str(Cocc.shape)))
+            raise Exception("Cocc shape is %s, need %s." % (str(self.npC_left.shape), str(Cocc.shape)))
         self.npC_left[:] = Cocc
         self.Da = np.dot(Cocc, Cocc.T)
 
@@ -99,7 +98,7 @@ class helper_HF(object):
         Diaganolize with orthogonalizer A.
         """
         Xp = self.A.dot(X).dot(self.A)
-        e, C2 = SLA.eigh(Xp)
+        e, C2 = np.linalg.eigh(Xp)
         C = self.A.dot(C2)
         if set_C:
             self.set_Cleft(C)
@@ -117,21 +116,31 @@ class helper_HF(object):
         self.scf_e = np.einsum('ij,ij->', self.F + self.H, self.Da) + self.enuc                
         return self.scf_e
 
-    def diis_add(self, F):
-        S = self.S
-        D = self.Da
-        FDSmSDF = np.einsum('ij,jk,kl->il', F, D, S) - np.einsum('ij,jk,kl->il', S, D, F)
-        self.DIIS_error.append(FDSmSDF)
-        self.DIIS_F.append(F)
-        
+class DIIS_helper(object):
 
-    def diis_update(self):
+    def __init__(self, max_vec=6):
+        self.error = []
+        self.vector = []
+        self.max_vec = 6
+
+    def add(self, matrix, error):
+
+        if len(self.error) > 1:
+            if self.error[-1].shape[0] != error.size:
+                raise Exception("Error vector size does not match previous vector.")
+            if self.vector[-1].shape != matrix.shape:
+                raise Exception("Vector shape does not match previous vector.")
+
+        self.error.append(error.ravel().copy())
+        self.vector.append(matrix.copy())
+
+    def extrapolate(self):
         # Limit size of DIIS vector
-        diis_count = len(self.DIIS_F)
-        if diis_count > 6:
+        diis_count = len(self.vector)
+        if diis_count > self.max_vec:
             # Remove oldest vector
-            del self.DIIS_F[0]
-            del self.DIIS_error[0]
+            del self.vector[0]
+            del self.error[0]
             diis_count -= 1
 
         # Build error matrix B
@@ -139,13 +148,12 @@ class helper_HF(object):
         B[-1, :] = -1
         B[:, -1] = -1
         B[-1, -1] = 0
-        for num1, e1 in enumerate(self.DIIS_error):
-            B[num1, num1] = np.einsum('ij,ij->', e1, e1)
-            for num2, e2 in enumerate(self.DIIS_error):
+        for num1, e1 in enumerate(self.error):
+            B[num1, num1] = np.dot(e1, e1)
+            for num2, e2 in enumerate(self.error):
                 if num2 >= num1: continue
-                val = np.einsum('ij,ij->', e1, e2)
-                B[num1, num2] = val
-                B[num2, num1] = val
+                val = np.dot(e1, e2)
+                B[num1, num2] = B[num2, num1] = val
 
         # normalize
         B[:-1, :-1] /= np.abs(B[:-1, :-1]).max()
@@ -154,11 +162,13 @@ class helper_HF(object):
         resid[-1] = -1
 
         # Solve pulay equations
-        ci = SLA.solve(B, resid)
+        ci = np.linalg.solve(B, resid)
         # Calculate new fock matrix as linear
         # combination of previous fock matrices
-        F = np.zeros_like(self.F)
+        V = np.zeros_like(self.vector[-1])
         for num, c in enumerate(ci[:-1]):
-            F += c * self.DIIS_F[num]
-        self.diag(F, set_C=True)
+            V += c * self.vector[num]
+
+        return V
+ 
 

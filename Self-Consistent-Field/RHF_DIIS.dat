@@ -1,9 +1,5 @@
-# A simple Psi 4 input script to compute MP2 from a RHF reference
-# Requirements scipy 0.13.0+ and numpy 1.7.2+
-#
-# Algorithms were taken directly from Daniel Crawford's programming website:
-# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
-# Special thanks to Rob Parrish for initial assistance with libmints
+# A simple Psi 4 input script to compute a RHF using DIIS reference
+# Requires umpy 1.7.2+
 #
 # Created by: Daniel G. A. Smith
 # Date: 7/29/14
@@ -12,7 +8,6 @@
 
 import time
 import numpy as np
-from scipy import linalg as SLA
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 
 # Memory for Psi4 in GB
@@ -81,7 +76,7 @@ A = np.asarray(A)
 
 # Calculate initial core guess
 Hp = A.dot(H).dot(A)
-e, C2 = SLA.eigh(Hp)
+e, C2 = np.linalg.eigh(Hp)
 C = A.dot(C2)
 Cocc = C[:, :ndocc]
 D = np.einsum('pi,qi->pq', Cocc, Cocc)
@@ -152,7 +147,7 @@ for RHF_ITER in range(1, maxiter + 1):
         resid[-1] = -1
 
         # Solve pulay equations
-        ci = SLA.solve(B, resid)
+        ci = np.linalg.solve(B, resid)
 
         # Calculate new fock matrix as linear
         # combination of previous fock matrices
@@ -162,7 +157,7 @@ for RHF_ITER in range(1, maxiter + 1):
 
     # Diagonalize Fock matrix
     Fp = A.dot(F).dot(A)
-    e, C2 = SLA.eigh(Fp)
+    e, C2 = np.linalg.eigh(Fp)
     C = A.dot(C2)
     Cocc = C[:, :ndocc]
     D = np.einsum('pi,qi->pq', Cocc, Cocc)

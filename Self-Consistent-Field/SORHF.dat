@@ -1,5 +1,5 @@
-# A simple Psi 4 input script to compute MP2 from a RHF reference
-# Requirements scipy 0.13.0+ and numpy 1.7.2+
+# A simple Psi 4 input script to compute a RHF reference using second-order optimizations
+# Requires scipy numpy 1.7.2+
 #
 # Created by: Daniel G. A. Smith
 # Date: 2/27/15
@@ -31,6 +31,8 @@ basis aug-cc-pVDZ
 E_conv = 1.e-10
 D_conv = 1.e-10
 
+# Build objects
+diis = DIIS_helper()
 hf = helper_HF(psi4, energy, mol, scf_type='DF')
 ndocc = hf.ndocc
 nvirt = hf.nvirt
@@ -55,7 +57,10 @@ for SCF_ITER in range(1, 20):
 
     # Build new fock matrix
     F = hf.build_fock()
-    hf.diis_add(F)
+
+    # DIIS error and update
+    diis_e = F.dot(hf.Da).dot(hf.S) - hf.S.dot(hf.Da).dot(F)
+    diis.add(F, diis_e)
 
     # SCF energy and update
     scf_e = hf.compute_hf_energy()
@@ -71,7 +76,9 @@ for SCF_ITER in range(1, 20):
         e, C = hf.diag(F)
         hf.set_Cleft(C)
     elif (dRMS > 0.5):
-        hf.diis_update()
+        F = diis.extrapolate()
+        e, C = hf.diag(F)
+        hf.set_Cleft(C)
         iter_type = 'DIIS'
     else:
         # Build MO fock matrix and gradient

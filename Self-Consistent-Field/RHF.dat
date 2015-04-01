@@ -1,5 +1,5 @@
-# A simple Psi 4 input script to compute MP2 from a RHF reference
-# Requirements scipy 0.13.0+ and numpy 1.7.2+
+# A simple Psi 4 input script to compute a RHF reference
+# Requires umpy 1.7.2+
 #
 # Algorithms were taken directly from Daniel Crawford's programming website:
 # http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming

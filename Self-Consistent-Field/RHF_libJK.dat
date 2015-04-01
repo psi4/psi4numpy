@@ -1,18 +1,14 @@
-# A simple Psi 4 input script to compute MP2 from a RHF reference
-# Requirements scipy 0.13.0+ and numpy 1.7.2+
-#
-# Algorithms were taken directly from Daniel Crawford's programming website:
-# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
-# Special thanks to Rob Parrish for initial assistance with libmints
+# A simple Psi 4 input script to compute a RHF reference using Psi4's libJK
+# Requires numpy 1.7.2+
 #
 # Created by: Daniel G. A. Smith
-# Date: 7/29/14
+# Date: 4/1/15
 # License: GPL v3.0
 #
 
 import time
 import numpy as np
-from scipy import linalg as SLA
+from helper_HF import *
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 
 # Memory for Psi4 in GB
@@ -40,7 +36,7 @@ symmetry c1
 }
 
 set {
-basis aug-cc-pVDZ
+basis cc-pVDZ
 scf_type df
 e_convergence 1e-8
 }
@@ -80,7 +76,7 @@ A = np.asarray(A)
 
 # Calculate initial core guess
 Hp = A.dot(H).dot(A)
-e, C2 = SLA.eigh(Hp)
+e, C2 = np.linalg.eigh(Hp)
 C = A.dot(C2)
 Cocc = C[:, :ndocc]
 D = np.einsum('pi,qi->pq', Cocc, Cocc)
@@ -104,9 +100,8 @@ jk = JK.build_JK()
 jk.initialize()
 jk.C_left().append(C)
 
-# Lists for DIIS extrapolations
-ei = []
-fi = []
+# Build a DIIS helper object
+diis = DIIS_helper()
 
 print('\nTotal time taken for setup: %.3f seconds' % (time.time() - t))
 
@@ -123,10 +118,9 @@ for RHF_ITER in range(1, maxiter + 1):
     K = np.asarray(jk.K()[0])
     F = H + J * 2 - K
 
-    # DIIS error build
+    # DIIS error build and update
     diis_e = F.dot(D).dot(S) - S.dot(D).dot(F)
-    Fock_list.append(F)
-    DIIS_error.append(diis_e)
+    diis.add(F, diis_e)
 
     # RHF energy and update
     RHF_E = np.einsum('pq,pq->', F + H, D) + Enuc
@@ -141,46 +135,11 @@ for RHF_ITER in range(1, maxiter + 1):
     Dold = D
 
     if RHF_ITER >= 3:
-
-        # Limit size of DIIS vector
-        diis_count = len(Fock_list)
-        if diis_count > 6:
-            # Remove oldest vector
-            del Fock_list[0]
-            del DIIS_error[0]
-            diis_count -= 1
-
-        # Build error matrix B
-        B = np.empty((diis_count + 1, diis_count + 1))
-        B[-1, :] = -1
-        B[:, -1] = -1
-        B[-1, -1] = 0
-        for num1, e1 in enumerate(DIIS_error):
-            for num2, e2 in enumerate(DIIS_error):
-                if num2 > num1: continue
-                val = np.einsum('ij,ij->', e1, e2)
-                B[num1, num2] = val
-                B[num2, num1] = val
-
-        # normalize
-        B[:-1, :-1] /= np.abs(B[:-1, :-1]).max()
-
-        # Build residual vector
-        resid = np.zeros(diis_count + 1)
-        resid[-1] = -1
-
-        # Solve pulay equations
-        ci = SLA.solve(B, resid)
-
-        # Calculate new fock matrix as linear
-        # combination of previous fock matrices
-        F = np.zeros_like(F)
-        for num, c in enumerate(ci[:-1]):
-            F += c * Fock_list[num]
+        F = diis.extrapolate()
 
     # Diagonalize Fock matrix
     Fp = A.dot(F).dot(A)
-    e, C2 = SLA.eigh(Fp)
+    e, C2 = np.linalg.eigh(Fp)
     C = A.dot(C2)
     Cocc = C[:, :ndocc]
     D = np.einsum('pi,qi->pq', Cocc, Cocc)
