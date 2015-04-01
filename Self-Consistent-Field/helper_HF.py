@@ -116,6 +116,7 @@ class helper_HF(object):
         self.scf_e = np.einsum('ij,ij->', self.F + self.H, self.Da) + self.enuc                
         return self.scf_e
 
+
 class DIIS_helper(object):
 
     def __init__(self, max_vec=6):
@@ -171,4 +172,3 @@ class DIIS_helper(object):
 
         return V
  
-
