@@ -189,7 +189,6 @@ class helper_SAPT(object):
         if side == 'A':
             # Compute on the fly
             # return np.einsum('ui,vj,uv->ij', self.orbitals[s1], self.orbitals[s2], self.V_A) / (2 * self.ndocc_A)
-
             if (s1 in self.idx_B) and (s2 in self.idx_B):
                 return self.V_A_BB[self.slices[s1], self.slices[s2]] / (2 * self.ndocc_A)
             elif (s1 in self.idx_A) and (s2 in self.idx_B):
@@ -203,7 +202,6 @@ class helper_SAPT(object):
         elif side == 'B':
             # Compute on the fly
             # return np.einsum('ui,vj,uv->ij', self.orbitals[s1], self.orbitals[s2], self.V_B) / (2 * self.ndocc_B)
-
             if (s1 in self.idx_A) and (s2 in self.idx_A):
                 return self.V_B_AA[self.slices[s1], self.slices[s2]] / (2 * self.ndocc_B)
             elif (s1 in self.idx_A) and (s2 in self.idx_B):
@@ -260,7 +258,6 @@ class helper_SAPT(object):
             # Set terms
             v_term1 = 'sbbs'
             v_term2 = 'sbsb'
-            v_term3 = 'ssbb'
             no, nv = self.ndocc_B, self.nvirt_B
 
         if monomer == 'B':
@@ -269,12 +266,12 @@ class helper_SAPT(object):
             eps_ov = (self.eps('a', dim=2) - self.eps('r'))
             v_term1 = 'raar'
             v_term2 = 'rara'
-            v_term3 = 'rraa'
             no, nv = self.ndocc_A, self.nvirt_A
 
         # Form A matix (LHS)
-        v_vOoV = 2 * self.v(v_term1) - self.v(v_term2).swapaxes(2, 3)
-        v_ooaa = self.v(v_term3)
+        voov = self.v(v_term1)
+        v_vOoV = 2 * voov - self.v(v_term2).swapaxes(2, 3)
+        v_ooaa = voov.swapaxes(1, 3)
         v_vVoO = 2 * v_ooaa - v_ooaa.swapaxes(2, 3)
         A_ovOV = np.einsum('vOoV->ovOV', v_vOoV + v_vVoO.swapaxes(1, 3))
 
@@ -311,5 +308,4 @@ class sapt_timer(object):
 
 def sapt_printer(line, value):
     spacer = ' ' * (20 - len(line))
-
     print(line + spacer + '% 16.8f mH  % 16.8f kcal/mol' % (value * 1000, value * 627.509))
