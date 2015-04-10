@@ -37,6 +37,9 @@ class helper_HF(object):
         self.Ca = None
         self.Cb = None
 
+        self.J = None
+        self.K = None
+
         # Orthoganlizer
         A = mints.ao_overlap()
         A.power(-0.5, 1.e-14)
@@ -104,12 +107,11 @@ class helper_HF(object):
             self.set_Cleft(C)
         return e, C
 
-
     def build_fock(self):
         self.jk.compute()
-        J = np.asarray(self.jk.J()[0])
-        K = np.asarray(self.jk.K()[0])
-        self.F = self.H + J * 2 - K
+        self.J = np.asarray(self.jk.J()[0])
+        self.K = np.asarray(self.jk.K()[0])
+        self.F = self.H + self.J * 2 - self.K
         return self.F
 
     def compute_hf_energy(self):
@@ -138,6 +140,12 @@ class DIIS_helper(object):
     def extrapolate(self):
         # Limit size of DIIS vector
         diis_count = len(self.vector)
+
+        if diis_count == 0:
+            raise Exception("DIIS: No previous vectors.")
+        if diis_count == 1:
+            return self.vector[0]
+
         if diis_count > self.max_vec:
             # Remove oldest vector
             del self.vector[0]
