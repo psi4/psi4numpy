@@ -190,11 +190,11 @@ class helper_SAPT(object):
             # Compute on the fly
             # return np.einsum('ui,vj,uv->ij', self.orbitals[s1], self.orbitals[s2], self.V_A) / (2 * self.ndocc_A)
             if (s1 in self.idx_B) and (s2 in self.idx_B):
-                return self.V_A_BB[self.slices[s1], self.slices[s2]] / (2 * self.ndocc_A)
+                return self.V_A_BB[self.slices[s1], self.slices[s2]]
             elif (s1 in self.idx_A) and (s2 in self.idx_B):
-                return self.V_A_AB[self.slices[s1], self.slices[s2]] / (2 * self.ndocc_A)
+                return self.V_A_AB[self.slices[s1], self.slices[s2]]
             elif (s1 in self.idx_B) and (s2 in self.idx_A):
-                return self.V_A_AB[self.slices[s2], self.slices[s1]].T / (2 * self.ndocc_A)
+                return self.V_A_AB[self.slices[s2], self.slices[s1]].T
             else:
                 self.psi.clean()
                 raise Exception('No match for %s indices in helper_SAPT.potential.' % string)
@@ -203,11 +203,11 @@ class helper_SAPT(object):
             # Compute on the fly
             # return np.einsum('ui,vj,uv->ij', self.orbitals[s1], self.orbitals[s2], self.V_B) / (2 * self.ndocc_B)
             if (s1 in self.idx_A) and (s2 in self.idx_A):
-                return self.V_B_AA[self.slices[s1], self.slices[s2]] / (2 * self.ndocc_B)
+                return self.V_B_AA[self.slices[s1], self.slices[s2]]
             elif (s1 in self.idx_A) and (s2 in self.idx_B):
-                return self.V_B_AB[self.slices[s1], self.slices[s2]] / (2 * self.ndocc_B)
+                return self.V_B_AB[self.slices[s1], self.slices[s2]]
             elif (s1 in self.idx_B) and (s2 in self.idx_A):
-                return self.V_B_AB[self.slices[s2], self.slices[s1]].T / (2 * self.ndocc_B)
+                return self.V_B_AB[self.slices[s2], self.slices[s1]].T
             else:
                 self.psi.clean()
                 raise Exception('No match for %s indices in helper_SAPT.potential.' % string)
@@ -230,12 +230,12 @@ class helper_SAPT(object):
 
         # Potential A
         S_A = self.s(s_left)
-        V_A = self.potential(s_right, 'A')
+        V_A = self.potential(s_right, 'A') / (2 * self.ndocc_A)
         V += np.einsum('ik,jl->ijkl', S_A, V_A)
 
         # Potential B
         S_B = self.s(s_right)
-        V_B = self.potential(s_left, 'B')
+        V_B = self.potential(s_left, 'B') / (2 * self.ndocc_B)
         V += np.einsum('ik,jl->ijkl', V_B, S_B)
 
         # Nuclear
@@ -292,6 +292,7 @@ class helper_SAPT(object):
             return (t, e20_ind)
         else:
             return t
+
 # End SAPT helper
 
 
