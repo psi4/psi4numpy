@@ -22,6 +22,7 @@ class helper_HF(object):
         # Build and all 2D values
         print('Building rank 2 integrals...')
         t = time.time()
+        self.psi = psi
         psi.set_active_molecule(mol)
         self.mints = psi.MintsHelper()
         self.enuc = mol.nuclear_repulsion_energy()
@@ -55,7 +56,7 @@ class helper_HF(object):
 
         # Only rhf for now
         self.nvirt = self.nbf - self.ndocc
-        
+
         print('\nNumber of occupied orbitals: %d' % self.ndocc)
         print('Number of basis functions: %d' % self.nbf)
 
@@ -65,9 +66,9 @@ class helper_HF(object):
         if guess == 'core':
             Xp = self.A.dot(self.H).dot(self.A)
             e, C2 = np.linalg.eigh(Xp)
-            C = self.A.dot(C2)
-            self.npC_left[:] = C[:, :self.ndocc]
-            self.epsilon = e 
+            self.Ca = self.A.dot(C2)
+            self.npC_left[:] = self.Ca[:, :self.ndocc]
+            self.epsilon = e
             self.Da = np.dot(self.npC_left, self.npC_left.T)
         else:
             raise Exception("Guess %s not yet supported" % (guess))
@@ -81,7 +82,7 @@ class helper_HF(object):
         psi.set_global_option('SCF_TYPE', scf_type)
         self.jk = psi.JK.build_JK()
         self.jk.initialize()
-        self.jk.C_left().append(self.C_left)
+#        self.jk.C_left().append(self.C_left)
 
         print('...rank 2 integrals built in %.3f seconds.' % (time.time() - t))
 
@@ -108,14 +109,42 @@ class helper_HF(object):
         return e, C
 
     def build_fock(self):
+        self.jk.C_left().append(self.C_left)
         self.jk.compute()
+        del self.jk.C_left()[0]
         self.J = np.asarray(self.jk.J()[0])
         self.K = np.asarray(self.jk.K()[0])
         self.F = self.H + self.J * 2 - self.K
         return self.F
 
+    def build_jk(self, C_left, C_right=None):
+        lmat = self.psi.Matrix(C_left.shape[0], C_left.shape[1])
+        np_lmat = np.asarray(lmat)
+        np_lmat[:] = C_left
+        self.jk.C_left().append(lmat)
+
+        if C_right is not None:
+            rmat = self.psi.Matrix(C_right.shape[0], C_right.shape[1])
+            np_rmat = np.asarray(rmat)
+            np_rmat[:] = C_right
+            self.jk.C_right().append(rmat)
+
+        self.jk.compute()
+        J = np.asarray(self.jk.J()[0])
+        K = np.asarray(self.jk.K()[0])
+
+        del self.jk.C_left()[0]
+        del lmat
+        del np_lmat
+
+        if C_right is not None:
+            del self.jk.C_right()[0]
+            del rmat
+            del np_rmat
+        return J, K
+
     def compute_hf_energy(self):
-        self.scf_e = np.einsum('ij,ij->', self.F + self.H, self.Da) + self.enuc                
+        self.scf_e = np.einsum('ij,ij->', self.F + self.H, self.Da) + self.enuc
         return self.scf_e
 
 
@@ -127,7 +156,6 @@ class DIIS_helper(object):
         self.max_vec = 6
 
     def add(self, matrix, error):
-
         if len(self.error) > 1:
             if self.error[-1].shape[0] != error.size:
                 raise Exception("Error vector size does not match previous vector.")
@@ -179,4 +207,4 @@ class DIIS_helper(object):
             V += c * self.vector[num]
 
         return V
- 
+

@@ -83,7 +83,7 @@ for SCF_ITER in range(1, 20):
     else:
         # Build MO fock matrix and gradient
         moF = np.einsum('ui,vj,uv', hf.Ca, hf.Ca, F)
-        gn = 4 * moF[:ndocc, ndocc:]
+        gn = -4 * moF[:ndocc, ndocc:]
 
         # AO -> MO ERI transform
         # Only transform occupied on first index, oN^4 <<< N^5
@@ -93,17 +93,18 @@ for SCF_ITER in range(1, 20):
         MO = np.asarray(mints.mo_transform(mI, occ_mC, mC, mC, mC))
 
         # Build electronic hessian
-        Biajb  = 4  * np.einsum('ab,ij->iajb', moF[ndocc:, ndocc:], np.diag(np.ones(ndocc)))
-        Biajb -= 4  * np.einsum('ij,ab->iajb', moF[:ndocc:, :ndocc], np.diag(np.ones(nvirt)))
-        Biajb += 16 * MO[:, ndocc:, :ndocc, ndocc:]
-        Biajb -= 4  * MO[:, ndocc:, :ndocc, ndocc:].swapaxes(0, 2)
-        Biajb -= 4  * MO[:, :ndocc, ndocc:, ndocc:].swapaxes(1, 2)
+        Biajb  = np.einsum('ab,ij->iajb', moF[ndocc:, ndocc:], np.diag(np.ones(ndocc)))
+        Biajb -= np.einsum('ij,ab->iajb', moF[:ndocc:, :ndocc], np.diag(np.ones(nvirt)))
+        Biajb += 4 * MO[:, ndocc:, :ndocc, ndocc:]
+        Biajb -= MO[:, ndocc:, :ndocc, ndocc:].swapaxes(0, 2)
+        Biajb -= MO[:, :ndocc, ndocc:, ndocc:].swapaxes(1, 2)
+        Biajb *= 4
 
         # Invert B, (o^3 v^3)
         Binv = np.linalg.inv(Biajb.reshape(ndocc * nvirt, -1)).reshape(ndocc, nvirt, ndocc, nvirt)
 
         # Build orbital rotation matrix
-        x = -np.einsum('iajb,ia->jb', Binv, gn)
+        x = np.einsum('iajb,ia->jb', Binv, gn)
         U = np.zeros_like(hf.Ca)
         U[:ndocc, ndocc:] = x
         U[ndocc:, :ndocc] = -x.T
