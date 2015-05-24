@@ -98,11 +98,11 @@ class helper_SAPT(object):
         mints = psi.MintsHelper()
         self.mints = mints
         ERI_Size = (self.nmo ** 4) * 8.e-9
-        memory_footprint = ERI_Size * 5
+        memory_footprint = ERI_Size * 4
         if memory_footprint > self.memory:
             self.psi.clean()
             raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory \
-                            limit of %4.2f GB." % (memory_footprint, numpy_memory))
+                            limit of %4.2f GB." % (memory_footprint, self.memory))
 
         # Integral generation from Psi4's MintsHelper
         print('Building ERI tensor...')
@@ -124,16 +124,22 @@ class helper_SAPT(object):
         print("\n...finished inializing SAPT object in %5.2f seconds." % (time.time() - tinit_start))
 
     # Compute MO ERI tensor (v) on the fly
-    def v(self, string):
+    def v(self, string, phys=True):
         if len(string) != 4:
             self.psi.clean()
             raise Exception('v: string %s does not have 4 elements' % string)
 
         # ERI's from mints are of type (11|22) - need <12|12>
-        orbitals = [self.orbitals[string[0]], self.orbitals[string[2]],
-                    self.orbitals[string[1]], self.orbitals[string[3]]]
-        v = self.mints.mo_transform(self.I, *orbitals)
-        return np.asarray(v).swapaxes(1, 2)
+        if phys:
+            orbitals = [self.orbitals[string[0]], self.orbitals[string[2]],
+                        self.orbitals[string[1]], self.orbitals[string[3]]]
+            v = self.mints.mo_transform(self.I, *orbitals)
+            return np.asarray(v).swapaxes(1, 2)
+        else:
+            orbitals = [self.orbitals[string[0]], self.orbitals[string[1]],
+                        self.orbitals[string[2]], self.orbitals[string[3]]]
+            v = self.mints.mo_transform(self.I, *orbitals)
+            return np.asarray(v)
 
     # Grab MO overlap matrices
     def s(self, string):
