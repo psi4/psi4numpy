@@ -31,7 +31,7 @@ e_convergence 1e-8
 
 # Set defaults
 maxiter = 40
-E_conv = 1.0E-6
+E_conv = 1.0E-8
 D_conv = 1.0E-3
 
 # Integral generation from Psi4's MintsHelper
@@ -88,7 +88,6 @@ t = time.time()
 E = 0.0
 Enuc = mol.nuclear_repulsion_energy()
 Eold = 0.0
-Dold = np.zeros_like(D)
 
 Fock_list = []
 DIIS_error = []
@@ -107,7 +106,7 @@ for RHF_ITER in range(1, maxiter + 1):
 
     # RHF energy and update
     RHF_E = np.einsum('pq,pq->', F + H, D) + Enuc
-    dRMS = np.sum(np.power(D - Dold, 2)) ** 0.5
+    dRMS = np.mean(diis_e**2)**0.5
 
     print('RHF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
           % (RHF_ITER, RHF_E, (RHF_E - Eold), dRMS))
@@ -115,7 +114,6 @@ for RHF_ITER in range(1, maxiter + 1):
         break
 
     Eold = RHF_E
-    Dold = D
 
     if RHF_ITER >= 2:
 
