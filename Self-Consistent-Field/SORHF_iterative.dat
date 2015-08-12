@@ -34,19 +34,21 @@ symmetry c1
 }
 
 set {
-basis 6-31G
+basis cc-pVDZ
+e_convergence 1e1
+d_convergence 1e1
 }
 
 # Knobs
 E_conv = 1.e-8
-D_conv = 1.e-5
-max_micro = 5
+D_conv = 1.e-4
+max_micro = 4
 micro_conv = 1.e-10
-micro_print = False
+micro_print = True
 
 # Build objects
 diis = DIIS_helper()
-hf = helper_HF(psi4, energy, mol, scf_type='DF')
+hf = helper_HF(psi4, energy, mol, scf_type='DF', guess='SAD')
 ndocc = hf.ndocc
 nvirt = hf.nvirt
 
@@ -65,6 +67,7 @@ for SCF_ITER in range(1, 20):
 
     # DIIS error and update
     diis_e = F.dot(hf.Da).dot(hf.S) - hf.S.dot(hf.Da).dot(F)
+    diis_e = (hf.A).dot(diis_e).dot(hf.A) 
     diis.add(F, diis_e)
 
     # SCF energy and update
@@ -74,6 +77,8 @@ for SCF_ITER in range(1, 20):
     if (abs(hf.scf_e - Eold) < E_conv) and (dRMS < D_conv):
         break
 
+    Co = hf.Ca[:, :ndocc]
+    print np.sum(np.abs(np.einsum('pj,qj->pq', Co, Co) - Dold) > 1.e-8)
     Eold = hf.scf_e
     Dold = hf.Da
 
@@ -84,7 +89,7 @@ for SCF_ITER in range(1, 20):
     gradient = -4 * moF[:ndocc, ndocc:]
     grad_norm = np.linalg.norm(gradient)
 
-    if (grad_norm > 0.1):
+    if (grad_norm > 1):
         F = diis.extrapolate()
         eps, C = hf.diag(F)
         hf.set_Cleft(C)
@@ -97,6 +102,7 @@ for SCF_ITER in range(1, 20):
         ia_denom = (-eps[:ndocc].reshape(-1, 1) + eps[ndocc:])
         x = gradient / (4 * ia_denom)
         xold = np.zeros_like(x)
+        tmp = 0
 
         for rot_iter in range(max_micro):
             # Since only ov rotations are non-redundant the code is greatly simplified
@@ -107,7 +113,11 @@ for SCF_ITER in range(1, 20):
 
             # Build two electron part, M = -4 (4 G_{mnip} - g_{mpin} - g_{npim}) K_{ip}
             C_right = np.einsum('ia,sa->si', -x, Cv)
+            cd = np.einsum('pj,qj->pq', Co, C_right)
+            print np.sum(np.abs(cd - tmp) > 1.e-8)
             J, K = hf.build_jk(Co, C_right)
+            tmp = cd
+
             M    = (Co.T).dot(4 * J - K.T - K).dot(Cv)
             M   *= -4
 
@@ -117,7 +127,7 @@ for SCF_ITER in range(1, 20):
             rdiis.add(x, x - xold)
             x = rdiis.extrapolate()
 
-            rms = np.sum((x - xold) ** 2)
+            rms = np.mean((x - xold) ** 2) ** 0.5
             if micro_print:
                 print('Micro Iteration %2d: RMS = %1.5e' %  (rot_iter + 1, rms))
             if rms < micro_conv:
