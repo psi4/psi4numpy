@@ -1,0 +1,170 @@
+# A simple Psi 4 input script to compute a UHF reference using Psi4's libJK
+# Requires numpy 1.7.2+
+#
+# Created by: Daniel G. A. Smith
+# Date: 4/1/15
+# License: GPL v3.0
+#
+
+import time
+import numpy as np
+from helper_HF import *
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
+
+# Memory for Psi4 in GB
+memory 2 GB
+
+# Memory for numpy in GB
+numpy_memory = 2
+
+# Triplet O2
+molecule mol {
+    0 3
+    O
+    O 1 1.2
+symmetry c1
+}
+
+set {
+basis aug-cc-pVDZ
+scf_type df
+e_convergence 1e-8
+}
+
+# Set occupations
+nocca = 9
+noccb = 7
+
+# Set defaults
+maxiter = 40
+E_conv = 1.0E-8
+D_conv = 1.0E-5
+
+# Integral generation from Psi4's MintsHelper
+t = time.time()
+mints = MintsHelper()
+S = np.asarray(mints.ao_overlap())
+
+# Get nbf and ndocc for closed shell molecules
+nbf = S.shape[0]
+ndocc = sum(mol.Z(A) for A in range(mol.natom())) / 2
+ndocc = int(ndocc)
+
+print '\nNumber of occupied orbitals: %d' % ndocc
+print 'Number of basis functions: %d' % nbf
+
+V = np.asarray(mints.ao_potential())
+T = np.asarray(mints.ao_kinetic())
+
+print '\nTotal time taken for integrals: %.3f seconds.' % (time.time()-t)
+
+t = time.time()
+
+# Build H_core
+H = T + V
+
+# Orthogonalizer A = S^(-1/2)
+A = mints.ao_overlap()
+A.power(-0.5, 1.e-16)
+A = np.asarray(A)
+
+
+def diag_H(H, nocc):
+    Hp = A.dot(H).dot(A)
+    e, C2 = np.linalg.eigh(Hp)
+    C = A.dot(C2)
+    Cocc = C[:, :nocc]
+    D = np.einsum('pi,qi->pq', Cocc, Cocc)
+    return (C, D)
+    
+Ca, Da = diag_H(H, nocca)    
+Cb, Db = diag_H(H, noccb)    
+
+t = time.time()
+E = 0.0
+Enuc = mol.nuclear_repulsion_energy()
+Eold = 0.0
+
+Fock_list = []
+DIIS_error = []
+
+# Build a C matrix and share data with the numpy array npC
+Cocca = Matrix(nbf, nocca)
+npCa = np.asarray(Cocca)
+npCa[:] = Ca[:, :nocca]
+
+Coccb = Matrix(nbf, noccb)
+npCb = np.asarray(Coccb)
+npCb[:] = Cb[:, :noccb]
+
+# Initialize the JK object
+jk = JK.build_JK()
+jk.initialize()
+jk.C_left().append(Cocca)
+jk.C_left().append(Coccb)
+
+# Build a DIIS helper object
+diisa = DIIS_helper()
+diisb = DIIS_helper()
+
+print('\nTotal time taken for setup: %.3f seconds' % (time.time() - t))
+
+print('\nStart UHF iterations:\n')
+t = time.time()
+
+for UHF_ITER in range(1, maxiter + 1):
+
+    npCa[:] = Ca[:, :nocca]
+    npCb[:] = Cb[:, :noccb]
+    jk.compute()
+
+    # Build fock matrix
+    Ja = np.asarray(jk.J()[0])
+    Jb = np.asarray(jk.J()[1])
+    Ka = np.asarray(jk.K()[0])
+    Kb = np.asarray(jk.K()[1])
+    Fa = H + (Ja + Jb) - Ka
+    Fb = H + (Ja + Jb) - Kb
+
+    # DIIS error build and update
+    diisa_e = Fa.dot(Da).dot(S) - S.dot(Da).dot(Fa)
+    diisa.add(Fa, diisa_e)
+
+    diisb_e = Fb.dot(Db).dot(S) - S.dot(Db).dot(Fb)
+    diisb.add(Fb, diisb_e)
+
+    # UHF energy and update
+    UHF_E = np.einsum('pq,pq->', Da + Db, H)
+    UHF_E += np.einsum('pq,pq->', Da, Fa)
+    UHF_E += np.einsum('pq,pq->', Db, Fb)
+    UHF_E *= 0.5
+    UHF_E += Enuc 
+
+    dRMS = 0.5 * (np.mean(diisa_e**2)**0.5 + np.mean(diisb_e**2)**0.5)
+    print('UHF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
+          % (UHF_ITER, UHF_E, (UHF_E - Eold), dRMS))
+    if (abs(UHF_E - Eold) < E_conv) and (dRMS < D_conv):
+        break
+
+    Eold = UHF_E
+
+    if UHF_ITER >= 3:
+        Fa = diisa.extrapolate()
+        Fb = diisb.extrapolate()
+
+    # Diagonalize Fock matrix
+    Ca, Da = diag_H(Fa, nocca)    
+    Cb, Db = diag_H(Fb, noccb)    
+
+    if UHF_ITER == maxiter:
+        clean()
+        raise Exception("Maximum number of UHF cycles exceeded.")
+
+print('Total time for UHF iterations: %.3f seconds \n' % (time.time() - t))
+
+print('Final UHF energy: %.8f hartree' % UHF_E)
+set {
+e_convergence 1e-8
+}
+UHF_E_psi = energy('UHF')
+compare_values(UHF_E_psi, UHF_E, 6, 'UHF Energy')
