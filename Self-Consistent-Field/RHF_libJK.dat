@@ -135,8 +135,7 @@ for RHF_ITER in range(1, maxiter + 1):
     Eold = RHF_E
     Dold = D
 
-    if RHF_ITER >= 3:
-        F = diis.extrapolate()
+    F = diis.extrapolate()
 
     # Diagonalize Fock matrix
     Fp = A.dot(F).dot(A)

@@ -77,8 +77,6 @@ for SCF_ITER in range(1, 20):
     if (abs(hf.scf_e - Eold) < E_conv) and (dRMS < D_conv):
         break
 
-    Co = hf.Ca[:, :ndocc]
-    print np.sum(np.abs(np.einsum('pj,qj->pq', Co, Co) - Dold) > 1.e-8)
     Eold = hf.scf_e
     Dold = hf.Da
 
@@ -99,27 +97,22 @@ for SCF_ITER in range(1, 20):
         # DIIS helper and initial guess
         rdiis = DIIS_helper()
         eps = np.diag(moF)
-        ia_denom = (-eps[:ndocc].reshape(-1, 1) + eps[ndocc:])
-        x = gradient / (4 * ia_denom)
+        ia_denom = (eps[:ndocc].reshape(-1, 1) - eps[ndocc:])
+        x = gradient / (-4 * ia_denom)
         xold = np.zeros_like(x)
-        tmp = 0
 
         for rot_iter in range(max_micro):
             # Since only ov rotations are non-redundant the code is greatly simplified
             # One electron part, F = -4 (F_{mp} K_{np} + F_{pn} K_{mp})
-            F  = np.einsum('mp,pn->mn', moF[:ndocc, :ndocc], x)
-            F += np.einsum('pm,np->nm', moF[ndocc:, ndocc:], -x)
+            F  = np.dot(moF[:ndocc, :ndocc], x)
+            F -= np.dot(x, moF[ndocc:, ndocc:])
             F *= -4
 
             # Build two electron part, M = -4 (4 G_{mnip} - g_{mpin} - g_{npim}) K_{ip}
             C_right = np.einsum('ia,sa->si', -x, Cv)
-            cd = np.einsum('pj,qj->pq', Co, C_right)
-            print np.sum(np.abs(cd - tmp) > 1.e-8)
             J, K = hf.build_jk(Co, C_right)
-            tmp = cd
-
-            M    = (Co.T).dot(4 * J - K.T - K).dot(Cv)
-            M   *= -4
+            M  = (Co.T).dot(4 * J - K.T - K).dot(Cv)
+            M *= -4
 
             # New guess and diis
             # M + F = gradient, 1 = (gradient - M) / F
