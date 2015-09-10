@@ -34,14 +34,15 @@ symmetry c1
 }
 
 set {
-basis 6-31G
+basis aug-cc-pVDZ
 }
 
 # Knobs
 E_conv = 1.e-8
 D_conv = 1.e-5
-max_micro = 5
-micro_conv = 1.e-10
+max_macro = 20
+max_micro = 4
+micro_conv = 1.e-3
 micro_print = False
 
 # Build objects
@@ -55,21 +56,37 @@ print('\nStart RHF iterations:\n')
 t = time.time()
 E = 0.0
 Eold = 0.0
-Dold = 0.0
-iter_type = 'DIAG'
+iter_type = 'CORE'
 
-for SCF_ITER in range(1, 20):
+def Hx(x, Co, Cv, parts = False):
+    F  = np.einsum('mp,pn->mn', moF[:ndocc, :ndocc], x)
+    F += np.einsum('pm,np->nm', moF[ndocc:, ndocc:], -x)
+    F *= -4
+
+    # Build two electron part, M = -4 (4 G_{mnip} - g_{mpin} - g_{npim}) K_{ip}
+    C_right = np.einsum('ia,sa->si', -x, Cv)
+    J, K = hf.build_jk(Co, C_right)
+    M    = (Co.T).dot(4 * J - K.T - K).dot(Cv)
+    M   *= -4
+
+    if parts:
+        return (F, M)
+    else:
+        return F + M
+
+for SCF_ITER in range(1, max_macro):
 
     # Build new fock matrix
     F = hf.build_fock()
 
     # DIIS error and update
     diis_e = F.dot(hf.Da).dot(hf.S) - hf.S.dot(hf.Da).dot(F)
+    diis_e = (hf.A).dot(diis_e).dot(hf.A)
     diis.add(F, diis_e)
 
     # SCF energy and update
     scf_e = hf.compute_hf_energy()
-    dRMS = np.sum(np.power(hf.Da - Dold, 2)) ** 0.5
+    dRMS = np.mean(diis_e ** 2) ** 0.5
     print 'RHF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E   %s' % (SCF_ITER, hf.scf_e, (hf.scf_e - Eold), dRMS, iter_type)
     if (abs(hf.scf_e - Eold) < E_conv) and (dRMS < D_conv):
         break
@@ -82,55 +99,75 @@ for SCF_ITER in range(1, 20):
     Cv = hf.Ca[:, ndocc:]
     moF = np.einsum('ui,vj,uv->ij', hf.Ca, hf.Ca, F)
     gradient = -4 * moF[:ndocc, ndocc:]
-    grad_norm = np.linalg.norm(gradient)
+    grad_dot = np.vdot(gradient, gradient)
 
-    if (grad_norm > 0.1):
+    if grad_dot < (D_conv):
+        grad_dot = D_conv
+
+    if (np.abs(np.max(gradient)) > 0.2):
         F = diis.extrapolate()
         eps, C = hf.diag(F)
         hf.set_Cleft(C)
         iter_type = 'DIIS'
     else:
 
-        # DIIS helper and initial guess
-        rdiis = DIIS_helper()
+        # Build preconditioner
         eps = np.diag(moF)
-        ia_denom = (-eps[:ndocc].reshape(-1, 1) + eps[ndocc:])
-        x = gradient / (4 * ia_denom)
-        xold = np.zeros_like(x)
+        precon = -4 * (eps[:ndocc].reshape(-1, 1) - eps[ndocc:])
 
+        # Build guess
+        guess_x = gradient / precon
+        x = guess_x.copy()
+
+        # CG setup
+        r = gradient - Hx(guess_x, Co, Cv)
+        z = r / precon
+        p = z.copy()
+
+        rms = np.mean(np.vdot(r, r) / grad_dot) ** 0.5
+        if micro_print:
+            print('Micro Iteration %2d: RMS = %1.5e' %  (0, rms))
+
+        # CG iterations
         for rot_iter in range(max_micro):
-            # Since only ov rotations are non-redundant the code is greatly simplified
-            # One electron part, F = -4 (F_{mp} K_{np} + F_{pn} K_{mp})
-            F  = np.einsum('mp,pn->mn', moF[:ndocc, :ndocc], x)
-            F += np.einsum('pm,np->nm', moF[ndocc:, ndocc:], -x)
-            F *= -4
+            Ap = Hx(p, Co, Cv)
 
-            # Build two electron part, M = -4 (4 G_{mnip} - g_{mpin} - g_{npim}) K_{ip}
-            C_right = np.einsum('ia,sa->si', -x, Cv)
-            J, K = hf.build_jk(Co, C_right)
-            M    = (Co.T).dot(4 * J - K.T - K).dot(Cv)
-            M   *= -4
+            rz = np.vdot(r, z)
+            alpha = rz / np.vdot(p, Ap)
 
-            # New guess and diis
-            # M + F = gradient, 1 = (gradient - M) / F
-            x = x * (gradient - M) / F
-            rdiis.add(x, x - xold)
-            x = rdiis.extrapolate()
+            # Hessian is non-singular
+            if alpha < 0:
+                x = guess_x
+                break
 
-            rms = np.sum((x - xold) ** 2)
+            x += alpha * p
+            r -= alpha * Ap
+
+            rms = np.mean(np.vdot(r, r) / grad_dot) ** 0.5
+
+            # Were not converging
+            if rms > 1:
+                x = guess_x
+                break
+
             if micro_print:
                 print('Micro Iteration %2d: RMS = %1.5e' %  (rot_iter + 1, rms))
             if rms < micro_conv:
                 break
-            xold = x
 
-        # Build and exponentiate U
-        U = np.zeros_like(hf.Ca)
-        U[:ndocc, ndocc:] = x
-        U[ndocc:, :ndocc] = -x.T
+            z = r / precon
+            beta = np.vdot(r, z) / rz
+            p = z + beta * p
 
-        U += 0.5 * np.dot(U, U)
+        # Build full x (antisymmetric) and exponentiate
+        R = np.zeros_like(hf.Ca)
+        R[:ndocc, ndocc:] = x
+        R[ndocc:, :ndocc] = -x.T
+
+        U  = R.copy()
         U[np.diag_indices_from(hf.A)] += 1
+        U += 0.5 * np.dot(R, R)
+        U += (1.0/6.0) * np.dot(R, R).dot(R)
 
         # Easy acess to shmidt orthogonalization
         U, r = np.linalg.qr(U.T)
@@ -142,8 +179,8 @@ for SCF_ITER in range(1, 20):
 
 print 'Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t)
 
-print 'Final SCF energy:     %.8f hartree' % hf.scf_e
-RHF_E_psi = energy('RHF')
-compare_values(RHF_E_psi, hf.scf_e, 6, 'RHF Energy')
+#print 'Final SCF energy:     %.8f hartree' % hf.scf_e
+#RHF_E_psi = energy('RHF')
+#compare_values(RHF_E_psi, hf.scf_e, 6, 'RHF Energy')
 
 
