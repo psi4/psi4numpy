@@ -199,10 +199,10 @@ class DIIS_helper(object):
         B[:, -1] = -1
         B[-1, -1] = 0
         for num1, e1 in enumerate(self.error):
-            B[num1, num1] = np.dot(e1, e1)
+            B[num1, num1] = np.vdot(e1, e1)
             for num2, e2 in enumerate(self.error):
                 if num2 >= num1: continue
-                val = np.dot(e1, e2)
+                val = np.vdot(e1, e2)
                 B[num1, num2] = B[num2, num1] = val
 
         # normalize
@@ -213,8 +213,8 @@ class DIIS_helper(object):
         resid[-1] = -1
 
         # Solve pulay equations
-        ci = np.linalg.solve(B, resid)
-        # Calculate new fock matrix as linear
+        ci = np.dot(np.linalg.pinv(B), resid)
+
         # combination of previous fock matrices
         V = np.zeros_like(self.vector[-1])
         for num, c in enumerate(ci[:-1]):

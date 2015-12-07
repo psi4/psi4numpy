@@ -1,0 +1,339 @@
+# A simple Psi 4 input script to compute a UHF reference using Psi4's libJK
+# Requires numpy 1.7.2+
+#
+# This is more of a testing ground, excuse the mess
+#
+# Created by: Daniel G. A. Smith
+# Date: 4/1/15
+# License: GPL v3.0
+#
+
+import time
+import numpy as np
+from helper_HF import *
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
+
+# Memory for Psi4 in GB
+memory 2 GB
+
+# Memory for numpy in GB
+numpy_memory = 2
+
+# Triplet O2, actually very multireference
+molecule mol {
+    0 3
+    O
+    O 1 1.2
+symmetry c1
+}
+
+set {
+basis aug-cc-pVDZ
+scf_type df
+e_convergence 1e-8
+}
+
+# Set occupations
+nocca = 9
+noccb = 7
+
+# Set defaults
+maxiter = 10
+E_conv = 1.0E-8
+D_conv = 1.0E-5
+max_micro = 4
+micro_conv = 5.e-2
+micro_print = True
+
+# Integral generation from Psi4's MintsHelper
+t = time.time()
+mints = MintsHelper()
+S = np.asarray(mints.ao_overlap())
+
+# Get nbf and ndocc for closed shell molecules
+nbf = S.shape[0]
+ndocc = sum(mol.Z(A) for A in range(mol.natom())) / 2
+ndocc = int(ndocc)
+
+print '\nNumber of occupied orbitals: %d' % ndocc
+print 'Number of basis functions: %d' % nbf
+
+V = np.asarray(mints.ao_potential())
+T = np.asarray(mints.ao_kinetic())
+
+print '\nTotal time taken for integrals: %.3f seconds.' % (time.time()-t)
+
+t = time.time()
+
+# Build H_core
+H = T + V
+
+# Orthogonalizer A = S^(-1/2)
+A = mints.ao_overlap()
+A.power(-0.5, 1.e-16)
+A = np.asarray(A)
+
+
+def diag_H(H, nocc):
+    Hp = A.dot(H).dot(A)
+    e, C2 = np.linalg.eigh(Hp)
+    C = A.dot(C2)
+    Cocc = C[:, :nocc]
+    D = np.einsum('pi,qi->pq', Cocc, Cocc)
+    return (C, D)
+
+def compute_jk(c_left, c_right=None):
+    cl = jk.C_left()
+    if not isinstance(c_left, (list, tuple)):
+        c_left = [c_left]
+
+    for c in c_left:
+        mat = Matrix(c.shape[0], c.shape[1])
+        np_mat = np.asarray(mat)
+        np_mat[:] = c        
+        cl.append(mat)
+
+    if c_right is not None:
+        if len(c_left) != len(c_right):
+            raise ValueError("JK: length of left and right matrices is not equal")
+        
+        cr = jk.C_right()
+        if not isinstance(c_right, (list, tuple)):
+            c_right = [c_right]
+
+        for c in c_right:
+            mat = Matrix(c.shape[0], c.shape[1])
+            np_mat = np.asarray(mat)
+            np_mat[:] = c        
+            cr.append(mat)
+
+    jk.compute()
+    J = []
+    K = []
+    for n in range(len(c_left)):
+        J.append(np.array(jk.J()[n]))
+        K.append(np.array(jk.K()[n]))
+        del cl[0]
+        if c_right is not None:
+            del cr[0]
+
+    return (J, K)
+
+
+
+def UHF_Hx(xa, xb, moFa, Co_a, Cv_a, moFb, Co_b, Cv_b):
+    """
+    Compute a hessian vector guess where x is a ov matrix of nonredundant operators.
+    """
+    Hx_a  = np.dot(moFa[:nocca, :nocca], xa)
+    Hx_a -= np.dot(xa, moFa[nocca:, nocca:])
+
+    Hx_b  = np.dot(moFb[:noccb, :noccb], xb)
+    Hx_b -= np.dot(xb, moFb[noccb:, noccb:])
+
+    # Build two electron part, M = -4 (4 G_{mnip} - g_{mpin} - g_{npim}) K_{ip}
+    C_right_a = np.einsum('ia,sa->si', -xa, Cv_a)
+    C_right_b = np.einsum('ia,sa->si', -xb, Cv_b)
+
+    J, K = compute_jk([Co_a, Co_b], [C_right_a, C_right_b]) 
+
+    Jab = J[0] + J[1]
+    Hx_a += (Co_a.T).dot(2 * Jab - K[0].T - K[0]).dot(Cv_a)
+    Hx_b += (Co_b.T).dot(2 * Jab - K[1].T - K[1]).dot(Cv_b)
+    
+    Hx_a *= -4 
+    Hx_b *= -4 
+
+    return (Hx_a, Hx_b)
+
+def rotate_orbs(x, C, nocc):
+
+    U = np.zeros_like(C)
+    U[:nocc, nocc:] = x
+    U[nocc:, :nocc] = -x.T
+
+    U += 0.5 * np.dot(U, U)
+    U[np.diag_indices_from(U)] += 1
+
+    # Easy acess to shmidt orthogonalization
+    U, r = np.linalg.qr(U.T)
+
+    # Rotate and set orbitals
+    C = C.dot(U)
+    Cocc = C[:, :nocc]
+    D = np.einsum('pi,qi->pq', Cocc, Cocc)
+    return (C, D)
+    
+Ca, Da = diag_H(H, nocca)    
+Cb, Db = diag_H(H, noccb)    
+
+t = time.time()
+E = 0.0
+Enuc = mol.nuclear_repulsion_energy()
+Eold = 0.0
+
+Fock_list = []
+DIIS_error = []
+
+# Build a C matrix and share data with the numpy array npC
+Cocca = Matrix(nbf, nocca)
+npCa = np.asarray(Cocca)
+npCa[:] = Ca[:, :nocca]
+
+Coccb = Matrix(nbf, noccb)
+npCb = np.asarray(Coccb)
+npCb[:] = Cb[:, :noccb]
+
+# Initialize the JK object
+jk = JK.build_JK()
+jk.initialize()
+
+# Build a DIIS helper object
+diisa = DIIS_helper()
+diisb = DIIS_helper()
+
+
+print('\nTotal time taken for setup: %.3f seconds' % (time.time() - t))
+
+print('\nStart UHF iterations:\n')
+t = time.time()
+
+for UHF_ITER in range(1, maxiter + 1):
+
+    # Build Fock matrices
+    J, K = compute_jk([Ca[:, :nocca], Cb[:, :noccb]])
+    J = J[0] + J[1]
+    Fa = H + J - K[0]
+    Fb = H + J - K[1]
+
+    # DIIS error build and update
+    diisa_e = Fa.dot(Da).dot(S) - S.dot(Da).dot(Fa)
+    diisa_e = (A.T).dot(diisa_e).dot(A)
+    diisa.add(Fa, diisa_e)
+
+    diisb_e = Fb.dot(Db).dot(S) - S.dot(Db).dot(Fb)
+    diisb_e = (A.T).dot(diisb_e).dot(A)
+    diisb.add(Fb, diisb_e)
+
+    # UHF energy and update
+    UHF_E  = np.einsum('pq,pq->', Da + Db, H)
+    UHF_E += np.einsum('pq,pq->', Da, Fa)
+    UHF_E += np.einsum('pq,pq->', Db, Fb)
+    UHF_E *= 0.5
+    UHF_E += Enuc 
+
+    dRMS = 0.5 * (np.mean(diisa_e**2)**0.5 + np.mean(diisb_e**2)**0.5)
+    print('UHF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
+          % (UHF_ITER, UHF_E, (UHF_E - Eold), dRMS))
+    if (abs(UHF_E - Eold) < E_conv) and (dRMS < D_conv):
+        break
+
+    Eold = UHF_E
+
+    Co_a = Ca[:, :nocca]
+    Cv_a = Ca[:, nocca:]
+    moF_a = np.dot(Ca.T, Fa).dot(Ca)
+    gradient_a = -4 * moF_a[:nocca, nocca:]
+    gradient_norm_a = np.linalg.norm(gradient_a)
+
+    Co_b = Cb[:, :noccb]
+    Cv_b = Cb[:, noccb:]
+    moF_b = np.dot(Cb.T, Fb).dot(Cb)
+    gradient_b = -4 * moF_b[:noccb, noccb:]
+    gradient_norm_b = np.linalg.norm(gradient_b)
+
+    gradient_norm = gradient_norm_a + gradient_norm_b
+
+    # Conventional updates
+    if np.any(np.abs(gradient_a) > 0.3) or np.any(np.abs(gradient_b) > 0.3):
+        Fa = diisa.extrapolate()
+        Fb = diisb.extrapolate()
+
+        # Diagonalize Fock matrix
+        Ca, Da = diag_H(Fa, nocca)    
+        Cb, Db = diag_H(Fb, noccb)    
+
+    else:
+
+        so_diis = DIIS_helper()
+
+        eps_a = np.diag(moF_a)
+        precon_a = -4 * (eps_a[:nocca].reshape(-1, 1) - eps_a[nocca:])
+        x_a = gradient_a / precon_a 
+
+        eps_b = np.diag(moF_b)
+        precon_b = -4 * (eps_b[:noccb].reshape(-1, 1) - eps_b[noccb:])
+        x_b = gradient_b / precon_b 
+
+        Hx_a, Hx_b = UHF_Hx(x_a, x_b, moF_a, Co_a, Cv_a, moF_b, Co_b, Cv_b)
+
+        r_a = gradient_a - Hx_a
+        z_a = r_a / precon_a
+        p_a = z_a.copy()
+
+        r_b = gradient_b - Hx_b
+        z_b = r_b / precon_b
+        p_b = z_b.copy()
+
+        for rot_iter in range(max_micro):
+            rz_old = np.vdot(r_a, z_a) + np.vdot(r_b, z_b)
+
+            Hx_a, Hx_b = UHF_Hx(p_a, p_b, moF_a, Co_a, Cv_a, moF_b, Co_b, Cv_b)
+
+            alpha = rz_old / (np.vdot(Hx_a, p_a) + np.vdot(Hx_b, p_b))
+
+            # CG update            
+            x_a += alpha * p_a
+            r_a -= alpha * Hx_a
+            z_a = r_a / precon_a
+
+            x_b += alpha * p_b
+            r_b -= alpha * Hx_b
+            z_b = r_b / precon_b
+
+            x_diis = np.hstack((x_a.ravel(), x_b.ravel()))
+            r_diis = np.hstack((r_a.ravel(), r_b.ravel()))
+            so_diis.add(x_diis, r_diis)
+
+            rms_a = (np.linalg.norm(r_a) / gradient_norm_a) ** 0.5
+            rms_b = (np.linalg.norm(r_b) / gradient_norm_b) ** 0.5
+
+            if gradient_norm > 1.e-2:
+                denom = gradient_norm
+            else:
+                denom = 1.e-2   
+            rms = ((np.linalg.norm(r_a) + np.linalg.norm(r_b)) / denom) ** 0.5
+
+            if micro_print:
+                print('Micro Iteration %2d: Rel. RMS = %1.5e (%1.2e, %1.2e)' %  (rot_iter + 1, rms, rms_a, rms_b))
+            if rms < micro_conv:
+                break
+
+            beta = (np.vdot(r_a, z_a) + np.vdot(r_b, z_b)) / rz_old
+
+            p_a = z_a + beta * p_a
+            p_b = z_b + beta * p_b
+
+        x = so_diis.extrapolate()
+        x_a = x[:x_a.size].reshape(x_a.shape)
+        x_b = x[x_a.size:].reshape(x_b.shape)
+
+        # Diagonalize Fock matrix
+        Ca, Da = rotate_orbs(x_a, Ca, nocca)    
+        Cb, Db = rotate_orbs(x_b, Cb, noccb)    
+
+        #print 'Here!'
+        #raise Exception("")
+
+    if UHF_ITER == maxiter:
+        clean()
+        raise Exception("Maximum number of UHF cycles exceeded.")
+
+print('Total time for UHF iterations: %.3f seconds \n' % (time.time() - t))
+
+print('Final UHF energy: %.8f hartree' % UHF_E)
+set {
+e_convergence 1e-8
+}
+UHF_E_psi = energy('UHF')
+compare_values(UHF_E_psi, UHF_E, 6, 'UHF Energy')
