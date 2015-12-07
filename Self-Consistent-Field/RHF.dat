@@ -102,9 +102,12 @@ for RHF_ITER in range(1, maxiter + 1):
     K = np.einsum('prqs,rs->pq', I, D)
     F = H + J * 2 - K
 
+    diis_e = np.einsum('ij,jk,kl->il', F, D, S) - np.einsum('ij,jk,kl->il', S, D, F)
+    diis_e = A.dot(diis_e).dot(A)
+
     # RHF energy and update
     RHF_E = np.einsum('pq,pq->', F + H, D) + Enuc
-    dRMS = np.sum(np.power(D - Dold, 2)) ** 0.5
+    dRMS = np.mean(diis_e**2)**0.5
 
     print('RHF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
           % (RHF_ITER, RHF_E, (RHF_E - Eold), dRMS))
