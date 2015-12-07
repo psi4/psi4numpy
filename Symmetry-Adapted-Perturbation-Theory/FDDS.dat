@@ -28,6 +28,8 @@ e_convergence 1e-8
 d_convergence 1e-8
 }
 
+#energy('SAPT2+3')
+#raise Exception();
 # Knobs
 leg_points = 8
 
@@ -91,9 +93,10 @@ b_eps_o = sapt.eps('b')
 b_eps_v = sapt.eps('s')
 
 disp_timer = sapt_timer('FDDS dispersion')
+fdds_lambda = 0.2
 print('     Omega      value     weight        sum')
 for point, weight in zip(*np.polynomial.legendre.leggauss(leg_points)):
-    omega = 0.3 * (1.0 - point) / (1.0 + point)
+    omega = fdds_lambda * (1.0 - point) / (1.0 + point)
 
     C_arar = FDDS_coef(omega, a_v_iajb, a_v_ijab, a_eps_o, a_eps_v)
     C_bsbs = FDDS_coef(omega, b_v_iajb, b_v_ijab, b_eps_o, b_eps_v)
@@ -103,7 +106,7 @@ for point, weight in zip(*np.polynomial.legendre.leggauss(leg_points)):
     BSAR = np.einsum('bsAR,bsBS->BSAR', bsAR, C_bsbs)
     tmp = np.einsum('BSAR,ABRS->', BSAR, v_abrs)
 
-    total += tmp * weight
+    total += tmp * weight * ( (2 * fdds_lambda) / (point + 1)**2 )
     print('% .3e % .3e % .3e % .3e' % (omega, tmp, weight, tmp*weight))
 disp_timer.stop()
 
