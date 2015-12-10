@@ -21,7 +21,6 @@ H 1 1.1 2 104
 symmetry c1
 }
 
-
 set {
 basis aug-cc-pVDZ
 }
@@ -55,19 +54,34 @@ t = time.time()
 Psi4_MO = np.asarray(mints.mo_transform(Matrix_I, Matrix_C, Matrix_C, Matrix_C, Matrix_C))
 print("...transformation complete in %.3f seconds." % (time.time() - t))
 
-# Numpy N^5 transformation.
-print("\nStarting Numpy's N^5 AO->MO transformation...")
+# Numpy einsum N^5 transformation.
+print("\nStarting Numpy's N^5 AO->MO transformation with einsum...")
 t = time.time()
-MO = np.einsum('rJ,pqrs->pqJs', C, I)
-MO = np.einsum('pI,pqJs->IqJs', C, MO)
-MO = np.einsum('sB,IqJs->IqJB', C, MO)
-MO = np.einsum('qA,IqJB->IAJB', C, MO)
+MO = np.einsum('pA,pqrs->Aqrs', C, I)
+MO = np.einsum('qB,Aqrs->ABrs', C, MO)
+MO = np.einsum('rC,ABrs->ABCs', C, MO)
+MO = np.einsum('sD,ABCs->ABCD', C, MO)
+print("...transformation complete in %.3f seconds." % (time.time() - t))
+print("Matches Psi4's implementation: %s" % np.allclose(Psi4_MO, MO))
+
+# Numpy GEMM N^5 transformation.
+# Try to figure this one out!
+print("\nStarting Numpy's N^5 AO->MO transformation with GEMM...")
+t = time.time()
+MO = np.dot(C.T, I.reshape(nbf, -1))
+MO = np.dot(MO.reshape(-1, nbf), C)
+MO = MO.reshape(nbf, nbf, nbf, nbf).transpose(1,0,3,2)
+
+MO = np.dot(C.T, MO.reshape(nbf, -1))
+MO = np.dot(MO.reshape(-1, nbf), C)
+MO = MO.reshape(nbf, nbf, nbf, nbf)
 print("...transformation complete in %.3f seconds." % (time.time() - t))
 print("Matches Psi4's implementation: %s" % np.allclose(Psi4_MO, MO))
 
 
 # Numpy N^8 transformation.
 # Transformation is too expensive @ N^8 for N > 20.
+# @ 20 basis functions will take approximate a minute.
 if nbf < 20:
     print("\nStarting Numpy's N^8 AO->MO transformation...")
     t = time.time()

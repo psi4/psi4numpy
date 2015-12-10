@@ -15,14 +15,6 @@ import numpy as np
 from scipy import linalg as SLA
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 
-memory 2 GB
-
-numpy_memory = 2
-
-def pexit():
-    clean()
-    raise Exception("Exiting Psi4")
-
 molecule mol {
 O
 H 1 1.1

@@ -101,6 +101,7 @@ for RHF_ITER in range(1, maxiter + 1):
 
     # DIIS error build
     diis_e = np.einsum('ij,jk,kl->il', F, D, S) - np.einsum('ij,jk,kl->il', S, D, F)
+    diis_e = A.dot(diis_e).dot(A)
     Fock_list.append(F)
     DIIS_error.append(diis_e)
 

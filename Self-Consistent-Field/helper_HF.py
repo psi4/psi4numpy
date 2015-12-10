@@ -63,13 +63,26 @@ class helper_HF(object):
         self.C_left = psi.Matrix(self.nbf, self.ndocc)
         self.npC_left = np.asarray(self.C_left)
 
-        if guess == 'core':
+        if guess.upper() == 'CORE':
             Xp = self.A.dot(self.H).dot(self.A)
             e, C2 = np.linalg.eigh(Xp)
             self.Ca = self.A.dot(C2)
             self.npC_left[:] = self.Ca[:, :self.ndocc]
             self.epsilon = e
             self.Da = np.dot(self.npC_left, self.npC_left.T)
+        elif guess.upper() == 'SAD':
+            # Cheat and run a quick SCF calculation
+            psi.set_global_option('E_CONVERGENCE', 1)
+            psi.set_global_option('D_CONVERGENCE', 1)
+            energy('RHF')
+            wfn = psi.wavefunction()
+            self.Ca = np.array(wfn.Ca())
+            self.npC_left[:] = self.Ca[:, :self.ndocc]
+            self.epsilon = np.array(wfn.epsilon_a())
+            self.Da = np.dot(self.npC_left, self.npC_left.T)
+            psi.set_global_option('E_CONVERGENCE', 6)
+            psi.set_global_option('D_CONVERGENCE', 6)
+
         else:
             raise Exception("Guess %s not yet supported" % (guess))
 
@@ -77,7 +90,7 @@ class helper_HF(object):
         self.DIIS_F = []
 
         scf_type = scf_type.upper()
-        if scf_type not in ['DF', 'PK', 'DIRECT']:
+        if scf_type not in ['DF', 'PK', 'DIRECT', 'OUT_OF_CORE']:
             raise Exception('SCF_TYPE %s not supported' % scf_type)
         psi.set_global_option('SCF_TYPE', scf_type)
         self.jk = psi.JK.build_JK()
@@ -193,6 +206,7 @@ class DIIS_helper(object):
                 B[num1, num2] = B[num2, num1] = val
 
         # normalize
+        B[abs(B) < 1.e-14] = 1.e-14
         B[:-1, :-1] /= np.abs(B[:-1, :-1]).max()
         # Build residual vector
         resid = np.zeros(diis_count + 1)

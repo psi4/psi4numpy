@@ -120,6 +120,7 @@ for RHF_ITER in range(1, maxiter + 1):
 
     # DIIS error build and update
     diis_e = F.dot(D).dot(S) - S.dot(D).dot(F)
+    diis_e = A.dot(diis_e).dot(A)
     diis.add(F, diis_e)
 
     # RHF energy and update
@@ -134,8 +135,7 @@ for RHF_ITER in range(1, maxiter + 1):
     Eold = RHF_E
     Dold = D
 
-    if RHF_ITER >= 3:
-        F = diis.extrapolate()
+    F = diis.extrapolate()
 
     # Diagonalize Fock matrix
     Fp = A.dot(F).dot(A)

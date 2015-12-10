@@ -26,6 +26,7 @@ symmetry c1
 
 set {
 basis aug-cc-pVDZ
+guess sad
 }
 
 E_conv = 1.e-10
@@ -33,7 +34,7 @@ D_conv = 1.e-10
 
 # Build objects
 diis = DIIS_helper()
-hf = helper_HF(psi4, energy, mol, scf_type='DF')
+hf = helper_HF(psi4, energy, mol, scf_type='PK', guess='SAD')
 ndocc = hf.ndocc
 nvirt = hf.nvirt
 mints = MintsHelper()
@@ -72,10 +73,7 @@ for SCF_ITER in range(1, 20):
     Eold = hf.scf_e
     Dold = hf.Da
 
-    if SCF_ITER < 2:
-        e, C = hf.diag(F)
-        hf.set_Cleft(C)
-    elif (dRMS > 0.5):
+    if (dRMS > 1):
         F = diis.extrapolate()
         e, C = hf.diag(F)
         hf.set_Cleft(C)

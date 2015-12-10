@@ -129,15 +129,15 @@ for UHF_ITER in range(1, maxiter + 1):
 
     # DIIS error build and update
     diisa_e = Fa.dot(Da).dot(S) - S.dot(Da).dot(Fa)
-    diisa_e = A.dot(diisa_e).dot(A)
+    diisa_e = (A.T).dot(diisa_e).dot(A)
     diisa.add(Fa, diisa_e)
 
     diisb_e = Fb.dot(Db).dot(S) - S.dot(Db).dot(Fb)
-    diisb_e = A.dot(diisb_e).dot(A)
+    diisb_e = (A.T).dot(diisb_e).dot(A)
     diisb.add(Fb, diisb_e)
 
     # UHF energy and update
-    UHF_E = np.einsum('pq,pq->', Da + Db, H)
+    UHF_E  = np.einsum('pq,pq->', Da + Db, H)
     UHF_E += np.einsum('pq,pq->', Da, Fa)
     UHF_E += np.einsum('pq,pq->', Db, Fb)
     UHF_E *= 0.5
