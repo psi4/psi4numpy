@@ -1,0 +1,104 @@
+# A simple Psi 4 input script to compute a RHF reference
+# Requires umpy 1.7.2+
+#
+# Algorithms were taken directly from Daniel Crawford's programming website:
+# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+# Special thanks to Rob Parrish for initial assistance with libmints
+#
+# Created by: Daniel G. A. Smith
+# Date: 7/29/14
+# License: GPL v3.0
+#
+
+import time
+import numpy as np
+from scipy import linalg as SLA
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
+
+# Memory for Psi4 in GB
+memory 2 GB
+
+# Memory for numpy in GB
+numpy_memory = 2
+
+molecule mol {
+O 0.0000000000000000  0.0000000000000000 -0.12947689015702168
+H 0.0000000000000000 -1.4941867505039508  1.0274461029282449
+H 0.0000000000000000  1.4941867505039510  1.0274461029282449
+units bohr
+}
+
+set {
+basis sto-3g
+scf_type pk
+e_convergence 1e-8
+}
+
+print 'RHF energy', energy('RHF')
+# Integral generation from Psi4's MintsHelper
+mints = MintsHelper()
+S = np.asarray(mints.ao_overlap())
+V = np.asarray(mints.ao_potential())
+T = np.asarray(mints.ao_kinetic())
+I = np.asarray(mints.ao_eri())
+H = T + V
+
+
+def symm2array(array):
+    ifs = array.array_interfaces()
+    arrs = [np.array(x) for x in ifs]
+    dim0 = sum(x.shape[0] for x in arrs)
+    dim1 = sum(x.shape[1] for x in arrs)
+    
+    ret = np.zeros((dim0, dim1))
+    off0 = 0
+    off1 = 0
+    for irrep in arrs:
+        ret[off0:off0 + irrep.shape[0], off1:off1 + irrep.shape[1]] = irrep
+        off0 += irrep.shape[0]
+        off1 += irrep.shape[1]
+    return ret
+
+
+wfn = wavefunction()
+soC = symm2array(wfn.Ca_subset("SO", "ALL"))
+aoC = symm2array(wfn.Ca_subset("AO", "ALL"))
+ao2so = symm2array(wfn.aotoso())
+ao2so = ao2so.reshape(-1, aoC.shape[0], aoC.shape[1])
+
+evals = wfn.epsilon_a().array_interfaces()
+evals = np.hstack([np.asarray(x) for x in evals])
+#print evals
+sort = evals.argsort()
+evals = evals[sort]
+
+# from C
+new_ao = np.zeros_like(soC)
+for x in ao2so:
+    new_ao += np.dot(x, soC)
+C = new_ao[:, sort]
+
+Cocc = C[:, :5]
+Cocc = wfn.Ca_subset("AO", "OCC")
+D = np.einsum('ai,bi->ab', Cocc, Cocc)
+
+Dso = symm2array(wfn.Da()) 
+D = np.zeros_like(Dso)
+for x in ao2so:
+    tmp = np.dot(x, Dso)
+    D += np.dot(tmp, x.T)
+
+J = np.einsum('ijkl,kl->ij', I, D)
+K = np.einsum('ijkl,jl->ik', I, D)
+F = H + 2*J - K
+
+print 'RHF energy', np.einsum('ij,ij->', D, F+H) + mol.nuclear_repulsion_energy() 
+
+
+temp = np.einsum('pqrs,sA->pqrA', I, C)
+invD = np.linalg.inv(C)
+back = np.einsum('pqrA,sA->pqrs', temp, invD)
+
+print np.allclose(temp, back)
+
+
