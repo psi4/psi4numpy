@@ -74,7 +74,7 @@ class helper_HF(object):
             # Cheat and run a quick SCF calculation
             psi.set_global_option('E_CONVERGENCE', 1)
             psi.set_global_option('D_CONVERGENCE', 1)
-            energy('RHF')
+            energy('SCF')
             wfn = psi.wavefunction()
             self.Ca = np.array(wfn.Ca())
             self.npC_left[:] = self.Ca[:, :self.ndocc]

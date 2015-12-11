@@ -20,12 +20,13 @@ numpy_memory = 2
 molecule mol {
 O
 H 1 1.1
-H 1 1.1 2 104
+H 1 1.1 2 109
 symmetry c1
 }
 
 set {
-basis aug-cc-pVDZ
+scf_type df
+basis aug-cc-pVTZ
 e_convergence 1e1
 d_convergence 1e1
 }
@@ -33,16 +34,16 @@ d_convergence 1e1
 # Knobs
 E_conv = 1.e-8
 D_conv = 1.e-4
-max_micro = 4
-micro_conv = 1.e-2
+max_micro = 3
+micro_conv = 1.e-3
 micro_print = True
+
 
 # Build objects
 diis = DIIS_helper()
-hf = helper_HF(psi4, energy, mol, scf_type='OUT_OF_CORE', guess='SAD')
+hf = helper_HF(psi4, energy, mol, scf_type='DF', guess='CORE')
 ndocc = hf.ndocc
 nvirt = hf.nvirt
-hf.diag(hf.H, set_C=True)
 
 
 print('\nStart RHF iterations:\n')
@@ -66,7 +67,7 @@ def RHF_Hx(x, moF, Co, Cv):
     F  += (Co.T).dot(4 * J - K.T - K).dot(Cv)
     F *= -4
     return F
-    
+
 for SCF_ITER in range(1, 10):
 
     # Build new fock matrix
@@ -74,7 +75,7 @@ for SCF_ITER in range(1, 10):
 
     # DIIS error and update
     diis_e = F.dot(hf.Da).dot(hf.S) - hf.S.dot(hf.Da).dot(F)
-    diis_e = (hf.A).dot(diis_e).dot(hf.A) 
+    diis_e = (hf.A).dot(diis_e).dot(hf.A)
     diis.add(F, diis_e)
 
     # SCF energy and update
@@ -87,7 +88,7 @@ for SCF_ITER in range(1, 10):
     Eold = hf.scf_e
     Dold = hf.Da
 
-    # Build MO fock matrix and gradient
+    # Build MO fock ,matrix and gradient
     Co = hf.Ca[:, :ndocc]
     Cv = hf.Ca[:, ndocc:]
     moF = np.einsum('ui,vj,uv->ij', hf.Ca, hf.Ca, F)
@@ -102,16 +103,19 @@ for SCF_ITER in range(1, 10):
     else:
 
         # DIIS helper and initial guess
-        rdiis = DIIS_helper()
+        sodiis = DIIS_helper()
         eps = np.diag(moF)
         precon = -4 * (eps[:ndocc].reshape(-1, 1) - eps[ndocc:])
-        precon[precon < 1.e-3] = 1.e-3
 
         x = gradient / precon
-        Ax = RHF_Hx(x, moF, Co, Cv) 
+        Ax = RHF_Hx(x, moF, Co, Cv)
         r = gradient - Ax
         z = r / precon
         p = z.copy()
+        rms = ((np.linalg.norm(r) / (grad_norm * r.size))) ** 0.5
+        if micro_print:
+            print('Micro Iteration Guess: Rel. RMS = %1.5e' %  (rms))
+
 
         for rot_iter in range(max_micro):
             rz_old = np.vdot(r, z)
@@ -120,29 +124,28 @@ for SCF_ITER in range(1, 10):
             alpha = rz_old / np.vdot(Ap, p)
 
             x += alpha * p
-            r -= alpha * Ap 
-
+            r -= alpha * Ap
             z = r / precon
+            sodiis.add(x, r)
+
+            rms = ((np.linalg.norm(r) / grad_norm) / r.size) ** 0.5
+
+            if micro_print:
+                print('Micro Iteration %5d: Rel. RMS = %1.5e' %  (rot_iter + 1, rms))
+            if rms < micro_conv:
+                break
 
             beta = np.vdot(r, z) / rz_old
             p = z + beta * p
 
-            rms = (np.linalg.norm(r) / grad_norm) ** 0.5
 
-            if micro_print:
-                print('Micro Iteration %2d: Rel. RMS = %1.5e' %  (rot_iter + 1, rms))
-            if rms < micro_conv:
-                break
-            rdiis.add(x, r) 
-
-        x = rdiis.extrapolate()
-        # Build and exponentiate U
+        x = sodiis.extrapolate()
         U = np.zeros_like(hf.Ca)
         U[:ndocc, ndocc:] = x
         U[ndocc:, :ndocc] = -x.T
 
         U += 0.5 * np.dot(U, U)
-        U[np.diag_indices_from(hf.A)] += 1
+        U[np.diag_indices_from(U)] += 1
 
         # Easy acess to shmidt orthogonalization
         U, r = np.linalg.qr(U.T)
@@ -155,7 +158,5 @@ for SCF_ITER in range(1, 10):
 print 'Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t)
 
 print 'Final SCF energy:     %.8f hartree' % hf.scf_e
-RHF_E_psi = energy('RHF')
-compare_values(RHF_E_psi, hf.scf_e, 6, 'RHF Energy')
 
 
