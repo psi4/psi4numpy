@@ -1,0 +1,211 @@
+# A simple Psi 4 input script to compute a UHF reference using Psi4's libJK
+# Requires numpy 1.7.2+
+#
+# Created by: Daniel G. A. Smith
+# Date: 4/1/15
+# License: GPL v3.0
+#
+
+import time
+import numpy as np
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
+
+# Triplet oxygen
+molecule mol {
+    0 3
+    O
+    O 1 1.2
+symmetry c1
+}
+
+set {
+basis aug-cc-pVDZ
+}
+
+nalpha = 9
+nbeta = 7
+
+# Set defaults
+maxiter = 10
+E_conv = 1.0E-8
+D_conv = 1.0E-5
+
+# Integral generation from Psi4's MintsHelper
+mints = MintsHelper()
+S = np.asarray(mints.ao_overlap())
+V = np.asarray(mints.ao_potential())
+T = np.asarray(mints.ao_kinetic())
+nbf = S.shape[0]
+
+if nbf > 100:
+    raise Exception("This has a N^4 memory overhead, killing if nbf > 100.")
+
+H = T + V
+
+# Orthogonalizer A = S^(-1/2)
+A = mints.ao_overlap()
+A.power(-0.5, 1.e-16)
+A = np.asarray(A)
+
+# ERI's
+I = np.asarray(mints.ao_eri())
+
+# Steal a good starting guess
+set {
+e_convergence -5
+d_convergence -5
+maxiter 0
+guess sad
+}
+
+energy('UHF')
+wfn = wavefunction()
+Ca = np.array(wfn.Ca())
+Da = np.array(wfn.Da())
+Cb = np.array(wfn.Cb())
+Db = np.array(wfn.Db())
+
+nalpha = wfn.nalpha()
+nbeta = wfn.nbeta()
+
+t = time.time()
+E = 0.0
+Enuc = mol.nuclear_repulsion_energy()
+Eold = 0.0
+
+print('\nTotal time taken for setup: %.3f seconds' % (time.time() - t))
+
+print('\nStart UHF iterations:\n')
+t = time.time()
+
+
+def transform(I, C1, C2, C3, C4):
+    #MO = np.einsum('pA,pqrs->Aqrs', C1,  I)
+    nao = I.shape[0]
+    MO = np.dot(C1.T, I.reshape(nao, -1)).reshape(C1.shape[1], nao, nao, nao)
+
+    MO = np.einsum('qB,Aqrs->ABrs', C2, MO)
+    MO = np.einsum('rC,ABrs->ABCs', C3, MO)
+    MO = np.einsum('sD,ABCs->ABCD', C4, MO)
+    return MO
+
+# Rotate orbs and produce C and D matrices
+def rotate_orbs(C, x, nocc):
+    U = np.zeros_like(C)
+    U[:nocc, nocc:] = x
+    U[nocc:, :nocc] = -x.T
+
+    expU = U.copy()
+    expU[np.diag_indices_from(U)] += 1
+    expU += 0.5 * np.dot(U, U)
+
+    expU, r = np.linalg.qr(expU.T)
+    Cn = C.dot(expU)
+    D = np.dot(Cn[:,:nocc], Cn[:,:nocc].T)
+    return (Cn, D) 
+
+for UHF_ITER in range(1, maxiter + 1):
+
+    # Build the fock matrices
+    Ja = np.einsum('pqrs,rs->pq', I, Da)
+    Ka = np.einsum('prqs,rs->pq', I, Da)
+    Jb = np.einsum('pqrs,rs->pq', I, Db)
+    Kb = np.einsum('prqs,rs->pq', I, Db)
+
+    Fa = H + (Ja + Jb) - Ka
+    Fb = H + (Ja + Jb) - Kb
+
+    # dRMS error
+    diisa_e = Fa.dot(Da).dot(S) - S.dot(Da).dot(Fa)
+    diisb_e = Fb.dot(Db).dot(S) - S.dot(Db).dot(Fb)
+
+    # UHF energy and update
+    UHF_E = np.einsum('pq,pq->', Da + Db, H)
+    UHF_E += np.einsum('pq,pq->', Da, Fa)
+    UHF_E += np.einsum('pq,pq->', Db, Fb)
+    UHF_E *= 0.5
+    UHF_E += Enuc 
+
+    dRMS = 0.5 * (np.mean(diisa_e**2)**0.5 + np.mean(diisb_e**2)**0.5)
+    print('UHF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
+          % (UHF_ITER, UHF_E, (UHF_E - Eold), dRMS))
+    if (abs(UHF_E - Eold) < E_conv) and (dRMS < D_conv):
+        break
+
+    Eold = UHF_E
+
+    Cocca = Ca[:, :nalpha]
+    Cvira = Ca[:, nalpha:]
+
+    Coccb = Cb[:, :nbeta]
+    Cvirb = Cb[:, nbeta:]
+
+    # Form gradients
+    moFa = (Ca.T).dot(Fa).dot(Ca)
+    moFb = (Cb.T).dot(Fb).dot(Cb)
+    grada = -4 * moFa[:nalpha, nalpha:]
+    gradb = -4 * moFb[:nbeta, nbeta:]
+
+    # Form off diagonal contributions
+    Jab = 8 * transform(I, Cocca, Cvira, Coccb, Cvirb)
+
+    # Form diagonal a contributions
+    MOaa = transform(I, Cocca, Ca, Ca, Ca)
+    Ha  = np.einsum('ab,ij->iajb', moFa[nalpha:, nalpha:], np.diag(np.ones(nalpha)))
+    Ha -= np.einsum('ij,ab->iajb', moFa[:nalpha:, :nalpha], np.diag(np.ones(nbf-nalpha)))
+    Ha += 2 * MOaa[:, nalpha:, :nalpha, nalpha:]
+    Ha -= MOaa[:, nalpha:, :nalpha, nalpha:].swapaxes(0, 2)
+    Ha -= MOaa[:, :nalpha, nalpha:, nalpha:].swapaxes(1, 2)
+    Ha *= 4
+
+    # Form diagonal b contributions
+    MObb = transform(I, Coccb, Cb, Cb, Cb)
+    Hb  = np.einsum('ab,ij->iajb', moFb[nbeta:, nbeta:], np.diag(np.ones(nbeta)))
+    Hb -= np.einsum('ij,ab->iajb', moFb[:nbeta:, :nbeta], np.diag(np.ones(nbf-nbeta)))
+    Hb += 2 * MObb[:, nbeta:, :nbeta, nbeta:]
+    Hb -= MObb[:, nbeta:, :nbeta, nbeta:].swapaxes(0, 2)
+    Hb -= MObb[:, :nbeta, nbeta:, nbeta:].swapaxes(1, 2)
+    Hb *= 4
+
+    # Build the full Hessian matrix
+    na = Ha.shape[0] * Ha.shape[1]
+    nb = Hb.shape[0] * Hb.shape[1]
+    ntot = na + nb
+
+    #  aa | ab
+    #  -------
+    #  ba | bb
+    Hess = np.zeros((ntot, ntot))
+    Hess[:na,:na] = Ha.reshape(na, na)
+    Hess[:na,na:] = Jab.reshape(na,nb)
+    Hess[na:,:na] = Jab.reshape(na,nb).T
+    Hess[na:,na:] = Hb.reshape(nb, nb)
+
+    # Invert hessian and obtain new vectors
+    Hinv = np.linalg.inv(Hess)
+
+    gradvec = np.hstack((grada.reshape(-1), gradb.reshape(-1)))
+    resultx = np.einsum('ij,j->i', Hinv, gradvec)
+    
+    xa = resultx[:na].reshape(Ha.shape[0], Ha.shape[1])
+    xb = resultx[na:].reshape(Hb.shape[0], Hb.shape[1])
+
+    # Rotate the orbitals
+    Ca, Da = rotate_orbs(Ca, xa, nalpha)
+    Cb, Db = rotate_orbs(Cb, xb, nbeta)
+
+    if UHF_ITER == maxiter:
+        clean()
+        raise Exception("Maximum number of UHF cycles exceeded.")
+
+print('Total time for UHF iterations: %.3f seconds \n' % (time.time() - t))
+
+print('Final UHF energy: %.8f hartree' % UHF_E)
+set {
+e_convergence 1e-8
+r_convergence 1e-6
+scf_type pk
+maxiter = 100
+}
+UHF_E_psi = energy('UHF')
+compare_values(UHF_E_psi, UHF_E, 6, 'UHF Energy')

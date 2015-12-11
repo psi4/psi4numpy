@@ -14,10 +14,9 @@ np.set_printoptions(precision=5, linewidth=200, suppress=True)
 memory 2 GB
 
 molecule mol {
-0 1
 O
-H 1 1.0
-H 1 1.0 2 104.5
+H 1 1.1
+H 1 1.1 2 104
 symmetry c1
 }
 

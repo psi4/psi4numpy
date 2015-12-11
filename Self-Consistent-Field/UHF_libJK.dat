@@ -26,6 +26,7 @@ symmetry c1
 }
 
 set {
+guess core
 basis aug-cc-pVDZ
 scf_type df
 e_convergence 1e-8
