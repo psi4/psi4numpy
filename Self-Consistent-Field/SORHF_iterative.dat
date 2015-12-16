@@ -31,6 +31,7 @@ e_convergence 1e1
 d_convergence 1e1
 }
 
+
 # Knobs
 E_conv = 1.e-8
 D_conv = 1.e-4
@@ -52,22 +53,6 @@ t = time.time()
 E = 0.0
 Eold = 0.0
 iter_type = 'CORE'
-
-def Hx(x, Co, Cv, parts = False):
-    F  = np.einsum('mp,pn->mn', moF[:ndocc, :ndocc], x)
-    F += np.einsum('pm,np->nm', moF[ndocc:, ndocc:], -x)
-    F *= -4
-
-    # Build two electron part, M = -4 (4 G_{mnip} - g_{mpin} - g_{npim}) K_{ip}
-    C_right = np.einsum('ia,sa->si', -x, Cv)
-    J, K = hf.build_jk(Co, C_right)
-    M    = (Co.T).dot(4 * J - K.T - K).dot(Cv)
-    M   *= -4
-
-    if parts:
-        return (F, M)
-    else:
-        return F + M
 
 def RHF_Hx(x, moF, Co, Cv):
     """
