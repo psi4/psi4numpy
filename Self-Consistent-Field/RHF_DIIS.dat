@@ -1,4 +1,4 @@
-# A simple Psi 4 input script to compute a RHF using DIIS reference
+# A simple Psi 4 input script to compute a SCF using DIIS reference
 # Requires umpy 1.7.2+
 #
 # Created by: Daniel G. A. Smith
@@ -57,7 +57,7 @@ if I_Size > numpy_memory:
     raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory \
                     limit of %4.2f GB." % (memory_footprint, numpy_memory))
 
-# Compute required quantities for RHF
+# Compute required quantities for SCF
 V = np.asarray(mints.ao_potential())
 T = np.asarray(mints.ao_kinetic())
 I = np.asarray(mints.ao_eri())
@@ -83,7 +83,7 @@ D = np.einsum('pi,qi->pq', Cocc, Cocc)
 
 print('\nTotal time taken for setup: %.3f seconds' % (time.time() - t))
 
-print('\nStart RHF iterations:\n')
+print('\nStart SCF iterations:\n')
 t = time.time()
 E = 0.0
 Enuc = mol.nuclear_repulsion_energy()
@@ -92,7 +92,7 @@ Eold = 0.0
 Fock_list = []
 DIIS_error = []
 
-for RHF_ITER in range(1, maxiter + 1):
+for SCF_ITER in range(1, maxiter + 1):
 
     # Build fock matrix
     J = np.einsum('pqrs,rs->pq', I, D)
@@ -105,18 +105,18 @@ for RHF_ITER in range(1, maxiter + 1):
     Fock_list.append(F)
     DIIS_error.append(diis_e)
 
-    # RHF energy and update
-    RHF_E = np.einsum('pq,pq->', F + H, D) + Enuc
+    # SCF energy and update
+    SCF_E = np.einsum('pq,pq->', F + H, D) + Enuc
     dRMS = np.mean(diis_e**2)**0.5
 
-    print('RHF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
-          % (RHF_ITER, RHF_E, (RHF_E - Eold), dRMS))
-    if (abs(RHF_E - Eold) < E_conv) and (dRMS < D_conv):
+    print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
+          % (SCF_ITER, SCF_E, (SCF_E - Eold), dRMS))
+    if (abs(SCF_E - Eold) < E_conv) and (dRMS < D_conv):
         break
 
-    Eold = RHF_E
+    Eold = SCF_E
 
-    if RHF_ITER >= 2:
+    if SCF_ITER >= 2:
 
         # Limit size of DIIS vector
         diis_count = len(Fock_list)
@@ -161,12 +161,12 @@ for RHF_ITER in range(1, maxiter + 1):
     Cocc = C[:, :ndocc]
     D = np.einsum('pi,qi->pq', Cocc, Cocc)
 
-    if RHF_ITER == maxiter:
+    if SCF_ITER == maxiter:
         clean()
-        raise Exception("Maximum number of RHF cycles exceeded.")
+        raise Exception("Maximum number of SCF cycles exceeded.")
 
-print('Total time for RHF iterations: %.3f seconds \n' % (time.time() - t))
+print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 
-print('Final RHF energy: %.8f hartree' % RHF_E)
-RHF_E_psi = energy('RHF')
-compare_values(RHF_E_psi, RHF_E, 6, 'RHF Energy')
+print('Final SCF energy: %.8f hartree' % SCF_E)
+SCF_E_psi = energy('SCF')
+compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')

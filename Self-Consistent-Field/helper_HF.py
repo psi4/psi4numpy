@@ -222,3 +222,40 @@ class DIIS_helper(object):
 
         return V
 
+def compute_jk(psi4, jk, c_left, c_right=None):
+    cl = jk.C_left()
+    if not isinstance(c_left, (list, tuple)):
+        c_left = [c_left]
+
+    for c in c_left:
+        mat = psi4.Matrix(c.shape[0], c.shape[1])
+        np_mat = np.asarray(mat)
+        np_mat[:] = c        
+        cl.append(mat)
+
+    if c_right is not None:
+        if len(c_left) != len(c_right):
+            raise ValueError("JK: length of left and right matrices is not equal")
+        
+        cr = jk.C_right()
+        if not isinstance(c_right, (list, tuple)):
+            c_right = [c_right]
+
+        for c in c_right:
+            mat = psi4.Matrix(c.shape[0], c.shape[1])
+            np_mat = np.asarray(mat)
+            np_mat[:] = c        
+            cr.append(mat)
+
+    jk.compute()
+    J = []
+    K = []
+    for n in range(len(c_left)):
+        J.append(np.array(jk.J()[n]))
+        K.append(np.array(jk.K()[n]))
+        del cl[0]
+        if c_right is not None:
+            del cr[0]
+
+    return (J, K)
+

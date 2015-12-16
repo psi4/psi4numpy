@@ -1,4 +1,4 @@
-# A simple Psi 4 input script to compute a RHF reference using second-order optimizations
+# A simple Psi 4 input script to compute a SCF reference using second-order optimizations
 # Requires scipy numpy 1.7.2+
 #
 # Created by: Daniel G. A. Smith
@@ -48,7 +48,7 @@ npC = np.asarray(mC)
 occ_mC = Matrix(hf.nbf, hf.ndocc)
 occ_npC = np.asarray(occ_mC)
 
-print('\nStart RHF iterations:\n')
+print('\nStart SCF iterations:\n')
 t = time.time()
 E = 0.0
 Eold = 0.0
@@ -68,7 +68,7 @@ for SCF_ITER in range(1, 20):
     # SCF energy and update
     scf_e = hf.compute_hf_energy()
     dRMS = np.mean(diis_e**2)**0.5
-    print 'RHF Iteration %3d: Energy = %4.16f   dE = % 1.3E   dRMS = %1.3E   %s' % (SCF_ITER, hf.scf_e, (hf.scf_e - Eold), dRMS, iter_type)
+    print 'SCF Iteration %3d: Energy = %4.16f   dE = % 1.3E   dRMS = %1.3E   %s' % (SCF_ITER, hf.scf_e, (hf.scf_e - Eold), dRMS, iter_type)
     if (abs(hf.scf_e - Eold) < E_conv) and (dRMS < D_conv):
         break
 
@@ -122,6 +122,6 @@ for SCF_ITER in range(1, 20):
 print 'Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t)
 
 print 'Final SCF energy:     %.8f hartree' % hf.scf_e
-RHF_E_psi = energy('RHF')
-compare_values(RHF_E_psi, hf.scf_e, 6, 'RHF Energy')
+SCF_E_psi = energy('SCF')
+compare_values(SCF_E_psi, hf.scf_e, 6, 'SCF Energy')
 

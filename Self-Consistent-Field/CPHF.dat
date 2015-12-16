@@ -1,4 +1,4 @@
-# A simple Psi 4 input script to compute MP2 from a RHF reference
+# A simple Psi 4 input script to compute MP2 from a SCF reference
 #
 # Created by: Daniel G. A. Smith
 # Date: 3/31/15

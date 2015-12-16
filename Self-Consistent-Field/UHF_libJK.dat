@@ -1,4 +1,4 @@
-# A simple Psi 4 input script to compute a UHF reference using Psi4's libJK
+# A simple Psi 4 input script to compute a SCF reference using Psi4's libJK
 # Requires numpy 1.7.2+
 #
 # Created by: Daniel G. A. Smith
@@ -26,10 +26,11 @@ symmetry c1
 }
 
 set {
-guess core
-basis aug-cc-pVDZ
-scf_type df
-e_convergence 1e-8
+    guess           core
+    basis           aug-cc-pVDZ
+    scf_type        df
+    e_convergence   1e-8
+    reference       uhf
 }
 
 # Set occupations
@@ -110,10 +111,10 @@ diisb = DIIS_helper()
 
 print('\nTotal time taken for setup: %.3f seconds' % (time.time() - t))
 
-print('\nStart UHF iterations:\n')
+print('\nStart SCF iterations:\n')
 t = time.time()
 
-for UHF_ITER in range(1, maxiter + 1):
+for SCF_ITER in range(1, maxiter + 1):
 
     npCa[:] = Ca[:, :nocca]
     npCb[:] = Cb[:, :noccb]
@@ -136,20 +137,20 @@ for UHF_ITER in range(1, maxiter + 1):
     diisb_e = (A.T).dot(diisb_e).dot(A)
     diisb.add(Fb, diisb_e)
 
-    # UHF energy and update
-    UHF_E  = np.einsum('pq,pq->', Da + Db, H)
-    UHF_E += np.einsum('pq,pq->', Da, Fa)
-    UHF_E += np.einsum('pq,pq->', Db, Fb)
-    UHF_E *= 0.5
-    UHF_E += Enuc 
+    # SCF energy and update
+    SCF_E  = np.einsum('pq,pq->', Da + Db, H)
+    SCF_E += np.einsum('pq,pq->', Da, Fa)
+    SCF_E += np.einsum('pq,pq->', Db, Fb)
+    SCF_E *= 0.5
+    SCF_E += Enuc 
 
     dRMS = 0.5 * (np.mean(diisa_e**2)**0.5 + np.mean(diisb_e**2)**0.5)
-    print('UHF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
-          % (UHF_ITER, UHF_E, (UHF_E - Eold), dRMS))
-    if (abs(UHF_E - Eold) < E_conv) and (dRMS < D_conv):
+    print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
+          % (SCF_ITER, SCF_E, (SCF_E - Eold), dRMS))
+    if (abs(SCF_E - Eold) < E_conv) and (dRMS < D_conv):
         break
 
-    Eold = UHF_E
+    Eold = SCF_E
 
     Fa = diisa.extrapolate()
     Fb = diisb.extrapolate()
@@ -158,15 +159,15 @@ for UHF_ITER in range(1, maxiter + 1):
     Ca, Da = diag_H(Fa, nocca)    
     Cb, Db = diag_H(Fb, noccb)    
 
-    if UHF_ITER == maxiter:
+    if SCF_ITER == maxiter:
         clean()
-        raise Exception("Maximum number of UHF cycles exceeded.")
+        raise Exception("Maximum number of SCF cycles exceeded.")
 
-print('Total time for UHF iterations: %.3f seconds \n' % (time.time() - t))
+print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 
-print('Final UHF energy: %.8f hartree' % UHF_E)
+print('Final SCF energy: %.8f hartree' % SCF_E)
 set {
 e_convergence 1e-8
 }
-UHF_E_psi = energy('UHF')
-compare_values(UHF_E_psi, UHF_E, 6, 'UHF Energy')
+SCF_E_psi = energy('SCF')
+compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')

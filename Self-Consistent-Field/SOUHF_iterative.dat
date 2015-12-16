@@ -1,4 +1,4 @@
-# A simple Psi 4 input script to compute a UHF reference using Psi4's libJK
+# A simple Psi 4 input script to compute a SCF reference using Psi4's libJK
 # Requires numpy 1.7.2+
 #
 # This is more of a testing ground, excuse the mess
@@ -10,7 +10,7 @@
 
 import time
 import numpy as np
-from helper_HF import *
+import helper_HF as hf
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 
 # Memory for Psi4 in GB
@@ -28,9 +28,10 @@ symmetry c1
 }
 
 set {
-basis aug-cc-pVDZ
-scf_type df
-e_convergence 1e-8
+    basis aug-cc-pVDZ
+    scf_type df
+    e_convergence 1e-8
+    reference uhf
 }
 
 # Set occupations
@@ -82,46 +83,8 @@ def diag_H(H, nocc):
     D = np.einsum('pi,qi->pq', Cocc, Cocc)
     return (C, D)
 
-def compute_jk(c_left, c_right=None):
-    cl = jk.C_left()
-    if not isinstance(c_left, (list, tuple)):
-        c_left = [c_left]
 
-    for c in c_left:
-        mat = Matrix(c.shape[0], c.shape[1])
-        np_mat = np.asarray(mat)
-        np_mat[:] = c        
-        cl.append(mat)
-
-    if c_right is not None:
-        if len(c_left) != len(c_right):
-            raise ValueError("JK: length of left and right matrices is not equal")
-        
-        cr = jk.C_right()
-        if not isinstance(c_right, (list, tuple)):
-            c_right = [c_right]
-
-        for c in c_right:
-            mat = Matrix(c.shape[0], c.shape[1])
-            np_mat = np.asarray(mat)
-            np_mat[:] = c        
-            cr.append(mat)
-
-    jk.compute()
-    J = []
-    K = []
-    for n in range(len(c_left)):
-        J.append(np.array(jk.J()[n]))
-        K.append(np.array(jk.K()[n]))
-        del cl[0]
-        if c_right is not None:
-            del cr[0]
-
-    return (J, K)
-
-
-
-def UHF_Hx(xa, xb, moFa, Co_a, Cv_a, moFb, Co_b, Cv_b):
+def SCF_Hx(xa, xb, moFa, Co_a, Cv_a, moFb, Co_b, Cv_b):
     """
     Compute a hessian vector guess where x is a ov matrix of nonredundant operators.
     """
@@ -135,7 +98,7 @@ def UHF_Hx(xa, xb, moFa, Co_a, Cv_a, moFb, Co_b, Cv_b):
     C_right_a = np.einsum('ia,sa->si', -xa, Cv_a)
     C_right_b = np.einsum('ia,sa->si', -xb, Cv_b)
 
-    J, K = compute_jk([Co_a, Co_b], [C_right_a, C_right_b]) 
+    J, K = hf.compute_jk(psi4, jk, [Co_a, Co_b], [C_right_a, C_right_b]) 
 
     Jab = J[0] + J[1]
     Hx_a += (Co_a.T).dot(2 * Jab - K[0].T - K[0]).dot(Cv_a)
@@ -172,36 +135,23 @@ E = 0.0
 Enuc = mol.nuclear_repulsion_energy()
 Eold = 0.0
 
-Fock_list = []
-DIIS_error = []
-
-# Build a C matrix and share data with the numpy array npC
-Cocca = Matrix(nbf, nocca)
-npCa = np.asarray(Cocca)
-npCa[:] = Ca[:, :nocca]
-
-Coccb = Matrix(nbf, noccb)
-npCb = np.asarray(Coccb)
-npCb[:] = Cb[:, :noccb]
-
 # Initialize the JK object
 jk = JK.build_JK()
 jk.initialize()
 
 # Build a DIIS helper object
-diisa = DIIS_helper()
-diisb = DIIS_helper()
-
+diisa = hf.DIIS_helper()
+diisb = hf.DIIS_helper()
 
 print('\nTotal time taken for setup: %.3f seconds' % (time.time() - t))
 
-print('\nStart UHF iterations:\n')
+print('\nStart SCF iterations:\n')
 t = time.time()
 
-for UHF_ITER in range(1, maxiter + 1):
+for SCF_ITER in range(1, maxiter + 1):
 
     # Build Fock matrices
-    J, K = compute_jk([Ca[:, :nocca], Cb[:, :noccb]])
+    J, K = hf.compute_jk(psi4, jk, [Ca[:, :nocca], Cb[:, :noccb]])
     J = J[0] + J[1]
     Fa = H + J - K[0]
     Fb = H + J - K[1]
@@ -215,20 +165,20 @@ for UHF_ITER in range(1, maxiter + 1):
     diisb_e = (A.T).dot(diisb_e).dot(A)
     diisb.add(Fb, diisb_e)
 
-    # UHF energy and update
-    UHF_E  = np.einsum('pq,pq->', Da + Db, H)
-    UHF_E += np.einsum('pq,pq->', Da, Fa)
-    UHF_E += np.einsum('pq,pq->', Db, Fb)
-    UHF_E *= 0.5
-    UHF_E += Enuc 
+    # SCF energy and update
+    SCF_E  = np.einsum('pq,pq->', Da + Db, H)
+    SCF_E += np.einsum('pq,pq->', Da, Fa)
+    SCF_E += np.einsum('pq,pq->', Db, Fb)
+    SCF_E *= 0.5
+    SCF_E += Enuc 
 
     dRMS = 0.5 * (np.mean(diisa_e**2)**0.5 + np.mean(diisb_e**2)**0.5)
-    print('UHF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
-          % (UHF_ITER, UHF_E, (UHF_E - Eold), dRMS))
-    if (abs(UHF_E - Eold) < E_conv) and (dRMS < D_conv):
+    print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
+          % (SCF_ITER, SCF_E, (SCF_E - Eold), dRMS))
+    if (abs(SCF_E - Eold) < E_conv) and (dRMS < D_conv):
         break
 
-    Eold = UHF_E
+    Eold = SCF_E
 
     Co_a = Ca[:, :nocca]
     Cv_a = Ca[:, nocca:]
@@ -255,7 +205,7 @@ for UHF_ITER in range(1, maxiter + 1):
 
     else:
 
-        so_diis = DIIS_helper()
+        so_diis = hf.DIIS_helper()
 
         eps_a = np.diag(moF_a)
         precon_a = -4 * (eps_a[:nocca].reshape(-1, 1) - eps_a[nocca:])
@@ -265,7 +215,7 @@ for UHF_ITER in range(1, maxiter + 1):
         precon_b = -4 * (eps_b[:noccb].reshape(-1, 1) - eps_b[noccb:])
         x_b = gradient_b / precon_b 
 
-        Hx_a, Hx_b = UHF_Hx(x_a, x_b, moF_a, Co_a, Cv_a, moF_b, Co_b, Cv_b)
+        Hx_a, Hx_b = SCF_Hx(x_a, x_b, moF_a, Co_a, Cv_a, moF_b, Co_b, Cv_b)
 
         r_a = gradient_a - Hx_a
         z_a = r_a / precon_a
@@ -278,7 +228,7 @@ for UHF_ITER in range(1, maxiter + 1):
         for rot_iter in range(max_micro):
             rz_old = np.vdot(r_a, z_a) + np.vdot(r_b, z_b)
 
-            Hx_a, Hx_b = UHF_Hx(p_a, p_b, moF_a, Co_a, Cv_a, moF_b, Co_b, Cv_b)
+            Hx_a, Hx_b = SCF_Hx(p_a, p_b, moF_a, Co_a, Cv_a, moF_b, Co_b, Cv_b)
 
             alpha = rz_old / (np.vdot(Hx_a, p_a) + np.vdot(Hx_b, p_b))
 
@@ -325,15 +275,15 @@ for UHF_ITER in range(1, maxiter + 1):
         #print 'Here!'
         #raise Exception("")
 
-    if UHF_ITER == maxiter:
+    if SCF_ITER == maxiter:
         clean()
-        raise Exception("Maximum number of UHF cycles exceeded.")
+        raise Exception("Maximum number of SCF cycles exceeded.")
 
-print('Total time for UHF iterations: %.3f seconds \n' % (time.time() - t))
+print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 
-print('Final UHF energy: %.8f hartree' % UHF_E)
+print('Final SCF energy: %.8f hartree' % SCF_E)
 set {
 e_convergence 1e-8
 }
-UHF_E_psi = energy('UHF')
-compare_values(UHF_E_psi, UHF_E, 6, 'UHF Energy')
+SCF_E_psi = energy('SCF')
+compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')

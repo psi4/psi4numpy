@@ -1,4 +1,4 @@
-# A simple Psi 4 input script to compute a RHF reference using Psi4's libJK
+# A simple Psi 4 input script to compute a SCF reference using Psi4's libJK
 # Requires numpy 1.7.2+
 #
 # Created by: Daniel G. A. Smith
@@ -105,10 +105,10 @@ diis = DIIS_helper()
 
 print('\nTotal time taken for setup: %.3f seconds' % (time.time() - t))
 
-print('\nStart RHF iterations:\n')
+print('\nStart SCF iterations:\n')
 t = time.time()
 
-for RHF_ITER in range(1, maxiter + 1):
+for SCF_ITER in range(1, maxiter + 1):
 
     npC[:] = Cocc
     jk.compute()
@@ -123,16 +123,16 @@ for RHF_ITER in range(1, maxiter + 1):
     diis_e = A.dot(diis_e).dot(A)
     diis.add(F, diis_e)
 
-    # RHF energy and update
-    RHF_E = np.einsum('pq,pq->', F + H, D) + Enuc
+    # SCF energy and update
+    SCF_E = np.einsum('pq,pq->', F + H, D) + Enuc
     dRMS = np.sum(np.power(D - Dold, 2)) ** 0.5
 
-    print('RHF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
-          % (RHF_ITER, RHF_E, (RHF_E - Eold), dRMS))
-    if (abs(RHF_E - Eold) < E_conv) and (dRMS < D_conv):
+    print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
+          % (SCF_ITER, SCF_E, (SCF_E - Eold), dRMS))
+    if (abs(SCF_E - Eold) < E_conv) and (dRMS < D_conv):
         break
 
-    Eold = RHF_E
+    Eold = SCF_E
     Dold = D
 
     F = diis.extrapolate()
@@ -144,12 +144,12 @@ for RHF_ITER in range(1, maxiter + 1):
     Cocc = C[:, :ndocc]
     D = np.einsum('pi,qi->pq', Cocc, Cocc)
 
-    if RHF_ITER == maxiter:
+    if SCF_ITER == maxiter:
         clean()
-        raise Exception("Maximum number of RHF cycles exceeded.")
+        raise Exception("Maximum number of SCF cycles exceeded.")
 
-print('Total time for RHF iterations: %.3f seconds \n' % (time.time() - t))
+print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 
-print('Final RHF energy: %.8f hartree' % RHF_E)
-RHF_E_psi = energy('RHF')
-compare_values(RHF_E_psi, RHF_E, 6, 'RHF Energy')
+print('Final SCF energy: %.8f hartree' % SCF_E)
+SCF_E_psi = energy('SCF')
+compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
