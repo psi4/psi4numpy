@@ -201,6 +201,10 @@ for SCF_ITER in range(1, maxiter + 1):
 
 print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 
+spin_mat = (Cb[:, :nbeta].T).dot(S).dot(Ca[:, :nalpha])
+spin_contam = min(nocca, noccb) - np.vdot(spin_mat, spin_mat)
+print('Spin Contamination Metric: %1.5E\n' % spin_contam)
+
 print('Final SCF energy: %.8f hartree' % SCF_E)
 set {
 e_convergence 1e-8

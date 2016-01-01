@@ -21,9 +21,9 @@ symmetry c1
 }
 
 set {
-basis aug-cc-pVDZ
-scf_type df
-cphf_tasks ['polarizability']
+    basis aug-cc-pVDZ
+    scf_type df
+    cphf_tasks ['polarizability']
 }
 
 # Set defaults

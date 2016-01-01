@@ -259,3 +259,30 @@ def compute_jk(psi4, jk, c_left, c_right=None):
 
     return (J, K)
 
+
+def rotate_orbitals(C, x, return_d = False):
+   
+    rsize = x.shape[0] + x.shape[1] 
+    if (rsize) != C.shape[1]:
+        raise ValueError("rotate_orbitals: shape mismatch")
+
+    U = np.zeros((rsize, rsize))
+    ndocc = x.shape[0]
+    U[:ndocc, ndocc:] = x
+    U[ndocc:, :ndocc] = -x.T
+
+    U += 0.5 * np.dot(U, U)
+    U[np.diag_indices_from(U)] += 1
+
+    # Easy acess to shmidt orthogonalization
+    U, r = np.linalg.qr(U.T)
+
+    # Rotate and set orbitals
+    C = C.dot(U)
+    if return_d:
+        Cocc = C[:, :ndocc]
+        return C, np.dot(Cocc, Cocc.T)
+    else:
+        return C
+
+

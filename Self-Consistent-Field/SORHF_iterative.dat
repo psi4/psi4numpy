@@ -141,18 +141,8 @@ for SCF_ITER in range(1, max_macro):
 
 
         x = sodiis.extrapolate()
-        U = np.zeros_like(hf.Ca)
-        U[:ndocc, ndocc:] = x
-        U[ndocc:, :ndocc] = -x.T
+        C = rotate_orbitals(hf.Ca, x)
 
-        U += 0.5 * np.dot(U, U)
-        U[np.diag_indices_from(U)] += 1
-
-        # Easy acess to shmidt orthogonalization
-        U, r = np.linalg.qr(U.T)
-
-        # Rotate and set orbitals
-        C = hf.Ca.dot(U)
         hf.set_Cleft(C)
         iter_type = 'SOSCF, nmicro ' + str(rot_iter + 1)
 
