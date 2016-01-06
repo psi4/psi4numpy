@@ -133,7 +133,7 @@ class helper_CCSD(object):
         if not freeze_core:
             psi.set_local_option('CCENERGY', 'FREEZE_CORE', 'FALSE')
 
-        self.rhf_e = energy('RHF')
+        self.rhf_e = energy('SCF')
         print('RHF Final Energy                          % 16.10f\n' % (self.rhf_e))
 
         self.ccsd_corr_e = 0.0

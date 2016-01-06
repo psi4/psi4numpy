@@ -41,7 +41,7 @@ check_energy = False
 
 print('\nStarting RHF...')
 t = time.time()
-RHF_E = energy('RHF')
+RHF_E = energy('SCF')
 print('...RHF finished in %.3f seconds:   %16.10f' % (time.time() - t, RHF_E))
 
 # Grab data from wavfunction class 

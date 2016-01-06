@@ -29,8 +29,8 @@ basis cc-pVDZ
 guess sad
 }
 
-E_conv = 1.e-15
-D_conv = 1.e-15
+E_conv = 1.e-13
+D_conv = 1.e-13
 
 # Build objects
 diis = DIIS_helper()

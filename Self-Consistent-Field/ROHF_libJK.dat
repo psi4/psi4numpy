@@ -27,7 +27,7 @@ symmetry c1
 
 set {
     guess           core
-    basis           cc-pVDZ
+    basis           aug-cc-pVDZ
     scf_type        df
     e_convergence   1e-8
     reference       rohf
@@ -119,6 +119,7 @@ for SCF_ITER in range(1, maxiter + 1):
     #  open    | 2(Fc-Fo)     Fc      2Fo
     #  virtual |    Fc       2Fo       Fc
 
+    #print moFa[ndocc:nocc, ndocc:nocc] + moFb[ndocc:nocc, ndocc:nocc]
     moFeff = 0.5 * (moFa + moFb)
     moFeff[:ndocc, ndocc:nocc] = moFb[:ndocc, ndocc:nocc]
     moFeff[ndocc:nocc, :ndocc] = moFb[ndocc:nocc, :ndocc]
@@ -131,7 +132,7 @@ for SCF_ITER in range(1, maxiter + 1):
     # Build gradient
     IFock = moFeff.copy()
     IFock[np.diag_indices_from(IFock)] = 0.0
-    diis_e = (Ct).dot(IFock).dot(Ct.T)
+    diis_e = (Ct[:, :nocc]).dot(IFock[:nocc, ndocc:]).dot(Ct[:, ndocc:].T)
     diis.add(Feff, diis_e)
 
     # SCF energy and update

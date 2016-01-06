@@ -46,7 +46,7 @@ print('\nStarting RHF and integral build...')
 t = time.time()
 
 # First compute RHF energy using Psi4
-energy('RHF')
+energy('SCF')
 
 # Grab data from wavfunction class 
 wfn = wavefunction()

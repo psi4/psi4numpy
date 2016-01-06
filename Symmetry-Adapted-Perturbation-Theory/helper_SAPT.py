@@ -35,14 +35,14 @@ class helper_SAPT(object):
         tstart = time.time()
         psi.set_active_molecule(monomerA)
         self.V_A = np.asarray(psi.MintsHelper().ao_potential())
-        self.rhfA = energy('RHF')
+        self.rhfA = energy('SCF')
         self.wfnA = psi.wavefunction()
         print("RHF for monomer A finished in %.2f seconds." % (time.time() - tstart))
 
         tstart = time.time()
         psi.set_active_molecule(monomerB)
         self.V_B = np.asarray(psi.MintsHelper().ao_potential())
-        self.rhfB = energy('RHF')
+        self.rhfB = energy('SCF')
         self.wfnB = psi.wavefunction()
         print("RHF for monomer B finished in %.2f seconds." % (time.time() - tstart))
 

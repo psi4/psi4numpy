@@ -1,4 +1,4 @@
-# A simple Psi 4 input script to compute MP2 from a RHF reference
+# A simple Psi 4 input script to compute MP2 from a SCF reference
 # Requirements scipy 0.13.0+ and numpy 1.7.2+
 #
 # Algorithms were taken directly from Daniel Crawford's programming website:
@@ -40,11 +40,11 @@ d_convergence 1e-8
 # Check energy against psi4?
 check_energy = False
 
-print('\nStarting RHF and integral build...')
+print('\nStarting SCF and integral build...')
 t = time.time()
 
-# First compute RHF energy using Psi4
-energy('RHF')
+# First compute SCF energy using Psi4
+energy('SCF')
 
 # Grab data from wavfunction class 
 wfn = wavefunction()
@@ -74,7 +74,7 @@ Eocc = eps[:ndocc]
 Evirt = eps[ndocc:]
 
 print('Shape of MO integrals: %s' % str(MO.shape))
-print('\n...finished RHF and integral build in %.3f seconds.\n' % (time.time() - t))
+print('\n...finished SCF and integral build in %.3f seconds.\n' % (time.time() - t))
 
 print('Computing MP2 energy...')
 t = time.time()
@@ -104,5 +104,6 @@ if check_energy:
     energy('MP2')
     compare_values(get_variable('MP2 TOTAL ENERGY'), MP2_E, 6, 'MP2 Energy')
     compare_values(get_variable('SCS-MP2 TOTAL ENERGY'), SCS_MP2_E, 6, 'SCS-MP2 Energy')
+
 
 

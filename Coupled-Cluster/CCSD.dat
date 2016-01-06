@@ -38,7 +38,7 @@ print_amps = False
 compare_psi4 = False
 
 # First compute RHF energy using Psi4
-energy('RHF')
+energy('SCF')
 
 # Grab data from
 wfn = wavefunction()
@@ -299,8 +299,8 @@ for CCSD_iter in range(1, maxiter + 1):
     CCSDcorr_E += 0.5 * np.einsum('ijab,ia,jb->', MO[o, o, v, v], t1, t1)
 
     ### Print CCSD correlation energy
-    print('CCSD Iteration %3d: CCSD correlation = %.12f \
-          dE = %.5E' % (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old)))
+    print('CCSD Iteration %3d: CCSD correlation = %3.12f  '\
+          'dE = %3.5E' % (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old)))
     if (abs(CCSDcorr_E - CCSDcorr_E_old) < E_conv):
         break
 

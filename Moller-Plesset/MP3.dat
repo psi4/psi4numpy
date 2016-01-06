@@ -38,7 +38,7 @@ d_convergence 1e-8
 }
 
 # First compute RHF energy using Psi4
-energy('RHF')
+energy('SCF')
 
 # Grab data from 
 wfn = wavefunction()

@@ -83,7 +83,6 @@ def diag_H(H, nocc):
     D = np.einsum('pi,qi->pq', Cocc, Cocc)
     return (C, D)
 
-
 def SCF_Hx(xa, xb, moFa, Co_a, Cv_a, moFb, Co_b, Cv_b):
     """
     Compute a hessian vector guess where x is a ov matrix of nonredundant operators.
@@ -253,9 +252,6 @@ for SCF_ITER in range(1, maxiter + 1):
         # Diagonalize Fock matrix
         Ca, Da = scf_helper.rotate_orbitals(Ca, x_a, True)
         Cb, Db = scf_helper.rotate_orbitals(Cb, x_b, True)
-
-        #print 'Here!'
-        #raise Exception("")
 
     if SCF_ITER == maxiter:
         clean()

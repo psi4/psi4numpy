@@ -28,8 +28,8 @@ nbeta = 7
 
 # Set defaults
 maxiter = 10
-E_conv = 1.0E-8
-D_conv = 1.0E-5
+E_conv = 1.0E-13
+D_conv = 1.0E-13
 
 # Integral generation from Psi4's MintsHelper
 mints = MintsHelper()
@@ -117,8 +117,8 @@ for SCF_ITER in range(1, maxiter + 1):
     Fb = H + (Ja + Jb) - Kb
 
     # dRMS error
-    diisa_e = Fa.dot(Da).dot(S) - S.dot(Da).dot(Fa)
-    diisb_e = Fb.dot(Db).dot(S) - S.dot(Db).dot(Fb)
+    diisa_e = A.dot(Fa.dot(Da).dot(S) - S.dot(Da).dot(Fa)).dot(A)
+    diisb_e = A.dot(Fb.dot(Db).dot(S) - S.dot(Db).dot(Fb)).dot(A)
 
     # SCF energy and update
     SCF_E = np.einsum('pq,pq->', Da + Db, H)
@@ -202,7 +202,7 @@ for SCF_ITER in range(1, maxiter + 1):
 print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 
 spin_mat = (Cb[:, :nbeta].T).dot(S).dot(Ca[:, :nalpha])
-spin_contam = min(nocca, noccb) - np.vdot(spin_mat, spin_mat)
+spin_contam = min(nalpha, nbeta) - np.vdot(spin_mat, spin_mat)
 print('Spin Contamination Metric: %1.5E\n' % spin_contam)
 
 print('Final SCF energy: %.8f hartree' % SCF_E)
