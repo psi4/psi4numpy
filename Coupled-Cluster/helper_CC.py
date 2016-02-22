@@ -133,13 +133,12 @@ class helper_CCSD(object):
         if not freeze_core:
             psi.set_local_option('CCENERGY', 'FREEZE_CORE', 'FALSE')
 
-        self.rhf_e = energy('SCF')
+        self.rhf_e, self.wfn = energy('SCF', return_wfn=True)
         print('RHF Final Energy                          % 16.10f\n' % (self.rhf_e))
 
         self.ccsd_corr_e = 0.0
         self.ccsd_e = 0.0
 
-        self.wfn = psi.wavefunction()
         self.eps = np.asarray(self.wfn.epsilon_a())
         self.ndocc = self.wfn.doccpi()[0]
         self.nmo = self.wfn.nmo()
@@ -171,7 +170,7 @@ class helper_CCSD(object):
             self.C = self.wfn.Ca()
             self.npC = np.asarray(self.C)
 
-        mints = psi.MintsHelper()
+        mints = psi.MintsHelper(self.wfn.basisset())
         H = np.asarray(mints.ao_kinetic()) + np.asarray(mints.ao_potential())
         self.nmo = H.shape[0]
 

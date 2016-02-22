@@ -38,10 +38,9 @@ print_amps = False
 compare_psi4 = False
 
 # First compute RHF energy using Psi4
-energy('SCF')
+scf_e, wfn = energy('SCF', return_wfn=True)
 
 # Grab data from
-wfn = wavefunction()
 C = wfn.Ca()
 ndocc = wfn.doccpi()[0]
 nmo = wfn.nmo()
@@ -59,7 +58,7 @@ if memory_footprint > numpy_memory:
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = MintsHelper()
+mints = MintsHelper(wfn.basisset())
 H = np.asarray(mints.ao_kinetic()) + np.asarray(mints.ao_potential())
 
 print('\nTotal time taken for ERI integrals: %.3f seconds.\n' % (time.time() - t))
