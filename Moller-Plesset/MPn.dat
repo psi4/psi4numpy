@@ -39,10 +39,9 @@ d_convergence 1e-8
 }
 
 # First compute RHF energy using Psi4
-energy('RHF')
+scf_e, wfn = energy('SCF', return_wfn=True)
 
 # Grab data from 
-wfn = wavefunction()
 C = wfn.Ca()
 ndocc = wfn.doccpi()[0]
 nmo = wfn.nmo()
@@ -61,7 +60,7 @@ if memory_footprint > numpy_memory:
 #Make spin-orbital MO
 t=time.time()
 print 'Starting ERI build and spin AO -> spin-orbital MO transformation...'
-mints = MintsHelper()
+mints = MintsHelper(wfn.basisset())
 MO = np.asarray(mints.mo_eri(C, C, C, C))
 
 # (pq|rs) -> <pr|qs>

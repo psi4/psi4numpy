@@ -41,11 +41,10 @@ check_energy = False
 
 print('\nStarting RHF...')
 t = time.time()
-RHF_E = energy('SCF')
+RHF_E, wfn = energy('SCF', return_wfn=True)
 print('...RHF finished in %.3f seconds:   %16.10f' % (time.time() - t, RHF_E))
 
 # Grab data from wavfunction class 
-wfn = wavefunction()
 ndocc = wfn.doccpi()[0]
 
 # Split eigenvectors and eigenvalues into o and v

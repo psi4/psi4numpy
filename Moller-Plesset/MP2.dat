@@ -44,10 +44,9 @@ print('\nStarting SCF and integral build...')
 t = time.time()
 
 # First compute SCF energy using Psi4
-energy('SCF')
+scf_e, wfn = energy('SCF', return_wfn=True)
 
 # Grab data from wavfunction class 
-wfn = wavefunction()
 ndocc = wfn.doccpi()[0]
 nmo = wfn.nmo()
 SCF_E = wfn.energy()
@@ -65,7 +64,7 @@ if memory_footprint > numpy_memory:
 print('Building MO integrals.')
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = MintsHelper()
+mints = MintsHelper(wfn.basisset())
 Co = wfn.Ca_subset("AO", "OCC")
 Cv = wfn.Ca_subset("AO", "VIR")
 MO = np.asarray(mints.mo_eri(Co, Cv, Co, Cv))

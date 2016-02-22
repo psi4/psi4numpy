@@ -38,10 +38,8 @@ d_convergence 1e-8
 }
 
 # First compute RHF energy using Psi4
-energy('SCF')
+scf_e, wfn = energy('SCF', return_wfn=True)
 
-# Grab data from 
-wfn = wavefunction()
 # Coefficient Matrix
 C = np.array(wfn.Ca())
 # Double occupied orbitals
@@ -64,7 +62,7 @@ if memory_footprint > numpy_memory:
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = MintsHelper()
+mints = MintsHelper(wfn.basisset())
 I = np.array(mints.ao_eri())
 I = I.reshape(nmo, nmo, nmo, nmo)
 
