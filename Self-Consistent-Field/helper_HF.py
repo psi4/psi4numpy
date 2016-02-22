@@ -24,13 +24,13 @@ class helper_HF(object):
         t = time.time()
         self.psi = psi
         psi.set_active_molecule(mol)
-        self.mints = psi.MintsHelper()
+        wfn = psi.new_wavefunction(mol, psi.get_global_option('BASIS'))
+        self.mints = psi.MintsHelper(wfn.basisset())
         self.enuc = mol.nuclear_repulsion_energy()
 
-        mints = psi.MintsHelper()
-        self.S = np.asarray(mints.ao_overlap())
-        self.V = np.asarray(mints.ao_potential())
-        self.T = np.asarray(mints.ao_kinetic())
+        self.S = np.asarray(self.mints.ao_overlap())
+        self.V = np.asarray(self.mints.ao_potential())
+        self.T = np.asarray(self.mints.ao_kinetic())
         self.H = self.T + self.V
 
         self.Da = None
@@ -42,7 +42,7 @@ class helper_HF(object):
         self.K = None
 
         # Orthoganlizer
-        A = mints.ao_overlap()
+        A = self.mints.ao_overlap()
         A.power(-0.5, 1.e-14)
         self.A = np.asarray(A)
 
@@ -93,7 +93,7 @@ class helper_HF(object):
         if scf_type not in ['DF', 'PK', 'DIRECT', 'OUT_OF_CORE']:
             raise Exception('SCF_TYPE %s not supported' % scf_type)
         psi.set_global_option('SCF_TYPE', scf_type)
-        self.jk = psi.JK.build_JK()
+        self.jk = psi.JK.build_JK(wfn.basisset())
         self.jk.initialize()
 #        self.jk.C_left().append(self.C_left)
 
@@ -166,7 +166,7 @@ class DIIS_helper(object):
     def __init__(self, max_vec=6):
         self.error = []
         self.vector = []
-        self.max_vec = 6
+        self.max_vec = max_vec
 
     def add(self, matrix, error):
         if len(self.error) > 1:

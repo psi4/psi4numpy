@@ -26,16 +26,18 @@ symmetry c1
 }
 
 set {
-    guess           core
+    guess           gwh
     basis           aug-cc-pVDZ
     scf_type        df
     e_convergence   1e-8
     reference       rohf
 }
 
+wfn = psi4.new_wavefunction(mol, psi4.get_global_option('BASIS'))
+
 # Set occupations
-nocca = 9
-noccb = 7
+nocca = wfn.nalpha()
+noccb = wfn.nbeta()
 ndocc = min(nocca, noccb)
 nocc = max(nocca, noccb)
 nsocc = nocc - ndocc
@@ -47,7 +49,7 @@ D_conv = 1.0E-5
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = MintsHelper()
+mints = MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 nbf = S.shape[0]
 
@@ -70,8 +72,14 @@ A = mints.ao_overlap()
 A.power(-0.5, 1.e-16)
 A = np.asarray(A)
 
+if True:
+    F = 0.875 * S * (np.diag(H)[:, None] + np.diag(H))
+    F[np.diag_indices_from(F)] = np.diag(H)
+else:
+    F = H.copy()
+
 # Build initial orbitals and density matrices
-Hp = A.dot(H).dot(A)
+Hp = A.dot(F).dot(A)
 e, Ct = np.linalg.eigh(Hp)
 C = A.dot(Ct)
 Cnocc = C[:, :nocc]
@@ -85,7 +93,7 @@ Enuc = mol.nuclear_repulsion_energy()
 Eold = 0.0
 
 # Initialize the JK object
-jk = JK.build_JK()
+jk = JK.build_JK(wfn.basisset())
 jk.initialize()
 
 # Build a DIIS helper object
@@ -130,9 +138,12 @@ for SCF_ITER in range(1, maxiter + 1):
     Feff = (Ct).dot(moFeff).dot(Ct.T)
 
     # Build gradient
-    IFock = moFeff.copy()
-    IFock[np.diag_indices_from(IFock)] = 0.0
-    diis_e = (Ct[:, :nocc]).dot(IFock[:nocc, ndocc:]).dot(Ct[:, ndocc:].T)
+    IFock = moFeff[:nocc, ndocc:].copy()
+    IFock[:, :nsocc] /= 2
+    IFock[ndocc:, :] /= 2
+    IFock[ndocc:, :nsocc] = 0.0
+#    IFock[np.diag_indices_from(IFock)] = 0.0
+    diis_e = (Ct[:, :nocc]).dot(IFock).dot(Ct[:, ndocc:].T)
     diis.add(Feff, diis_e)
 
     # SCF energy and update
