@@ -35,8 +35,9 @@ E_conv = 1.0E-8
 D_conv = 1.0E-3
 
 # Integral generation from Psi4's MintsHelper
+wfn = psi4.new_wavefunction(mol, psi4.get_global_option('BASIS'))
 t = time.time()
-mints = MintsHelper()
+mints = MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 
 # Get nbf and ndocc for closed shell molecules

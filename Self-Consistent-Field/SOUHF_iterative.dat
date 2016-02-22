@@ -48,7 +48,8 @@ micro_print = True
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = MintsHelper()
+wfn = psi4.new_wavefunction(mol, psi4.get_global_option('BASIS'))
+mints = MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 
 # Get nbf and ndocc for closed shell molecules
@@ -117,7 +118,7 @@ Enuc = mol.nuclear_repulsion_energy()
 Eold = 0.0
 
 # Initialize the JK object
-jk = JK.build_JK()
+jk = JK.build_JK(wfn.basisset())
 jk.initialize()
 
 # Build a DIIS helper object

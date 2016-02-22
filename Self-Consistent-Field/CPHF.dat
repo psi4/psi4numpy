@@ -37,22 +37,20 @@ maxiter = 20
 conv = 1.e-6
 
 # Compute the reference wavefunction and CPHF using Psi 
-energy('SCF')
-energy('CPHF')
-wfn = wavefunction()
+scf_e, scf_wfn = energy('SCF', return_wfn=True)
 
-C = wfn.Ca()
-Co = wfn.Ca_subset("AO", "OCC")
-Cv = wfn.Ca_subset("AO", "VIR")
-epsilon = np.asarray(wfn.epsilon_a())
+C = scf_wfn.Ca()
+Co = scf_wfn.Ca_subset("AO", "OCC")
+Cv = scf_wfn.Ca_subset("AO", "VIR")
+epsilon = np.asarray(scf_wfn.epsilon_a())
 
-nbf = wfn.nmo()
-nocc = wfn.nalpha()
+nbf = scf_wfn.nmo()
+nocc = scf_wfn.nalpha()
 nvir = nbf - nocc
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = MintsHelper()
+mints = MintsHelper(scf_wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 
 # Get nbf and ndocc for closed shell molecules
@@ -120,7 +118,7 @@ if method == 'direct':
 elif method == 'iterative':
 
     # Init JK object
-    jk = JK.build_JK()
+    jk = JK.build_JK(scf_wfn.basisset())
     jk.initialize()
 
     # Add blank matrices to the jk object and numpy hooks to C_right
@@ -204,4 +202,5 @@ else:
 
 print('\nCPHF Dipole Polarizability:')
 print(np.around(polar, 5))
+energy('CPHF')
 

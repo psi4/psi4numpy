@@ -32,7 +32,8 @@ E_conv = 1.0E-13
 D_conv = 1.0E-13
 
 # Integral generation from Psi4's MintsHelper
-mints = MintsHelper()
+wfn = psi4.new_wavefunction(mol, psi4.get_global_option('BASIS'))
+mints = MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 V = np.asarray(mints.ao_potential())
 T = np.asarray(mints.ao_kinetic())
@@ -59,8 +60,7 @@ maxiter 0
 guess sad
 }
 
-energy('SCF')
-wfn = wavefunction()
+scf_e, wfn = energy('SCF', return_wfn=True)
 Ca = np.array(wfn.Ca())
 Da = np.array(wfn.Da())
 Cb = np.array(wfn.Cb())
