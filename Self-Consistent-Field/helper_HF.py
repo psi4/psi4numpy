@@ -25,6 +25,7 @@ class helper_HF(object):
         self.psi = psi
         psi.set_active_molecule(mol)
         wfn = psi.new_wavefunction(mol, psi.get_global_option('BASIS'))
+        self.wfn = wfn
         self.mints = psi.MintsHelper(wfn.basisset())
         self.enuc = mol.nuclear_repulsion_energy()
 
@@ -74,8 +75,7 @@ class helper_HF(object):
             # Cheat and run a quick SCF calculation
             psi.set_global_option('E_CONVERGENCE', 1)
             psi.set_global_option('D_CONVERGENCE', 1)
-            energy('SCF')
-            wfn = psi.wavefunction()
+            e, wfn = energy('SCF', return_wfn=True)
             self.Ca = np.array(wfn.Ca())
             self.npC_left[:] = self.Ca[:, :self.ndocc]
             self.epsilon = np.array(wfn.epsilon_a())

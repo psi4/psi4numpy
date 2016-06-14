@@ -37,7 +37,7 @@ diis = DIIS_helper()
 hf = helper_HF(psi4, energy, mol, scf_type='PK', guess='SAD')
 ndocc = hf.ndocc
 nvirt = hf.nvirt
-mints = MintsHelper()
+mints = MintsHelper(hf.wfn.basisset())
 mI = mints.ao_eri()
 hf.diag(hf.H, set_C=True)
 
