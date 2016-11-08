@@ -13,25 +13,25 @@
 import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
+import psi4
 
 # Memory for Psi4 in GB
-memory 2 GB
+psi4.core.set_memory(int(5e8), False)
+psi4.core.set_output_file("output.dat", False)
 
 # Memory for numpy in GB
 numpy_memory = 2
 
-molecule mol {
+mol = psi4.geometry("""
 O
 H 1 1.1
 H 1 1.1 2 104
 symmetry c1
-}
+""")
 
-set {
-basis cc-pVDZ
-scf_type pk
-e_convergence 1e-8
-}
+psi4.core.set_global_option("basis", "cc-pVDZ")
+psi4.core.set_global_option("scf_type", "pk")
+psi4.core.set_global_option("e_convergence", 1e-8)
 
 # Set defaults
 maxiter = 40
@@ -39,14 +39,14 @@ E_conv = 1.0E-6
 D_conv = 1.0E-3
 
 # Integral generation from Psi4's MintsHelper
-wfn = psi4.new_wavefunction(mol, psi4.get_global_option('BASIS'))
+wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option('BASIS'))
 t = time.time()
-mints = MintsHelper(wfn.basisset())
+mints = psi4.core.MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 
 # Get nbf and ndocc for closed shell molecules
 nbf = S.shape[0]
-ndocc = sum(mol.Z(A) for A in range(mol.natom())) / 2
+ndocc = wfn.nalpha()
 
 print('\nNumber of occupied orbitals: %d' % ndocc)
 print('Number of basis functions: %d' % nbf)
@@ -131,5 +131,5 @@ for SCF_ITER in range(1, maxiter + 1):
 print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 
 print('Final SCF energy: %.8f hartree' % SCF_E)
-SCF_E_psi = energy('SCF')
-compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
+SCF_E_psi = psi4.energy('SCF')
+psi4.driver.p4util.util.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
