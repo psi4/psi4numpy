@@ -65,9 +65,10 @@ E1 -= v_iajb.swapaxes(0, 2)
 
 C6 = np.complex(0, 0)
 leg_points = 16
+fdds_lambda = 0.2
 print('     Omega      value     weight        sum')
 for point, weight in zip(*np.polynomial.legendre.leggauss(leg_points)):
-    omega = 0.2 * (1.0 - point) / (1.0 + point)
+    omega = fdds_lambda * (1.0 - point) / (1.0 + point)
 
     #print E1
     tmp = E1.reshape(nov, nov).astype(np.complex)
@@ -76,12 +77,8 @@ for point, weight in zip(*np.polynomial.legendre.leggauss(leg_points)):
 
     dip1 = dipoles_xyz[0].ravel().astype(np.complex)
     value = np.einsum('p,pq,q->', dip1, tmp, dip1)
-    #.real
-#    print value**2
 
-#    print value
-    #C6 += (weight * value) ** 2
-    C6 += weight * (value ** 2)
+    C6 += ((weight * value) ** 2) * ( (2 * fdds_lambda) / (point + 1)**2 )
     print('% .3e % .3e % .3e % .3e' % (omega, value, weight, weight*value))
 
 C6 *= 3.0 / np.pi
