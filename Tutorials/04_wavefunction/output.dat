@@ -1,0 +1,173 @@
+
+*** tstart() called on Daniels-MacBook-Pro-2.local
+*** at Thu Nov 10 09:10:48 2016
+
+    There are an even number of electrons - assuming singlet.
+    Specify the multiplicity in the molecule input block.
+
+
+         ---------------------------------------------------------
+                                   SCF
+            by Justin Turney, Rob Parrish, and Andy Simmonett
+                              RHF Reference
+                        1 Threads,    512 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: C2v
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+           O          0.000000000000     0.000000000000    -0.074942403999    15.994914619560
+           H          0.000000000000    -0.872688674320     0.594695167911     1.007825032070
+           H          0.000000000000     0.872688674320     0.594695167911     1.007825032070
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =     21.00135  B =     10.98153  C =      7.21095 [cm^-1]
+  Rotational constants: A = 629604.51912  B = 329217.85411  C = 216178.77775 [MHz]
+  Nuclear repulsion =    8.000310885650295
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 10
+  Nalpha       = 5
+  Nbeta        = 5
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-06
+  Density threshold  = 1.00e-06
+  Integral threshold = 0.00e+00
+
+  ==> Primary Basis <==
+
+  Basis Set: file /Users/daniel/Gits/dgaspsi/objdir/stage/usr/local/share/psi4/basis/sto-3g.gbs
+    Number of shells: 5
+    Number of basis function: 7
+    Number of Cartesian functions: 7
+    Spherical Harmonics?: true
+    Max angular momentum: 1
+
+  ==> Pre-Iterations <==
+
+   -------------------------------------------------------
+    Irrep   Nso     Nmo     Nalpha   Nbeta   Ndocc  Nsocc
+   -------------------------------------------------------
+     A          7       7       0       0       0       0
+   -------------------------------------------------------
+    Total       7       7       5       5       5       0
+   -------------------------------------------------------
+
+  ==> Integral Setup <==
+
+  ==> DFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                  Yes
+    K tasked:                  Yes
+    wK tasked:                  No
+    OpenMP threads:              1
+    Integrals threads:           1
+    Memory (MB):               366
+    Algorithm:                Core
+    Integral Cache:           NONE
+    Schwarz Cutoff:          1E-12
+    Fitting Condition:       1E-12
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: file /Users/daniel/Gits/dgaspsi/objdir/stage/usr/local/share/psi4/basis/def2-svp-jkfit.gbs
+    Number of shells: 37
+    Number of basis function: 113
+    Number of Cartesian functions: 133
+    Spherical Harmonics?: true
+    Max angular momentum: 4
+
+  Minimum eigenvalue in the overlap matrix is 4.3430767402E-01.
+  Using Symmetric Orthogonalization.
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF.
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-RHF iter   0:   -74.47649042795211   -7.44765e+01   1.55420e-01 
+   @DF-RHF iter   1:   -74.87498740306589   -3.98497e-01   3.71929e-02 
+   @DF-RHF iter   2:   -74.93773253714976   -6.27451e-02   8.47196e-03 DIIS
+   @DF-RHF iter   3:   -74.94078413939602   -3.05160e-03   2.95528e-03 DIIS
+   @DF-RHF iter   4:   -74.94159615977040   -8.12020e-04   2.94469e-04 DIIS
+   @DF-RHF iter   5:   -74.94160125861649   -5.09885e-06   5.22672e-05 DIIS
+   @DF-RHF iter   6:   -74.94160142993793   -1.71321e-07   1.17822e-06 DIIS
+   @DF-RHF iter   7:   -74.94160143003454   -9.66054e-11   6.78120e-09 DIIS
+
+  ==> Post-Iterations <==
+
+    Orbital Energies (a.u.)
+    -----------------------
+
+    Doubly Occupied:                                                      
+
+       1A    -20.261810     2A     -1.208831     3A     -0.549280  
+       4A     -0.434285     5A     -0.386866  
+
+    Virtual:                                                              
+
+       6A      0.475641     7A      0.590745  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     5 ]
+
+  Energy converged.
+
+  @DF-RHF Final Energy:   -74.94160143003454
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =              8.0003108856502951
+    One-Electron Energy =                -120.2016781069612676
+    Two-Electron Energy =                  37.2597657912764433
+    DFT Exchange-Correlation Energy =       0.0000000000000000
+    Empirical Dispersion Energy =           0.0000000000000000
+    PCM Polarization Energy =               0.0000000000000000
+    EFP Energy =                            0.0000000000000000
+    Total Energy =                        -74.9416014300345239
+
+    Alert: EFP and PCM quantities not currently incorporated into SCF psivars.
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 Bohr
+
+Properties computed using the SCF density matrix
+
+  Nuclear Dipole Moment: (a.u.)
+     X:     0.0000      Y:     0.0000      Z:     1.1147
+
+  Electronic Dipole Moment: (a.u.)
+     X:     0.0000      Y:     0.0000      Z:    -0.5131
+
+  Dipole Moment: (a.u.)
+     X:     0.0000      Y:     0.0000      Z:     0.6016     Total:     0.6016
+
+  Dipole Moment: (Debye)
+     X:     0.0000      Y:     0.0000      Z:     1.5291     Total:     1.5291
+
+
+*** tstop() called on Daniels-MacBook-Pro-2.local at Thu Nov 10 09:10:48 2016
+Module time:
+	user time   =       0.34 seconds =       0.01 minutes
+	system time =       0.01 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes
+Total time:
+	user time   =       0.34 seconds =       0.01 minutes
+	system time =       0.01 seconds =       0.00 minutes
+	total time  =          0 seconds =       0.00 minutes

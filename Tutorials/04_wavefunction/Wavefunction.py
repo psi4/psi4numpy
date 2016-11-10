@@ -1,24 +1,22 @@
 import numpy as np
+import psi4
+
+# Numpy print options
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 
-molecule mol {
+# Redirect output to a file
+psi4.core.set_output_file("output.dat", False)
+
+mol = psi4.geometry("""
 O
 H 1 1.1
 H 1 1.1 2 105
 symmetry c1
-}
+""")
 
-set {
- scf_type pk
- basis = sto-3g
-}
 
-# Compute the RHF energy
-energy('RHF')
-
-# Grab the wavefunction from the global space and save it.
-wfn = wavefunction()
-a = wfn.Ca()
+# Compute the SCF/sto-3g energy and return the wavefunction
+rhf_e, wfn = psi4.energy('SCF/sto-3g', molecule=mol, return_wfn=True)
 
 print('Number of alpha electrons: %d' % wfn.nalpha())
 print('Number of beta electrons: %d' % wfn.nbeta())
@@ -38,8 +36,7 @@ F = np.array(wfn.Fa())
 print(F)
 
 print('\n The curreng eigenvalues:')
-eps = wfn.epsilon_a()
-eps = np.array([eps.get(x) for x in range(C.shape[0])])
+eps = np.array(wfn.epsilon_a())
 print(eps)
 
 
@@ -47,7 +44,7 @@ print(eps)
 nbf = wfn.nmo()
 Enuc = mol.nuclear_repulsion_energy()
 
-mints = MintsHelper()
+mints = psi4.core.MintsHelper(wfn.basisset())
 T = np.array(mints.ao_kinetic())
 V = np.array(mints.ao_potential())
 

@@ -12,36 +12,31 @@
 
 import time
 import numpy as np
+import psi4
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 
-molecule mol {
+mol = psi4.geometry("""
 O
 H 1 1.1
 H 1 1.1 2 104
 symmetry c1
-}
+""")
 
-set {
-basis aug-cc-pVDZ
-}
 
 # First compute RHF energy using Psi4
-energy('RHF')
-
-# Grab data from wavfunction class 
-wfn = wavefunction()
+en, wfn = psi4.energy('SCF/aug-cc-pVDZ', molecule=mol, return_wfn=True)
 
 # Grab orbitals
 Matrix_C = wfn.Ca()
 C = np.asarray(Matrix_C)
-nbf = C.shape[0]
+nbf = wfn.nso()
 
 print("Number as basis functions: %d" % nbf)
 
 # Grab rank 4 ERI
 t = time.time()
 print("\nBuilding AO ERI...")
-mints = MintsHelper()
+mints = psi4.core.MintsHelper(wfn.basisset())
 Matrix_I = mints.ao_eri()
 I = np.asarray(Matrix_I)
 print("...built AO ERI in %.3f seconds." % (time.time() -t ))

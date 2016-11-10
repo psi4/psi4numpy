@@ -1,25 +1,20 @@
 import numpy as np
+import psi4
 
-molecule mol {
-O
-H 1 1.1
-H 1 1.1 2 105
-}
+mol = psi4.geometry("""
+H
+H 1 0.74
+""")
 
-set {
- basis = sto-3g
-}
+# Construct a Psi4 basis set
+basis = psi4.core.BasisSet.build(mol, target="sto-3g")
 
-mints = MintsHelper()
-# Any one-body integral will do!
-T = np.array(mints.ao_kinetic())
-nbf = T.shape[0]
+# Build a mints object
+mints = psi4.core.MintsHelper(basis)
 
-# Public
-I = np.array(mints.ao_eri()).reshape(nbf, nbf, nbf, nbf)
-print I.shape
-
-# Beta
 I = np.array(mints.ao_eri())
-print I.shape
+# Note that the ERI comes out as a 4D array
+print("The shape of I is %s\n" % str(I.shape))
 
+print("I:")
+print(I)

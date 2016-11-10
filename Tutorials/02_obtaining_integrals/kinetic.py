@@ -1,22 +1,22 @@
-import numpy as np
+mport numpy as np
+import psi4
 
-molecule mol {
+mol = psi4.geometry("""
 O
 H 1 1.1
 H 1 1.1 2 105
-}
+""")
 
-set {
- basis = sto-3g
-}
+# Construct a Psi4 basis set
+basis = psi4.core.BasisSet.build(mol, target="STO-3G")
 
-mints = MintsHelper()
+# Build a mints object
+mints = psi4.core.MintsHelper(basis)
 
+# AO Kinetic integrals
 T = mints.ao_kinetic()
-
 print T
 
-np_T = np.array(T)
-
 # Print the numpy array
+np_T = np.array(T)
 print np_T

@@ -4,6 +4,12 @@
 #####Author: Daniel G. A. Smith
 #####Contact: dsmith@auburn.edu
 
+#####Psi4 v1.1
+Note: This repostitory has drifted over time from its original intent. A cleanup pass and update to Psi v1.1 can
+be found in the `v1.1` repository.
+
+#####Overview
+
 The overall goal of psi4numpy is to provide clear, readable code for both learning
 and development. Python is used to "plug" together low level languages and
 provide an interface that is both simple to use and remains relatively fast
@@ -25,9 +31,14 @@ A tutorial that covers the basics of numpy can be found [here](http://wiki.scipy
  - [Numpy](scipy.org) 1.7.2+
  - [Scipy](numpy.scipy.org) 0.13.0+
 
-To use python syntax highlighting in vim for `*.dat` files add the following to
-your `.vimrc` file:
-`au BufReadPost *.dat set syntax=python`
+
+---
+#####Update 11/9/2016
+This update coincides with the Psi4 v1.1 release which allows Psi4 to imported
+as a Python module.  To this end all scripts within this repository have been
+reworked to simply be Python scripts.  To import psi4 locate the
+`psi4_install/lib` directory and export this to your Python path: `export
+PYTHONPATH=psi4_install/lib'.
 
 ---
 

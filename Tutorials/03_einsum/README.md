@@ -14,20 +14,16 @@ F_{pq} = H_{pq} + 2 * J_{pq} - K_{pq}
  - I: Four-index electron repulsion integrals
  - F: Two-index Fock matrix
 
-Lets define a few relevant quantities: 
+We can build the required integrals in the following way: 
 ```python
 # Compute integrals and convert the resulting matrices to numpy arrays
-mints = MintsHelper()
+mints = psi4.core.MintsHelper(basis)
 T = np.array(mints.ao_kinetic())
 V = np.array(mints.ao_potential())
 I = np.array(mints.ao_eri())
 
 # One-electron hamiltonian is the sum of the kinetic and potential elements
 H = T + V
-
-# Build a random density matrix
-nbf = H.shape[0]
-D = np.random.rand(nbf, nbf)
 ```
 
 Using standard loops, building the Fock matrix would look like the following:

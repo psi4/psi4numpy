@@ -1,29 +1,28 @@
 import numpy as np
+import psi4
 
-molecule mol {
+mol = psi4.geometry("""
 O
 H 1 1.1
 H 1 1.1 2 105
-symmetry c1
-}
+""")
 
-set {
- basis = sto-3g
-}
-
+# Construct a Psi4 basis set
+basis = psi4.core.BasisSet.build(mol, target="STO-3G")
+nbf = basis.nbf()
 
 # Compute integrals and convert the resulting matrices to numpy arrays
-mints = MintsHelper()
+mints = psi4.core.MintsHelper(basis)
 T = np.array(mints.ao_kinetic())
 V = np.array(mints.ao_potential())
-nbf = T.shape[0]
-I = np.array(mints.ao_eri()).reshape(nbf, nbf, nbf, nbf)
+I = np.array(mints.ao_eri())
+
 # One-electron hamiltonian is the sum of the kinetic and potential elements
 H = T + V
 
-# Build a random density matrix
-D = np.arange(nbf*nbf).reshape(nbf, nbf)
-D /= np.mean(D)
+# Build a symmetric random density matrix
+D = np.random.rand(nbf, nbf)
+D += D.T
 
 # Build the fock matrix using loops
 Floop = np.zeros((nbf, nbf))
@@ -39,13 +38,6 @@ for p in range(nbf):
 J = np.einsum('pqrs,rs', I, D) 
 K = np.einsum('prqs,rs', I, D)
 F = H + 2 * J - K
-# Make sure the correct answer is obtained
-print 'The loop and einsum fock builds match:    %s' % np.allclose(F, Floop)
 
-# As a bonus lets build the fock matrix in a slightly different way
-J = np.einsum('pqrs,rs', I, D) 
-# This is equivalent to the above exchange build
-K = np.einsum('pqrs,qs', I, D)
-Falt = H + 2 * J - K
 # Make sure the correct answer is obtained
-print 'The fock and alternate fock builds match: %s' % np.allclose(F, Falt)
+print('The loop and einsum fock builds match:    %s' % np.allclose(F, Floop))
