@@ -58,3 +58,4 @@ docs/_build/
 *timer.dat
 *.swp
 Test/
+output.dat
