@@ -1,4 +1,4 @@
-mport numpy as np
+import numpy as np
 import psi4
 
 mol = psi4.geometry("""
