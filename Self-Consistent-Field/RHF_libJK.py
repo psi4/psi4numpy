@@ -8,18 +8,18 @@
 
 import time
 import numpy as np
+import psi4
 
 # Benzene
-molecule mol {
+mol = psi4.geometry("""
 He
 symmetry c1
-}
+""")
 
-set {
-basis aug-cc-pVDZ
-scf_type df
-e_convergence 1e-8
-}
+# Set a few options
+psi4.set_options({"BASIS": "AUG-CC-PVDZ",
+                  "SCF_TYPE": "DF",
+                  "E_CONVERGENCE": 1.e-8})
 
 # Set tolerances
 maxiter = 12
@@ -27,8 +27,8 @@ E_conv = 1.0E-6
 D_conv = 1.0E-5
 
 # Integral generation from Psi4's MintsHelper
-wfn = psi4.new_wavefunction(mol, psi4.get_global_option('BASIS'))
-mints = MintsHelper(wfn.basisset())
+wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option('BASIS'))
+mints = psi4.core.MintsHelper(wfn.basisset())
 S = mints.ao_overlap()
 
 # Get nbf and ndocc for closed shell molecules
@@ -52,18 +52,18 @@ A.power(-0.5, 1.e-16)
 
 # Diagonalize routine
 def build_orbitals(diag):
-    Fp = psi4.Matrix.triplet(A, diag, A, True, False, True)
+    Fp = psi4.core.Matrix.triplet(A, diag, A, True, False, True)
 
-    Cp = psi4.Matrix(nbf, nbf)
-    eigvecs = psi4.Vector(nbf)
-    Fp.diagonalize(Cp, eigvecs, psi4.DiagonalizeOrder.Ascending)
+    Cp = psi4.core.Matrix(nbf, nbf)
+    eigvecs = psi4.core.Vector(nbf)
+    Fp.diagonalize(Cp, eigvecs, psi4.core.DiagonalizeOrder.Ascending)
 
-    C = psi4.Matrix.doublet(A, Cp, False, False)
+    C = psi4.core.Matrix.doublet(A, Cp, False, False)
 
-    Cocc = psi4.Matrix(nbf, ndocc)
+    Cocc = psi4.core.Matrix(nbf, ndocc)
     Cocc.np[:] = C.np[:, :ndocc]
 
-    D = psi4.Matrix.doublet(Cocc, Cocc, False, True)
+    D = psi4.core.Matrix.doublet(Cocc, Cocc, False, True)
     return C, Cocc, D
 
 # Build core orbitals
@@ -74,14 +74,14 @@ t = time.time()
 E = 0.0
 Enuc = mol.nuclear_repulsion_energy()
 Eold = 0.0
-Dold = psi4.Matrix(nbf, nbf)
+Dold = psi4.core.Matrix(nbf, nbf)
 Fock_list = []
 DIIS_error = []
 
 # Initialize the JK object
-jk = psi4.JK.build_JK(wfn.basisset())
+jk = psi4.core.JK.build(wfn.basisset())
 jk.set_memory(int(1.25e8))  # 1GB
-jk.initialize(False)
+jk.initialize()
 jk.print_header()
 
 psi4.print_out('\nTotal time taken for setup: %.3f seconds\n' % (time.time() - t))
@@ -102,9 +102,9 @@ for SCF_ITER in range(1, maxiter + 1):
     F.axpy(-1.0, jk.K()[0])
 
     # DIIS error build and update
-    diis_e = psi4.Matrix.triplet(F, D, S, False, False, False)
-    diis_e.subtract(psi4.Matrix.triplet(S, D, F, False, False, False))
-    diis_e = psi4.Matrix.triplet(A, diis_e, A, False, False, False)
+    diis_e = psi4.core.Matrix.triplet(F, D, S, False, False, False)
+    diis_e.subtract(psi4.core.Matrix.triplet(S, D, F, False, False, False))
+    diis_e = psi4.core.Matrix.triplet(A, diis_e, A, False, False, False)
 
     # SCF energy and update
     FH = F.clone()
@@ -131,4 +131,4 @@ for SCF_ITER in range(1, maxiter + 1):
 psi4.print_out('Total time for SCF iterations: %.3f seconds \n\n' % (time.time() - t))
 
 psi4.print_out('Final SCF energy: %.8f hartree\n' % SCF_E)
-compare_values(-2.8557342505784704, SCF_E, 6, 'SCF Energy')
+psi4.driver.p4util.compare_values(-2.8557342505784704, SCF_E, 6, 'SCF Energy')
