@@ -10,27 +10,26 @@ import time
 import numpy as np
 np.set_printoptions(precision=3, linewidth=200, suppress=True)
 from helper_HF import *
+import psi4
 
 # Memory for Psi4 in GB
-memory 2 GB
+psi4.core.set_memory(int(2e9), False)
+psi4.core.set_output('output.dat', False)
 
 # Memory for numpy in GB
 numpy_memory = 2
 
-molecule mol {
+mol = psi4.geometry("""
 O
 H 1 1.1
 H 1 1.1 2 109
 symmetry c1
-}
+""")
 
-set {
-scf_type df
-basis aug-cc-pVDZ
-e_convergence 1e1
-d_convergence 1e1
-}
-
+psi4.set_options({'scf_type':'df',
+                  'basis':'aug-cc-pvdz',
+                  'e_convergence':1e1,
+                  'd_convergence':1e1})
 
 # Knobs
 E_conv = 1.e-8
@@ -40,13 +39,11 @@ max_micro = 3
 micro_conv = 1.e-3
 micro_print = True
 
-
 # Build objects
 diis = DIIS_helper()
 hf = helper_HF(psi4, energy, mol, scf_type='DF', guess='CORE')
 ndocc = hf.ndocc
 nvirt = hf.nvirt
-
 
 print('\nStart SCF iterations:\n')
 t = time.time()
@@ -116,7 +113,6 @@ for SCF_ITER in range(1, max_macro):
         if micro_print:
             print('Micro Iteration Guess: Rel. RMS = %1.5e' %  (rms))
 
-
         # CG iterations
         for rot_iter in range(max_micro):
             rz_old = np.vdot(r, z)
@@ -146,15 +142,15 @@ for SCF_ITER in range(1, max_macro):
         hf.set_Cleft(C)
         iter_type = 'SOSCF, nmicro ' + str(rot_iter + 1)
 
-print 'Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t)
+print('Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t))
 
-print 'Final SCF energy:     %.8f hartree' % hf.scf_e
+print('Final SCF energy:     %.8f hartree' % hf.scf_e)
 
-set {
-e_convergence 1e-7
-d_convergence 1e-7
-}
-SCF_E_psi = energy('SCF')
-compare_values(SCF_E_psi, hf.scf_e, 6, 'SCF Energy')
+# Compute w/ Psi4 and compare
+psi4.set_options({'e_convergence':1e-7,
+                  'd_convergence':1e-7})
+
+SCF_E_psi = psi4.energy('SCF')
+psi4.driver.p4util.compare_values(SCF_E_psi, hf.scf_e, 6, 'SCF Energy')
 
 

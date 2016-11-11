@@ -10,30 +10,30 @@ import time
 import numpy as np
 import helper_HF as scf_helper
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
+import psi4
 
 # Memory for Psi4 in GB
-memory 2 GB
+psi4.core.set_memory(int(2e9), False)
+psi4.core.set_output('output.dat', False)
 
 # Memory for numpy in GB
 numpy_memory = 2
 
 # Triplet O2
-molecule mol {
+mol = psi4.geometry("""
     0 3
     O
     O 1 1.2
 symmetry c1
-}
+""")
 
-set {
-    guess           gwh
-    basis           aug-cc-pVDZ
-    scf_type        df
-    e_convergence   1e-8
-    reference       rohf
-}
+psi4.set_options({'guess':'gwh',
+                  'basis':'aug-cc-pvdz',
+                  'scf_type':'df',
+                  'e_convergence':1e-8,
+                  'reference':'rohf'})
 
-wfn = psi4.new_wavefunction(mol, psi4.get_global_option('BASIS'))
+wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option('BASIS'))
 
 # Set occupations
 nocca = wfn.nalpha()
@@ -49,18 +49,18 @@ D_conv = 1.0E-5
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = MintsHelper(wfn.basisset())
+mints = psi4.core.MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 nbf = S.shape[0]
 
-print '\nNumber of doubly occupied orbitals: %d' % ndocc
-print 'Number of singly occupied orbitals: %d' % nsocc
-print 'Number of basis functions:          %d' % nbf
+print('\nNumber of doubly occupied orbitals: %d' % ndocc)
+print('Number of singly occupied orbitals:   %d' % nsocc)
+print('Number of basis functions:            %d' % nbf)
 
 V = np.asarray(mints.ao_potential())
 T = np.asarray(mints.ao_kinetic())
 
-print '\nTotal time taken for integrals: %.3f seconds.' % (time.time()-t)
+print('\nTotal time taken for integrals: %.3f seconds.' % (time.time()-t))
 
 t = time.time()
 
@@ -93,7 +93,7 @@ Enuc = mol.nuclear_repulsion_energy()
 Eold = 0.0
 
 # Initialize the JK object
-jk = JK.build_JK(wfn.basisset())
+jk = psi4.core.JK.build(wfn.basisset())
 jk.initialize()
 
 # Build a DIIS helper object
@@ -178,8 +178,6 @@ for SCF_ITER in range(1, maxiter + 1):
 print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 
 print('Final SCF energy: %.8f hartree' % SCF_E)
-set {
-e_convergence 1e-8
-}
-SCF_E_psi = energy('SCF')
-compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
+# Compare with Psi4
+SCF_E_psi = psi4.energy('SCF')
+psi4.driver.p4util.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')

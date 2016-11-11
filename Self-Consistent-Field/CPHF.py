@@ -9,22 +9,23 @@ import time
 import numpy as np
 from helper_HF import DIIS_helper
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
+import psi4
 
 # Memory for Psi4 in GB
-memory 2 GB
+psi4.core.set_memory(int(2e9), False)
+psi4.core.set_output_file("output.dat", False)
 
-molecule mol {
+mol = psi4.geometry("""
 O
 H 1 1.1
 H 1 1.1 2 104
 symmetry c1
-}
+""")
 
-set {
-    basis aug-cc-pVDZ
-    scf_type df
-    cphf_tasks ['polarizability']
-}
+# Set options for CPHF
+psi4.core.set_options({"basis":"aug-cc-pVDZ",
+                       "scf_type":"df",
+                       "cphf_tasks":['polarizability']})
 
 # Set defaults
 # Can be direct or iterative
@@ -37,7 +38,7 @@ maxiter = 20
 conv = 1.e-6
 
 # Compute the reference wavefunction and CPHF using Psi 
-scf_e, scf_wfn = energy('SCF', return_wfn=True)
+scf_e, scf_wfn = psi4.energy('SCF', return_wfn=True)
 
 C = scf_wfn.Ca()
 Co = scf_wfn.Ca_subset("AO", "OCC")
@@ -50,7 +51,7 @@ nvir = nbf - nocc
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = MintsHelper(scf_wfn.basisset())
+mints = psi4.core.MintsHelper(scf_wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 
 # Get nbf and ndocc for closed shell molecules
@@ -118,7 +119,7 @@ if method == 'direct':
 elif method == 'iterative':
 
     # Init JK object
-    jk = JK.build_JK(scf_wfn.basisset())
+    jk = psi4.core.JK.build(scf_wfn.basisset())
     jk.initialize()
 
     # Add blank matrices to the jk object and numpy hooks to C_right
@@ -202,5 +203,3 @@ else:
 
 print('\nCPHF Dipole Polarizability:')
 print(np.around(polar, 5))
-energy('CPHF')
-
