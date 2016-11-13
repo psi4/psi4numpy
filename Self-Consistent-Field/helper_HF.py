@@ -23,10 +23,10 @@ class helper_HF(object):
         print('Building rank 2 integrals...')
         t = time.time()
         self.psi = psi
-        psi.set_active_molecule(mol)
-        wfn = psi.new_wavefunction(mol, psi.get_global_option('BASIS'))
+        psi.core.set_active_molecule(mol)
+        wfn = psi.core.Wavefunction.build(mol, psi.get_global_option('BASIS'))
         self.wfn = wfn
-        self.mints = psi.MintsHelper(wfn.basisset())
+        self.mints = psi.core.MintsHelper(wfn.basisset())
         self.enuc = mol.nuclear_repulsion_energy()
 
         self.S = np.asarray(self.mints.ao_overlap())
@@ -73,15 +73,15 @@ class helper_HF(object):
             self.Da = np.dot(self.npC_left, self.npC_left.T)
         elif guess.upper() == 'SAD':
             # Cheat and run a quick SCF calculation
-            psi.set_global_option('E_CONVERGENCE', 1)
-            psi.set_global_option('D_CONVERGENCE', 1)
-            e, wfn = energy('SCF', return_wfn=True)
+            psi.set_options({'E_CONVERGENCE':1,
+                            'D_CONVERGENCE':1})
+            e, wfn = psi.energy('SCF', return_wfn=True)
             self.Ca = np.array(wfn.Ca())
             self.npC_left[:] = self.Ca[:, :self.ndocc]
             self.epsilon = np.array(wfn.epsilon_a())
             self.Da = np.dot(self.npC_left, self.npC_left.T)
-            psi.set_global_option('E_CONVERGENCE', 6)
-            psi.set_global_option('D_CONVERGENCE', 6)
+            psi.set_options({'E_CONVERGENCE':6,
+                             'D_CONVERGENCE':6})
 
         else:
             raise Exception("Guess %s not yet supported" % (guess))
@@ -92,8 +92,8 @@ class helper_HF(object):
         scf_type = scf_type.upper()
         if scf_type not in ['DF', 'PK', 'DIRECT', 'OUT_OF_CORE']:
             raise Exception('SCF_TYPE %s not supported' % scf_type)
-        psi.set_global_option('SCF_TYPE', scf_type)
-        self.jk = psi.JK.build_JK(wfn.basisset())
+        psi.set_options({'SCF_TYPE':scf_type})
+        self.jk = psi.core.JK.build(wfn.basisset())
         self.jk.initialize()
 #        self.jk.C_left().append(self.C_left)
 
@@ -228,7 +228,7 @@ def compute_jk(psi4, jk, c_left, c_right=None):
         c_left = [c_left]
 
     for c in c_left:
-        mat = psi4.Matrix(c.shape[0], c.shape[1])
+        mat = psi4.core.Matrix(c.shape[0], c.shape[1])
         np_mat = np.asarray(mat)
         np_mat[:] = c        
         cl.append(mat)
@@ -242,7 +242,7 @@ def compute_jk(psi4, jk, c_left, c_right=None):
             c_right = [c_right]
 
         for c in c_right:
-            mat = psi4.Matrix(c.shape[0], c.shape[1])
+            mat = psi4.core.Matrix(c.shape[0], c.shape[1])
             np_mat = np.asarray(mat)
             np_mat[:] = c        
             cr.append(mat)
