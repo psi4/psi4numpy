@@ -5,8 +5,7 @@
 #####Contact: dsmith@auburn.edu
 
 #####Psi4 v1.1
-Note: This repostitory has drifted over time from its original intent. A cleanup pass and update to Psi v1.1 can
-be found in the `v1.1` repository.
+Note: This repostitory has drifted over time from its original intent. A cleanup pass and update to Psi4 version v1.1 is taking place. Please see the `master` branch for a Psi4 v1.0 compliant Psi4NumPy version. 
 
 #####Overview
 
