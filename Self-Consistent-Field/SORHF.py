@@ -42,9 +42,9 @@ hf.diag(hf.H, set_C=True)
 
 # Build Matrix and Numpy arrays that share memory
 # Updating npC changes mC
-mC = psi4.Matrix(hf.nbf, hf.nbf)
+mC = psi4.core.Matrix(hf.nbf, hf.nbf)
 npC = np.asarray(mC)
-occ_mC = psi4.Matrix(hf.nbf, hf.ndocc)
+occ_mC = psi4.core.Matrix(hf.nbf, hf.ndocc)
 occ_npC = np.asarray(occ_mC)
 
 print('\nStart SCF iterations:\n')
