@@ -10,30 +10,30 @@ import time
 import numpy as np
 import helper_HF as scf_helper
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
+import psi4
 
 # Memory for Psi4 in GB
-memory 2 GB
+psi4.core.set_memory(int(2e9), False)
+psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
 numpy_memory = 2
 
 # Triplet O2
-molecule mol {
+mol = psi4.geometry("""
     0 3
     O
     O 1 1.2
 symmetry c1
-}
+""")
 
-set {
-    guess           core
-    basis           aug-cc-pVDZ
-    scf_type        pk
-    e_convergence   1e-8
-    reference       rohf
-}
+psi4.set_options({'guess':'core',
+                  'basis':'aug-cc-pvdz',
+                  'scf_type':'pk'
+                  'e_convergence':1e-8
+                  'reference':'rohf'})
 
-wfn = psi4.new_wavefunction(mol, psi4.get_global_option('BASIS'))
+wfn = psi4.core.Wavefunction.build(mol, psi4.get_global_option('BASIS'))
 
 # Set occupations
 nocc = wfn.nalpha()
@@ -50,19 +50,19 @@ D_conv = 1.0E-4
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = MintsHelper(wfn.basisset())
+mints = psi4.core.MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 nbf = S.shape[0]
 
-jk = JK.build_JK(wfn.basisset())
+jk = psi4.core.JK.build(wfn.basisset())
 jk.initialize()
 
 if nbf > 100:
     raise Exception("This has a N^4 memory overhead, killing if nbf > 100.")
 
-print '\nNumber of doubly occupied orbitals: %d' % ndocc
-print 'Number of singly occupied orbitals: %d' % nsocc
-print 'Number of basis functions:          %d' % nbf
+print('\nNumber of doubly occupied orbitals: %d' % ndocc)
+print('Number of singly occupied orbitals: %d' % nsocc)
+print('Number of basis functions:          %d' % nbf)
 
 V = np.asarray(mints.ao_potential())
 T = np.asarray(mints.ao_kinetic())
@@ -78,7 +78,7 @@ A = mints.ao_overlap()
 A.power(-0.5, 1.e-16)
 A = np.asarray(A)
 
-print '\nTotal time taken for integrals: %.3f seconds.' % (time.time()-t)
+print('\nTotal time taken for integrals: %.3f seconds.' % (time.time()-t))
 
 t = time.time()
 
@@ -164,8 +164,8 @@ for SCF_ITER in range(1, maxiter + 1):
     SCF_E += Enuc 
 
     dRMS = np.mean(diis_e**2)**0.5
-    print 'SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E   %s' % \
-            (SCF_ITER, SCF_E, (SCF_E - Eold), dRMS, iter_type)
+    print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E   %s' % \
+            (SCF_ITER, SCF_E, (SCF_E - Eold), dRMS, iter_type))
     if (abs(SCF_E - Eold) < E_conv) and (dRMS < D_conv):
         break
 
@@ -269,8 +269,7 @@ for SCF_ITER in range(1, maxiter + 1):
 print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 
 print('Final SCF energy: %.8f hartree' % SCF_E)
-set {
-e_convergence 1e-8
-}
+
+# Compare to Psi4
 SCF_E_psi = energy('SCF')
-compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
+psi4.driver.p4util.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')

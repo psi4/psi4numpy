@@ -10,28 +10,29 @@ import time
 import numpy as np
 from helper_HF import *
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
+import psi4
 
 # Memory for Psi4 in GB
-memory 2 GB
+psi4.core.set_memory(int(2e9), False)
+psi4.core.set_ouput_file('output.dat', False)
 
 # Memory for numpy in GB
 numpy_memory = 2
 
 # Triplet O2
-molecule mol {
+mol = psi4.geometry("""
     0 3
     O
     O 1 1.2
 symmetry c1
-}
+""")
 
 set {
-    guess           core
-    basis           aug-cc-pVDZ
-    scf_type        df
-    e_convergence   1e-8
-    reference       uhf
-}
+psi4.set_options({'guess':'core',
+                  'basis':'aug-cc-pvdz',
+                  'scf_type':'df',
+                  'e_convergence':1e-8,
+                  'reference':'uhf'})
 
 # Set occupations
 nocca = 9
@@ -44,8 +45,8 @@ D_conv = 1.0E-5
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-wfn = psi4.new_wavefunction(mol, psi4.get_global_option('BASIS'))
-mints = MintsHelper(wfn.basisset())
+wfn = psi4.core.Wavefunction.build(mol, psi4.get_global_option('BASIS'))
+mints = psi4.core.MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 
 # Get nbf and ndocc for closed shell molecules
@@ -53,13 +54,13 @@ nbf = S.shape[0]
 ndocc = sum(mol.Z(A) for A in range(mol.natom())) / 2
 ndocc = int(ndocc)
 
-print '\nNumber of occupied orbitals: %d' % ndocc
-print 'Number of basis functions: %d' % nbf
+print('\nNumber of occupied orbitals: %d' % ndocc)
+print('Number of basis functions: %d' % nbf)
 
 V = np.asarray(mints.ao_potential())
 T = np.asarray(mints.ao_kinetic())
 
-print '\nTotal time taken for integrals: %.3f seconds.' % (time.time()-t)
+print('\nTotal time taken for integrals: %.3f seconds.' % (time.time()-t))
 
 t = time.time()
 
@@ -171,8 +172,7 @@ spin_contam = min(nocca, noccb) - np.vdot(spin_mat, spin_mat)
 print('Spin Contamination Metric: %1.5E\n' % spin_contam)
 
 print('Final SCF energy: %.8f hartree' % SCF_E)
-set {
-e_convergence 1e-8
-}
-SCF_E_psi = energy('SCF')
-compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
+
+# Compare to Psi4
+SCF_E_psi = psi4.energy('SCF')
+psi4.driver.p4util.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')

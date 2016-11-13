@@ -9,19 +9,18 @@
 import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
+import psi4
 
 # Triplet oxygen
-molecule mol {
+mol = psi4.geometry("""
     0 3
     O
     O 1 1.2
 symmetry c1
-}
+""")
 
-set {
-    basis aug-cc-pVDZ
-    reference uhf
-}
+psi4.set_options({'basis':'aug-cc-pvdz',
+                  'reference':'uhf'})
 
 nalpha = 9
 nbeta = 7
@@ -32,8 +31,8 @@ E_conv = 1.0E-13
 D_conv = 1.0E-13
 
 # Integral generation from Psi4's MintsHelper
-wfn = psi4.new_wavefunction(mol, psi4.get_global_option('BASIS'))
-mints = MintsHelper(wfn.basisset())
+wfn = psi4.core.Wavefunction.build(mol, psi4.get_global_option('BASIS'))
+mints = psi4.core.MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 V = np.asarray(mints.ao_potential())
 T = np.asarray(mints.ao_kinetic())
@@ -53,14 +52,12 @@ A = np.asarray(A)
 I = np.asarray(mints.ao_eri())
 
 # Steal a good starting guess
-set {
-e_convergence -5
-d_convergence -5
-maxiter 0
-guess sad
-}
+psi4.set_options({'e_convergence',1e-5,
+                  'd_convergence',1e-5,
+                  'maxiter':0,
+                  'guess','sad'})
 
-scf_e, wfn = energy('SCF', return_wfn=True)
+scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 Ca = np.array(wfn.Ca())
 Da = np.array(wfn.Da())
 Cb = np.array(wfn.Cb())
@@ -206,11 +203,12 @@ spin_contam = min(nalpha, nbeta) - np.vdot(spin_mat, spin_mat)
 print('Spin Contamination Metric: %1.5E\n' % spin_contam)
 
 print('Final SCF energy: %.8f hartree' % SCF_E)
-set {
-e_convergence 1e-8
-r_convergence 1e-6
-scf_type pk
-maxiter = 100
-}
-SCF_E_psi = energy('SCF')
-compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
+
+# Compare to Psi4
+psi4.set_options({'e_convergence':1e-8,
+                  'r_convergence':1e-8,
+                  'scf_type','pk'
+                  'maxiter',100})
+
+SCF_E_psi = psi4.energy('SCF')
+psi4.driver.p4util.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
