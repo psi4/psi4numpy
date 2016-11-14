@@ -19,7 +19,7 @@ import psi4
 
 # Memory for Psi4 in GB
 psi4.core.set_memory(int(2e9), False)
-psi4.core.set_ouput_file('output.dat', False)
+psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
 numpy_memory = 2
