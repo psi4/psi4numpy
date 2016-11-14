@@ -14,7 +14,7 @@ import psi4
 
 # Memory for Psi4 in GB
 psi4.core.set_memory(int(2e9), False)
-psi4.core.set_output('output.dat', False)
+psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
 numpy_memory = 2
@@ -27,13 +27,13 @@ symmetry c1
 """)
 
 psi4.set_options({'basis':'cc-pvdz',
-                  'guess':'sad'
+                  'guess':'sad',
                   'd_convergence':1e-13,
                   'e_convergence':1e-13})
 
 # Build objects
 diis = DIIS_helper()
-hf = helper_HF(psi4, energy, mol, scf_type='PK', guess='SAD')
+hf = helper_HF(psi4, mol, scf_type='PK', guess='SAD')
 ndocc = hf.ndocc
 nvirt = hf.nvirt
 mints = psi4.core.MintsHelper(hf.wfn.basisset())
@@ -46,6 +46,10 @@ mC = psi4.core.Matrix(hf.nbf, hf.nbf)
 npC = np.asarray(mC)
 occ_mC = psi4.core.Matrix(hf.nbf, hf.ndocc)
 occ_npC = np.asarray(occ_mC)
+
+# Knobs
+E_conv = 1e-8
+D_conv = 1e-8
 
 print('\nStart SCF iterations:\n')
 t = time.time()
