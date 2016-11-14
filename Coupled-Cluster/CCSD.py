@@ -17,7 +17,7 @@ import psi4
 
 # Set memory
 psi4.core.set_memory(int(2e9), False)
-psi4.core.set_ouput_file('output.dat', False)
+psi4.core.set_output_file('output.dat', False)
 
 numpy_memory = 2
 
@@ -28,7 +28,7 @@ H 1 1.1 2 104
 symmetry c1
 """)
 
-psi4.set_options({'basis':'cc-pvdz',
+psi4.set_options({'basis':'3-21g',
                   'scf_type':'pk',
                   'mp2_type':'conv',
                   'freeze_core':'false',
