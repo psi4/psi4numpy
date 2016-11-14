@@ -17,7 +17,7 @@ np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
 psi4.core.set_memory(int(2e9), False)
-psi4.core.set_ouput_file('output.dat', False)
+psi4.core.set_output_file('output.dat', False)
 
 mol = psi4.geometry("""
 O
@@ -36,7 +36,7 @@ compare_psi4 = True
 freeze_core = False
 
 # Build CCSD object
-ccsd = helper_CCSD(psi4, energy, mol, memory=2)
+ccsd = helper_CCSD(psi4, mol, memory=2)
 
 ### Setup DIIS
 diis_vals_t1 = [ccsd.t1.copy()]
@@ -128,5 +128,5 @@ print('\nFinal CCSD correlation energy:     % 16.10f' % CCSDcorr_E)
 print('Total CCSD energy:                 % 16.10f' % CCSD_E)
 
 if compare_psi4:
-    psi4.driver.p4util.compare_values(energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
+    psi4.driver.p4util.compare_values(psi4.energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
 
