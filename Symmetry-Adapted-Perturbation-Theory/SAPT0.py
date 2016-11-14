@@ -9,9 +9,16 @@ import time
 import numpy as np
 from helper_SAPT import *
 np.set_printoptions(precision=5, linewidth=200, threshold=2000, suppress=True)
+import psi4
+
+# Set Psi4 & NumPy Memory Options
+psi4.core.set_memory(int(2e9), False)
+psi4.core.set_output_file('output.dat', False)
+
+numpy_memory = 2
 
 # Set molecule to dimer
-molecule dimer {
+dimer = psi4.geometry("""
 O   -0.066999140   0.000000000   1.494354740
 H    0.815734270   0.000000000   1.865866390
 H    0.068855100   0.000000000   0.539142770
@@ -20,14 +27,13 @@ O    0.062547750   0.000000000  -1.422632080
 H   -0.406965400  -0.760178410  -1.771744500
 H   -0.406965400   0.760178410  -1.771744500
 symmetry c1
-}
+""")
 
-set {
-basis jun-cc-pVDZ
-e_convergence 1e-8
-d_convergence 1e-8
-}
-# psi_sapt0 = energy('SAPT0')
+psi4.set_options({'basis':'jun-cc-pvdz',
+                  'e_convergence':1e-8,
+                  'd_convergence':1e-8})
+
+# psi_sapt0 = psi4.energy('SAPT0')
 
 sapt = helper_SAPT(psi4, energy, dimer, memory=8)
 

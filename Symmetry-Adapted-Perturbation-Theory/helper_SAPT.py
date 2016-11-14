@@ -7,7 +7,7 @@
 
 import numpy as np
 import time
-
+import psi4
 
 class helper_SAPT(object):
 
@@ -33,17 +33,13 @@ class helper_SAPT(object):
 
         # Compute monomer properties
         tstart = time.time()
-        psi.set_active_molecule(monomerA)
-        self.V_A = np.asarray(psi.MintsHelper().ao_potential())
-        self.rhfA = energy('SCF')
-        self.wfnA = psi.wavefunction()
+        self.rhfA, self.wfnA = psi.energy('SCF', molecule=monomerA, return_wfn=True)
+        self.V_A = np.asarray(psi.core.MintsHelper(self.wfnA.basisset()).ao_potential())
         print("RHF for monomer A finished in %.2f seconds." % (time.time() - tstart))
 
         tstart = time.time()
-        psi.set_active_molecule(monomerB)
-        self.V_B = np.asarray(psi.MintsHelper().ao_potential())
-        self.rhfB = energy('SCF')
-        self.wfnB = psi.wavefunction()
+        self.rhfB, self.wfnB = energy('SCF', molecule=monomerB, return_wfn=True)
+        self.V_B = np.asarray(psi.core.MintsHelper(self.wfnB.basisset()).ao_potential())
         print("RHF for monomer B finished in %.2f seconds." % (time.time() - tstart))
 
         # Setup a few variables
@@ -94,8 +90,8 @@ class helper_SAPT(object):
                       's': self.nvirt_B}
 
         # Compute size of ERI tensor in GB
-        psi.set_active_molecule(dimer)
-        mints = psi.MintsHelper()
+        dimer_wfn = psi.core.Wavefunction.build(dimer, psi4.get_global_option('BASIS'))
+        mints = psi.core.MintsHelper(dimer_wfn.basisset())
         self.mints = mints
         ERI_Size = (self.nmo ** 4) * 8.e-9
         memory_footprint = ERI_Size * 4

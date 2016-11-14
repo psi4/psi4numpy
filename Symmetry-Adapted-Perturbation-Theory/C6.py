@@ -11,21 +11,25 @@ import time
 import numpy as np
 from helper_SAPT import *
 np.set_printoptions(precision=5, linewidth=200, threshold=2000, suppress=True)
+import psi4
+
+# Set Psi4 & NumPy memory options
+psi4.core.set_memory(int(2e9), False)
+psi4.set_output_file('output.dat', False)
+
+numpy_memory = 2
 
 # Set molecule to dimer
-molecule dimer {
+dimer = psi4.geometry("""
 He  0  0  0
 symmetry c1
-}
+""")
 
-set {
-basis aug-cc-pVQZ
-e_convergence 1e-8
-d_convergence 1e-8
-}
+psi4.set_options({'basis':'aug-cc-pvqz',
+                  'e_convergence':1e-8,
+                  'd_convergence':1e-8})
 
-energy('SCF')
-wfn = wavefunction()
+scf_e, wfn = si4.energy('SCF', return_wfn=True)
 
 Co = wfn.Ca_subset("AO", "OCC")
 Cv = wfn.Ca_subset("AO", "VIR")
@@ -41,7 +45,7 @@ eps_o = epsilon[:nocc]
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = MintsHelper()
+mints = psi4.core.MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 v_ijab = np.asarray(mints.mo_eri(Co, Co, Cv, Cv))
 v_iajb = np.asarray(mints.mo_eri(Co, Cv, Co, Cv))
@@ -83,5 +87,5 @@ for point, weight in zip(*np.polynomial.legendre.leggauss(leg_points)):
 
 C6 *= 3.0 / np.pi
 C6 = C6.real - C6.imag
-print '\nComputed C6 % 4.4f' % C6 
-print 'Limit        % 4.4f' % 1.322
+print('\nComputed C6 % 4.4f' % C6)
+print('Limit        % 4.4f' % 1.322)
