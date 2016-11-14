@@ -14,8 +14,9 @@
 import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
+import psi4
 
-molecule mol {
+mol = psi4.geometry(""" 
 C    1.39410    0.00000   0.00000
 C    0.69705   -1.20732   0.00000
 C   -0.69705   -1.20732   0.00000
@@ -29,31 +30,34 @@ H   -2.47618    0.00000   0.00000
 H   -1.23809    2.14444   0.00000
 H    1.23809    2.14444   0.00000
 symmetry c1
-}
+""")
 
-set {
-basis aug-cc-pVDZ
 # Basis used in mp2 density fitting
-df_basis_scf aug-cc-pVDZ-ri
-}
+psi4.set_options({'basis':'aug-cc-pVDZ',
+                  'df_basis_scf':'aug-cc-pvdz-ri'})
 
 check_energy = False
 
 print('\nStarting RHF...')
 t = time.time()
-RHF_E, wfn = energy('SCF', return_wfn=True)
+RHF_E, wfn = psi4.energy('SCF', return_wfn=True)
 print('...RHF finished in %.3f seconds:   %16.10f' % (time.time() - t, RHF_E))
 
-# Grab data from wavfunction class 
+# Grab data from Wavfunction clas
 ndocc = wfn.doccpi()[0]
+nbf = wfn.basisset().nbf()
+nvirt = nbf - ndocc
 
 # Split eigenvectors and eigenvalues into o and v
 eps_occ = np.asarray(wfn.epsilon_a_subset("AO", "ACTIVE_OCC"))
 eps_vir = np.asarray(wfn.epsilon_a_subset("AO", "ACTIVE_VIR"))
 
+# Build DF tensors
 print('\nBuilding DF ERI tensor Qov...')
 t = time.time()
-df = DFTensor(wfn, "DF_BASIS_SCF") 
+C = wfn.Ca()
+aux = psi4.core.BasisSet.build(mol, "DF_BASIS_MP2", "", "RIFIT", "aug-cc-pvdz")
+df = psi4.core.DFTensor(wfn.basisset(), aux, C, ndocc, nvirt) 
 # Transformed MO DF tensor
 Qov = np.asarray(df.Qov())
 print('...Qov build in %.3f seconds with a shape of %s, %.3f GB.' \
@@ -113,7 +117,7 @@ print('\nSCS-MP2 correlation energy:        %16.10f' % MP2corr_SS)
 print('SCS-MP2 total energy:              %16.10f' % SCS_MP2_E)
 
 if check_energy:
-    energy('MP2')
-    compare_values(get_variable('MP2 TOTAL ENERGY'), MP2_E, 6, 'MP2 Energy')
-    compare_values(get_variable('SCS-MP2 TOTAL ENERGY'), SCS_MP2_E, 6, 'SCS-MP2 Energy')
+    psi4.energy('MP2')
+    psi4.driver.p4util.compare_values(psi4.core.get_variable('MP2 TOTAL ENERGY'), MP2_E, 6, 'MP2 Energy')
+    psi4.driver.p4util.compare_values(psi4.core.get_variable('SCS-MP2 TOTAL ENERGY'), SCS_MP2_E, 6, 'SCS-MP2 Energy')
 
