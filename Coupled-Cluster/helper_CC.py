@@ -12,6 +12,7 @@
 
 import time
 import numpy as np
+import psi4
 
 # N dimensional dot
 # Like a mini DPD library
@@ -124,16 +125,16 @@ class helper_CCSD(object):
         time_init = time.time()
 
         print('Computing RHF reference.')
-        psi.set_active_molecule(mol)
-        psi.set_local_option('SCF', 'SCF_TYPE', 'PK')
-        psi.set_local_option('SCF', 'E_CONVERGENCE', 10e-10)
-        psi.set_local_option('SCF', 'D_CONVERGENCE', 10e-10)
+        psi.core.set_active_molecule(mol)
+        psi.core.set_local_option('SCF', 'SCF_TYPE', 'PK')
+        psi.core.set_local_option('SCF', 'E_CONVERGENCE', 10e-10)
+        psi.core.set_local_option('SCF', 'D_CONVERGENCE', 10e-10)
 
         # Core is frozen by default
         if not freeze_core:
-            psi.set_local_option('CCENERGY', 'FREEZE_CORE', 'FALSE')
+            psi.core.set_local_option('CCENERGY', 'FREEZE_CORE', 'FALSE')
 
-        self.rhf_e, self.wfn = energy('SCF', return_wfn=True)
+        self.rhf_e, self.wfn = psi4.energy('SCF', return_wfn=True)
         print('RHF Final Energy                          % 16.10f\n' % (self.rhf_e))
 
         self.ccsd_corr_e = 0.0
@@ -170,7 +171,7 @@ class helper_CCSD(object):
             self.C = self.wfn.Ca()
             self.npC = np.asarray(self.C)
 
-        mints = psi.MintsHelper(self.wfn.basisset())
+        mints = psi.core.MintsHelper(self.wfn.basisset())
         H = np.asarray(mints.ao_kinetic()) + np.asarray(mints.ao_potential())
         self.nmo = H.shape[0]
 
@@ -239,14 +240,14 @@ class helper_CCSD(object):
     # all oribitals p, q, r, s, t, u, v
     def get_MO(self, string):
         if len(string) != 4:
-            self.psi.clean()
+            self.psi.core.clean()
             raise Exception('get_MO: string %s must have 4 elements.' % string)
         return self.MO[self.slice_dict[string[0]], self.slice_dict[string[1]],
                        self.slice_dict[string[2]], self.slice_dict[string[3]]]
 
     def get_F(self, string):
         if len(string) != 2:
-            self.psi.clean()
+            self.psi.core.clean()
             raise Exception('get_F: string %s must have 4 elements.' % string)
         return self.F[self.slice_dict[string[0]], self.slice_dict[string[1]]]
 
