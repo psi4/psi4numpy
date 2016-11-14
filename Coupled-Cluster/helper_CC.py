@@ -115,7 +115,7 @@ def ndot(input_string, op1, op2, prefactor=None):
 
 class helper_CCSD(object):
 
-    def __init__(self, psi, energy, mol, freeze_core=False, memory=2):
+    def __init__(self, psi, mol, freeze_core=False, memory=2):
 
         if freeze_core:
             raise Exception("Frozen core doesnt work yet!")
@@ -126,13 +126,13 @@ class helper_CCSD(object):
 
         print('Computing RHF reference.')
         psi.core.set_active_molecule(mol)
-        psi.core.set_module_option('SCF', {'SCF_TYPE':'PK'})
-        psi.core.set_module_option('SCF', {'E_CONVERGENCE':10e-10})
-        psi.core.set_module_option('SCF', {'D_CONVERGENCE':10e-10})
+        psi.set_module_options('SCF', {'SCF_TYPE':'PK'})
+        psi.set_module_options('SCF', {'E_CONVERGENCE':10e-10})
+        psi.set_module_options('SCF', {'D_CONVERGENCE':10e-10})
 
         # Core is frozen by default
         if not freeze_core:
-            psi.core.set_module_option('CCENERGY', {'FREEZE_CORE':'FALSE'})
+            psi.set_module_options('CCENERGY', {'FREEZE_CORE':'FALSE'})
 
         self.rhf_e, self.wfn = psi4.energy('SCF', return_wfn=True)
         print('RHF Final Energy                          % 16.10f\n' % (self.rhf_e))
