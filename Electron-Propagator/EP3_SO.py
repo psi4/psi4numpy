@@ -15,9 +15,11 @@ import time
 import numpy as np
 from scipy import linalg as SLA
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
+import psi4
 
 # Memory for Psi4 in GB
-memory 2 GB
+psi4.core.set_memory(int(2e9), False)
+psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
 numpy_memory = 2
@@ -25,31 +27,29 @@ numpy_memory = 2
 # Number of orbitals below the HOMO to compute
 num_orbs = 5
 
-# molecule mol {
+# mol = psi4.geometry("""
 # O
 # H 1 1.1
 # H 1 1.1 2 104
 # symmetry c1
-# }
-molecule mol {
+# """)
+
+mol = psi4.geometry("""
 O -0.0247847074 0. -0.0175254347
 H  0.0232702345 0.  0.9433790708
 H  0.8971830624 0. -0.2925203027
 symmetry c1
-}
+""")
 
-
-set {
-basis 6-31G
-scf_type pk
-mp2_type conv
-freeze_core false
-e_convergence 1e-8
-d_convergence 1e-8
-}
+psi4.set_options({'basis':'6-31G',
+                  'scf_type':'pk',
+                  'mp2_type':'conv',
+                  'freeze_core':'false',
+                  'e_convergence':1e-8,
+                  'd_convergence':1e-8})
 
 # First compute RHF energy using Psi4
-scf_e, wfn = energy('SCF', return_wfn=True)
+scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 
 # Coefficient Matrix
 C = np.array(wfn.Ca())
@@ -74,7 +74,7 @@ if memory_footprint > numpy_memory:
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = MintsHelper(wfn.basisset())
+mints = psi4.core.MintsHelper(wfn.basisset())
 I = np.array(mints.ao_eri())
 I = I.reshape(nmo, nmo, nmo, nmo)
 
@@ -106,7 +106,7 @@ spin_mask = spin_mask * (spin_ind.reshape(-1, 1) == spin_ind)
 MO *= spin_mask
 MO = MO - MO.swapaxes(1, 3)
 MO = MO.swapaxes(1, 2)
-print '..finished transformation in %.3f seconds.\n' % (time.time()-t)
+print('..finished transformation in %.3f seconds.\n' % (time.time()-t))
 
 # Update nocc and nvirt
 nocc = ndocc * 2
@@ -175,7 +175,6 @@ def EP_term(n, orbital, factor, string, eps_views):
     term = factor * np.einsum(string, *views)
     return term
 
-
 ep2_arr = []
 ep3_arr = []
 for orbital in range(nocc-num_orbs*2, nocc, 2):
@@ -215,7 +214,7 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
 
     if ep2_conv is False:
         ep2_arr.append(E)
-        print 'WARNING: EP2 for orbital HOMO - %d did not converged' % (ndocc - orbital/2 - 1)
+        print('WARNING: EP2 for orbital HOMO - %d did not converged' % (ndocc - orbital/2 - 1))
 
     EP2 = E
     # EP3
@@ -313,13 +312,13 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
 
     if ep3_conv is False:
         ep3_arr.append(E)
-        print 'WARNING: EP3 for orbital HOMO - %d did not converged' % (ndocc - orbital/2 - 1)
+        print('WARNING: EP3 for orbital HOMO - %d did not converged' % (ndocc - orbital/2 - 1))
 
 
-print "\nKP - Koopmans' Theorem"
-print "EP2 - Electron Propagator 2\n"
-print "HOMO - n         KP (eV)              EP2 (eV)              EP3 (eV)"
-print "---------------------------------------------------------------------"
+print("\nKP - Koopmans' Theorem")
+print("EP2 - Electron Propagator 2\n")
+print("HOMO - n         KP (eV)              EP2 (eV)              EP3 (eV)")
+print("---------------------------------------------------------------------")
 
 KP_arr = eps[:nocc][::2] * 27.21138505
 

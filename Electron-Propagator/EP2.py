@@ -15,9 +15,11 @@ import time
 import numpy as np
 from scipy import linalg as SLA
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
+import psi4
 
 # Memory for Psi4 in GB
-memory 2 GB
+psi4.core.set_memory(int(2e9), False)
+psi4.core.set_ouput_file('output.dat', False)
 
 # Memory for numpy in GB
 numpy_memory = 2
@@ -28,25 +30,23 @@ start_orbs = 2
 # Number of orbitals to compute
 num_orbs = 4
 
-molecule mol {
+mol = psi4.geometry("""
 O
 H 1 1.1
 H 1 1.1 2 104
 symmetry c1
-}
+""")
 
-set {
-basis aug-cc-pVDZ
-scf_type pk
-e_convergence 1e-8
-d_convergence 1e-8
-}
+psi4.set_options({'basis':'aug-cc-pvdz',
+                  'scf_type':'pk',
+                  'e_convergence':1e-8,
+                  'd_convergence':1e-8})
 
 print('\nStarting RHF and integral build...')
 t = time.time()
 
 # First compute RHF energy using Psi4
-scf_e, wfn = energy('SCF', return_wfn=True)
+scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 
 # Grab data from wavfunction class 
 ndocc = wfn.doccpi()[0]
@@ -66,7 +66,7 @@ if memory_footprint > numpy_memory:
 print('Building MO integrals.')
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = MintsHelper(wfn.basisset())
+mints = psi4.core.MintsHelper(wfn.basisset())
 C = wfn.Ca()
 MO = np.asarray(mints.mo_eri(C, C, C, C))
 
@@ -126,18 +126,18 @@ for orbital in range(start_orbs + 1, start_orbs + num_orbs + 1):
 
     if ep2_conv is False:
         ep2_arr.append(E * 27.21138505)
-        print 'WARNING: EP2 for orbital HOMO - %d did not converged' % (ndocc - orbital - 1)
+        print('WARNING: EP2 for orbital HOMO - %d did not converged' % (ndocc - orbital - 1))
 
-print "KP - Koopmans' Theorem"
-print "EP2 - Electron Propagator 2\n"
-print "HOMO - n         KP (eV)              EP2 (eV)"
-print "----------------------------------------------"
+print("KP - Koopmans' Theorem")
+print("EP2 - Electron Propagator 2\n")
+print("HOMO - n         KP (eV)              EP2 (eV)")
+print("----------------------------------------------")
 
 KP_arr = eps * 27.21138505
 
 for orbital in range(0, len(ep2_arr)):
     kp_orb = start_orbs + orbital + 1
-    print "% 4d     % 16.4f    % 16.4f" % (kp_orb - ndocc + 1, KP_arr[kp_orb], ep2_arr[orbital])
+    print("% 4d     % 16.4f    % 16.4f" % (kp_orb - ndocc + 1, KP_arr[kp_orb], ep2_arr[orbital]))
 
 
 
