@@ -28,12 +28,12 @@ H 1 1.1 2 104
 symmetry c1
 """)
 
-psi4.set_options({'basis':'3-21g',
-                  'scf_type':'pk',
-                  'mp2_type':'conv',
-                  'freeze_core':'false',
-                  'e_convergence':1e-10,
-                  'd_convergence':1e-10})
+psi4.set_options({'basis': '3-21g',
+                  'scf_type': 'pk',
+                  'mp2_type': 'conv',
+                  'freeze_core': 'false',
+                  'e_convergence': 1e-10,
+                  'd_convergence': 1e-10})
 
 # CCSD Settings
 E_conv = 1.e-6

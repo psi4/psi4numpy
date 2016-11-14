@@ -28,7 +28,7 @@ H 1 1.1 2 104
 symmetry c1
 """)
 
-psi4.set_options({'basis':'cc-pVDZ'})
+psi4.set_options({'basis': 'cc-pVDZ'})
 
 # For numpy
 compare_psi4 = True

@@ -26,7 +26,7 @@ H 1 1.1 2 104
 symmetry c1
 """)
 
-psi4.set_options({'basis':'cc-pvdz'})
+psi4.set_options({'basis': 'cc-pvdz'})
 
 # CCSD settings
 E_conv = 1.e-8
