@@ -126,13 +126,13 @@ class helper_CCSD(object):
 
         print('Computing RHF reference.')
         psi.core.set_active_molecule(mol)
-        psi.core.set_local_option('SCF', 'SCF_TYPE', 'PK')
-        psi.core.set_local_option('SCF', 'E_CONVERGENCE', 10e-10)
-        psi.core.set_local_option('SCF', 'D_CONVERGENCE', 10e-10)
+        psi.core.set_module_option('SCF', {'SCF_TYPE':'PK'})
+        psi.core.set_module_option('SCF', {'E_CONVERGENCE':10e-10})
+        psi.core.set_module_option('SCF', {'D_CONVERGENCE':10e-10})
 
         # Core is frozen by default
         if not freeze_core:
-            psi.core.set_local_option('CCENERGY', 'FREEZE_CORE', 'FALSE')
+            psi.core.set_module_option('CCENERGY', {'FREEZE_CORE':'FALSE'})
 
         self.rhf_e, self.wfn = psi4.energy('SCF', return_wfn=True)
         print('RHF Final Energy                          % 16.10f\n' % (self.rhf_e))
