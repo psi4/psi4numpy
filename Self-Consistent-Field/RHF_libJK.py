@@ -37,8 +37,8 @@ ndocc = wfn.nalpha()
 if wfn.nalpha() != wfn.nbeta():
     raise PsiException("Only valid for RHF wavefunctions!")
 
-psi4.print_out('\nNumber of occupied orbitals: %d\n' % ndocc)
-psi4.print_out('Number of basis functions:   %d\n' % nbf)
+print('\nNumber of occupied orbitals: %d\n' % ndocc)
+print('Number of basis functions:   %d\n' % nbf)
 
 # Build H_core
 V = mints.ao_potential()
@@ -84,9 +84,9 @@ jk.set_memory(int(1.25e8))  # 1GB
 jk.initialize()
 jk.print_header()
 
-psi4.print_out('\nTotal time taken for setup: %.3f seconds\n' % (time.time() - t))
+print('\nTotal time taken for setup: %.3f seconds\n' % (time.time() - t))
 
-psi4.print_out('\nStart SCF iterations:\n\n')
+print('\nStart SCF iterations:\n\n')
 t = time.time()
 
 for SCF_ITER in range(1, maxiter + 1):
@@ -113,7 +113,7 @@ for SCF_ITER in range(1, maxiter + 1):
 
     dRMS = diis_e.rms()
 
-    psi4.print_out('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E\n'
+    print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
           % (SCF_ITER, SCF_E, (SCF_E - Eold), dRMS))
     if (abs(SCF_E - Eold) < E_conv) and (dRMS < D_conv):
         break
@@ -128,7 +128,7 @@ for SCF_ITER in range(1, maxiter + 1):
         psi4.clean()
         raise Exception("Maximum number of SCF cycles exceeded.\n")
 
-psi4.print_out('Total time for SCF iterations: %.3f seconds \n\n' % (time.time() - t))
+print('Total time for SCF iterations: %.3f seconds \n\n' % (time.time() - t))
 
-psi4.print_out('Final SCF energy: %.8f hartree\n' % SCF_E)
+print('Final SCF energy: %.8f hartree\n' % SCF_E)
 psi4.driver.p4util.compare_values(-2.8557342505784704, SCF_E, 6, 'SCF Energy')
