@@ -23,9 +23,9 @@ symmetry c1
 """)
 
 # Set options for CPHF
-psi4.core.set_options({"basis":"aug-cc-pVDZ",
-                       "scf_type":"df",
-                       "cphf_tasks":['polarizability']})
+psi4.set_options({"basis":"aug-cc-pVDZ",
+                  "scf_type":"df",
+                  "cphf_tasks":['polarizability']})
 
 # Set defaults
 # Can be direct or iterative
@@ -125,10 +125,10 @@ elif method == 'iterative':
     # Add blank matrices to the jk object and numpy hooks to C_right
     npC_right = []
     for xyz in range(3):
-        jk.C_left().append(Co)
-        mC = Matrix(nbf, nocc)
+        jk.C_left_add(Co)
+        mC = psi4.core.Matrix(nbf, nocc)
         npC_right.append(np.asarray(mC))
-        jk.C_right().append(mC)
+        jk.C_right_add(mC)
 
     # Build initial guess, previous vectors, diis object, and C_left updates
     x = []
