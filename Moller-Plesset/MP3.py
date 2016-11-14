@@ -60,7 +60,7 @@ if memory_footprint > numpy_memory:
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = psi4.MintsHelper(wfn.basisset())
+mints = psi4.core.MintsHelper(wfn.basisset())
 I = np.array(mints.ao_eri())
 I = I.reshape(nmo, nmo, nmo, nmo)
 
