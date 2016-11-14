@@ -11,7 +11,7 @@ import psi4
 
 class helper_SAPT(object):
 
-    def __init__(self, psi, energy, dimer, memory=2):
+    def __init__(self, psi, dimer, memory=2):
         print("\nInitalizing SAPT object...\n")
         tinit_start = time.time()
 
@@ -38,7 +38,7 @@ class helper_SAPT(object):
         print("RHF for monomer A finished in %.2f seconds." % (time.time() - tstart))
 
         tstart = time.time()
-        self.rhfB, self.wfnB = energy('SCF', molecule=monomerB, return_wfn=True)
+        self.rhfB, self.wfnB = psi4.energy('SCF', molecule=monomerB, return_wfn=True)
         self.V_B = np.asarray(psi.core.MintsHelper(self.wfnB.basisset()).ao_potential())
         print("RHF for monomer B finished in %.2f seconds." % (time.time() - tstart))
 
@@ -90,7 +90,7 @@ class helper_SAPT(object):
                       's': self.nvirt_B}
 
         # Compute size of ERI tensor in GB
-        dimer_wfn = psi.core.Wavefunction.build(dimer, psi4.get_global_option('BASIS'))
+        dimer_wfn = psi.core.Wavefunction.build(dimer, psi4.core.get_global_option('BASIS'))
         mints = psi.core.MintsHelper(dimer_wfn.basisset())
         self.mints = mints
         ERI_Size = (self.nmo ** 4) * 8.e-9
