@@ -17,7 +17,7 @@ np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
 psi4.core.set_memory(int(2e9), False)
-psi4.core.set_ouput_file('output.dat', False)
+psi4.core.set_output_file('output.dat', False)
 
 numpy_memory = 2
 
@@ -31,10 +31,10 @@ symmetry c1
 psi4.set_options({'basis':'cc-pVDZ'})
 
 # For numpy
-compare_psi4 = False
+compare_psi4 = True
 
 # Compute CCSD
-ccsd = helper_CCSD(psi4, energy, mol, memory=2)
+ccsd = helper_CCSD(psi4, mol, memory=2)
 ccsd.compute_energy()
 
 CCSDcorr_E = ccsd.ccsd_corr_e
@@ -104,5 +104,5 @@ CCSD_T_E = CCSD_E + Pert_T
 print('\nPertubative (T) correlation energy:     % 16.10f' % Pert_T)
 print('Total CCSD(T) energy:                   % 16.10f' % CCSD_T_E)
 if compare_psi4:
-    psi4.driver.p4util.compare_values(energy('CCSD(T)'), CCSD_T_E, 6, 'CCSD(T) Energy')
+    psi4.driver.p4util.compare_values(psi4.energy('CCSD(T)'), CCSD_T_E, 6, 'CCSD(T) Energy')
 
