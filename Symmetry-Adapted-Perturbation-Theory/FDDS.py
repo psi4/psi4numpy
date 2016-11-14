@@ -38,7 +38,7 @@ psi4.set_options({'basis':'jun-cc-pvdz',
 # Knobs
 leg_points = 8
 
-sapt = helper_SAPT(psi4, energy, dimer, memory=20)
+sapt = helper_SAPT(psi4, dimer, memory=20)
 
 #### Start E200 Disp
 disp_timer = sapt_timer('dispersion')
