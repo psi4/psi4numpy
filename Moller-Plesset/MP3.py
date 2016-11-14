@@ -11,34 +11,32 @@
 import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
+import psi4
 
 # Memory for Psi4 in GB
-memory 2 GB
+psi4.core.set_memory(int(2e9), False)
+psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
 numpy_memory = 2
 
-
-molecule mol {
+mol = psi4.geometry("""
 O
 H 1 1.1
 H 1 1.1 2 104
 symmetry c1
-}
+""")
 
-
-set {
-basis aug-cc-pVDZ
-scf_type pk
-guess core
-mp2_type conv
-freeze_core false
-e_convergence 1e-8
-d_convergence 1e-8
-}
+psi4.set_options({'basis':'aug-cc-pvdz',
+                  'scf_type':'pk',
+                  'guess':'core',
+                  'mp2_type':'conv',
+                  'freeze_core':'false',
+                  'e_convergence':1e-8,
+                  'd_convergence':1e-8})
 
 # First compute RHF energy using Psi4
-scf_e, wfn = energy('SCF', return_wfn=True)
+scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 
 # Coefficient Matrix
 C = np.array(wfn.Ca())
@@ -62,11 +60,11 @@ if memory_footprint > numpy_memory:
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = MintsHelper(wfn.basisset())
+mints = psi4.MintsHelper(wfn.basisset())
 I = np.array(mints.ao_eri())
 I = I.reshape(nmo, nmo, nmo, nmo)
 
-print '\nTotal time taken for ERI integrals: %.3f seconds.' % (time.time()-t)
+print('\nTotal time taken for ERI integrals: %.3f seconds.' % (time.time()-t))
 
 t=time.time()
 
@@ -79,8 +77,8 @@ MO = np.einsum('qA,IqJB->IAJB', C, MO)
 # (pq|rs) -> <ps|rq>
 MO = MO.swapaxes(1, 2)
 
-print '\nTotal time taken for integral transformation: %.f seconds' % (time.time()-t)
-print 'Shape of MO integrals %s \n' % str(MO.shape)
+print('\nTotal time taken for integral transformation: %.f seconds' % (time.time()-t))
+print('Shape of MO integrals %s \n' % str(MO.shape))
 
 # Build epsilon tensor
 eocc = eps[:ndocc]
@@ -96,9 +94,9 @@ v = slice(ndocc, MO.shape[0])
 MP2corr_E = 2 * np.einsum('abrs,rsab,abrs', MO[o, o, v, v], MO[v, v, o, o], epsilon)
 MP2corr_E -= np.einsum('abrs,rsba,abrs', MO[o, o, v, v], MO[v, v, o, o], epsilon)
 MP2total_E = SCF_E + MP2corr_E
-print 'MP2 correlation energy: %16.8f' % MP2corr_E
-print 'MP2 total energy:       %16.8f' % MP2total_E
-compare_values(energy('MP2'), MP2total_E, 6, 'MP2 Energy')
+print('MP2 correlation energy: %16.8f' % MP2corr_E)
+print('MP2 total energy:       %16.8f' % MP2total_E)
+psi4.driver.p4util.compare_values(psi4.energy('MP2'), MP2total_E, 6, 'MP2 Energy')
 
 print '\n Starting MP3 energy...'
 t = time.time()
@@ -128,13 +126,13 @@ MP3corr_E += -4.0 * np.einsum('abrs,scat,rtbc,abrs,cbrt', MO[o, o, v, v], MO[v, 
 # Equation 12
 MP3corr_E += -4.0 * np.einsum('bcrt,atsc,rsab,bctr,abrs', MO[o, o, v, v], MO[o, v, v, o], MO[v, v, o, o], epsilon, epsilon)
 
-print '...took %.3f seconds to compute MP3 correlation energy.\n' % (time.time()-t)
+print('...took %.3f seconds to compute MP3 correlation energy.\n' % (time.time()-t))
 
-print 'Third order energy:     %16.8f' % MP3corr_E
+print('Third order energy:     %16.8f' % MP3corr_E)
 MP3corr_E += MP2corr_E
 MP3total_E = SCF_E + MP3corr_E
-print 'MP3 correlation energy: %16.8f' % MP3corr_E
-print 'MP3 total energy:       %16.8f' % MP3total_E
-compare_values(energy('MP3'), MP3total_E, 6, 'MP3 Energy')
+print('MP3 correlation energy: %16.8f' % MP3corr_E)
+print('MP3 total energy:       %16.8f' % MP3total_E)
+psi4.driver.p4util.compare_values(psi4.energy('MP3'), MP3total_E, 6, 'MP3 Energy')
 
 

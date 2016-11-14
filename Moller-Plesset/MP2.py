@@ -13,29 +13,29 @@
 import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
+import psi4
 
 # Memory for Psi4 in GB
-memory 2 GB
+psi4.core.set_memory(int(2e9), False)
+psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
 numpy_memory = 2
 
 
-molecule mol {
+mol = psi4.geometry("""
 O
 H 1 1.1
 H 1 1.1 2 104
 symmetry c1
-}
+""")
 
 
-set {
-basis aug-cc-pVDZ
-scf_type pk
-mp2_type conv
-e_convergence 1e-8
-d_convergence 1e-8
-}
+psi4.set_options({'basis':'aug-cc-pvdz',
+                  'scf_type':'pk',
+                  'mp2_type':'conv',
+                  'e_convergence':1e-8,
+                  'd_convergence':1e-8})
 
 # Check energy against psi4?
 check_energy = False
@@ -44,7 +44,7 @@ print('\nStarting SCF and integral build...')
 t = time.time()
 
 # First compute SCF energy using Psi4
-scf_e, wfn = energy('SCF', return_wfn=True)
+scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 
 # Grab data from wavfunction class 
 ndocc = wfn.doccpi()[0]
@@ -64,7 +64,7 @@ if memory_footprint > numpy_memory:
 print('Building MO integrals.')
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = MintsHelper(wfn.basisset())
+mints = psi4.core.MintsHelper(wfn.basisset())
 Co = wfn.Ca_subset("AO", "OCC")
 Cv = wfn.Ca_subset("AO", "VIR")
 MO = np.asarray(mints.mo_eri(Co, Cv, Co, Cv))
@@ -100,9 +100,9 @@ print('\nSCS-MP2 correlation energy:        %16.10f' % MP2corr_SS)
 print('SCS-MP2 total energy:              %16.10f' % SCS_MP2_E)
 
 if check_energy:
-    energy('MP2')
-    compare_values(get_variable('MP2 TOTAL ENERGY'), MP2_E, 6, 'MP2 Energy')
-    compare_values(get_variable('SCS-MP2 TOTAL ENERGY'), SCS_MP2_E, 6, 'SCS-MP2 Energy')
+    psi4.energy('MP2')
+    psi4.driver.p4util.compare_values(psi4.core.get_variable('MP2 TOTAL ENERGY'), MP2_E, 6, 'MP2 Energy')
+    psi4.driver.p4util.compare_values(psi4.core.get_variable('SCS-MP2 TOTAL ENERGY'), SCS_MP2_E, 6, 'SCS-MP2 Energy')
 
 
 

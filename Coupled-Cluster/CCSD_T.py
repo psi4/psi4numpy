@@ -14,21 +14,21 @@ import time
 import numpy as np
 from helper_CC import *
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
+import psi4
 
-memory 2 GB
+psi4.core.set_memory(int(2e9), False)
+psi4.core.set_ouput_file('output.dat', False)
+
 numpy_memory = 2
 
-molecule mol {
+mol = psi4.geometry("""
 O
 H 1 1.1
 H 1 1.1 2 104
 symmetry c1
-}
+""")
 
-
-set {
-basis cc-pVDZ
-}
+psi4.set_options({'basis':'cc-pVDZ'})
 
 # For numpy
 compare_psi4 = False
@@ -104,5 +104,5 @@ CCSD_T_E = CCSD_E + Pert_T
 print('\nPertubative (T) correlation energy:     % 16.10f' % Pert_T)
 print('Total CCSD(T) energy:                   % 16.10f' % CCSD_T_E)
 if compare_psi4:
-    compare_values(energy('CCSD(T)'), CCSD_T_E, 6, 'CCSD(T) Energy')
+    psi4.driver.p4util.compare_values(energy('CCSD(T)'), CCSD_T_E, 6, 'CCSD(T) Energy')
 

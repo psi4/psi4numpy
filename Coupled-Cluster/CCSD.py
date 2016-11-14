@@ -13,23 +13,27 @@
 import time
 import numpy as np
 np.set_printoptions(precision=8, linewidth=200, suppress=True)
+import psi4
+
+# Set memory
+psi4.core.set_memory(int(2e9), False)
+psi4.core.set_ouput_file('output.dat', False)
+
 numpy_memory = 2
 
-molecule mol {
+mol = psi4.geometry("""
 O
 H 1 1.1
 H 1 1.1 2 104
 symmetry c1
-}
+""")
 
-set {
-basis cc-pVDZ
-scf_type pk
-mp2_type conv
-freeze_core false
-e_convergence 1e-10
-d_convergence 1e-10
-}
+psi4.set_options({'basis':'cc-pvdz',
+                  'scf_type':'pk',
+                  'mp2_type':'conv',
+                  'freeze_core':'false',
+                  'e_convergence':1e-10,
+                  'd_convergence':1e-10})
 
 # CCSD Settings
 E_conv = 1.e-6
@@ -38,7 +42,7 @@ print_amps = False
 compare_psi4 = False
 
 # First compute RHF energy using Psi4
-scf_e, wfn = energy('SCF', return_wfn=True)
+scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 
 # Grab data from
 C = wfn.Ca()
@@ -58,13 +62,13 @@ if memory_footprint > numpy_memory:
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-mints = MintsHelper(wfn.basisset())
+mints = psi4.core.MintsHelper(wfn.basisset())
 H = np.asarray(mints.ao_kinetic()) + np.asarray(mints.ao_potential())
 
 print('\nTotal time taken for ERI integrals: %.3f seconds.\n' % (time.time() - t))
 
 #Make spin-orbital MO
-print 'Starting AO -> spin-orbital MO transformation...'
+print('Starting AO -> spin-orbital MO transformation...')
 t = time.time()
 MO = np.asarray(mints.mo_spin_eri(C, C))
 
@@ -224,7 +228,7 @@ MP2_E = SCF_E + MP2corr_E
 
 print('MO based MP2 correlation energy: %.8f' % MP2corr_E)
 print('MP2 total energy:       %.8f' % MP2_E)
-compare_values(energy('mp2'), MP2_E, 6, 'MP2 Energy')
+psi4.driver.p4util.compare_values(psi4.energy('mp2'), MP2_E, 6, 'MP2 Energy')
 
 ### Start CCSD iterations
 print('\nStarting CCSD iterations')
@@ -304,6 +308,7 @@ for CCSD_iter in range(1, maxiter + 1):
         break
 
     CCSDcorr_E_old = CCSDcorr_E
+
 print('CCSD iterations took %.2f seconds.\n' % (time.time() - ccsd_tstart))
 
 CCSD_E = SCF_E + CCSDcorr_E
@@ -311,7 +316,7 @@ CCSD_E = SCF_E + CCSDcorr_E
 print('\nFinal CCSD correlation energy:     % 16.10f' % CCSDcorr_E)
 print('Total CCSD energy:                 % 16.10f' % CCSD_E)
 if compare_psi4:
-    compare_values(energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
+    psi4.driver.p4util.compare_values(psi4.energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
 
 if print_amps:
     # [::4] take every 4th, [-5:] take last 5, [::-1] reverse order

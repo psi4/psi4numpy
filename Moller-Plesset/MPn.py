@@ -12,34 +12,32 @@
 import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
+import psi4
 
 # Memory for Psi4 in GB
-memory 2 GB
+psi4.core.set_memory(int(2e9), False)
+psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
 numpy_memory = 2
 
-
-molecule mol {
+mol = psi4.geometry("""
 O
 H 1 1.1
 H 1 1.1 2 104
 symmetry c1
-}
+""")
 
-
-set {
-basis aug-cc-pVDZ
-scf_type pk
-guess core
-mp2_type conv
-freeze_core false
-e_convergence 1e-8
-d_convergence 1e-8
-}
+psi4.set_options({'basis':'aug-cc-pvdz',
+                  'scf_type':'pk',
+                  'guess':'core',
+                  'mp2_type':'conv',
+                  'freeze_core':'false',
+                  'e_convergence':1e-8,
+                  'd_convergence':1e-8})
 
 # First compute RHF energy using Psi4
-scf_e, wfn = energy('SCF', return_wfn=True)
+scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 
 # Grab data from 
 C = wfn.Ca()
@@ -60,7 +58,7 @@ if memory_footprint > numpy_memory:
 #Make spin-orbital MO
 t=time.time()
 print 'Starting ERI build and spin AO -> spin-orbital MO transformation...'
-mints = MintsHelper(wfn.basisset())
+mints = psi4.core.MintsHelper(wfn.basisset())
 MO = np.asarray(mints.mo_eri(C, C, C, C))
 
 # (pq|rs) -> <pr|qs>
@@ -73,8 +71,6 @@ print('Shape of MO integrals %s \n' % str(MO.shape))
 eocc = eps[:ndocc]
 evirt = eps[ndocc:]
 epsilon = 1/(eocc.reshape(-1, 1, 1, 1) + eocc.reshape(-1, 1, 1) - evirt.reshape(-1, 1) - evirt)
-
-
 
 def MP_term(n, h, l, factor, string):
     """
@@ -126,8 +122,7 @@ MP2corr_E += MP_term(2, 2, 1, 0.5, 'abrs,rsba,abrs')
 MP2total_E = SCF_E + MP2corr_E
 print('MP2 correlation energy: %.8f' % MP2corr_E)
 print('MP2 total energy:       %.8f' % MP2total_E)
-compare_values(energy('MP2'), MP2total_E, 6, 'MP2 Energy')
-
+psi4.driver.p4util.compare_values(energy('MP2'), MP2total_E, 6, 'MP2 Energy')
 
 ### MP3
 
@@ -164,6 +159,8 @@ MP3corr_E += MP2corr_E
 MP3total_E = SCF_E + MP3corr_E
 print('MP3 correlation energy: %.8f' % MP3corr_E)
 print('MP3 total energy:       %.8f' % MP3total_E)
-compare_values(energy('MP3'), MP3total_E, 6, 'MP3 Energy')
+
+# Compare to Psi4
+psi4.driver.p4util.compare_values(energy('MP3'), MP3total_E, 6, 'MP3 Energy')
 
 
