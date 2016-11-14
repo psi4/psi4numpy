@@ -29,7 +29,7 @@ psi4.set_options({'basis':'aug-cc-pvqz',
                   'e_convergence':1e-8,
                   'd_convergence':1e-8})
 
-scf_e, wfn = si4.energy('SCF', return_wfn=True)
+scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 
 Co = wfn.Ca_subset("AO", "OCC")
 Cv = wfn.Ca_subset("AO", "VIR")
@@ -70,7 +70,7 @@ E1 -= v_iajb.swapaxes(0, 2)
 C6 = np.complex(0, 0)
 leg_points = 16
 fdds_lambda = 0.2
-print('     Omega      value     weight        sum')
+print('  Omega             value            weight             sum')
 for point, weight in zip(*np.polynomial.legendre.leggauss(leg_points)):
     omega = fdds_lambda * (1.0 - point) / (1.0 + point)
 
@@ -83,9 +83,9 @@ for point, weight in zip(*np.polynomial.legendre.leggauss(leg_points)):
     value = np.einsum('p,pq,q->', dip1, tmp, dip1)
 
     C6 += ((weight * value) ** 2) * ( (2 * fdds_lambda) / (point + 1)**2 )
-    print('% .3e % .3e % .3e % .3e' % (omega, value, weight, weight*value))
+    print('{:.3e}   {:.3e}   {:.3e}   {:.3e}'.format(omega, value, weight, weight*value))
 
 C6 *= 3.0 / np.pi
 C6 = C6.real - C6.imag
-print('\nComputed C6 % 4.4f' % C6)
+print('\nComputed C6: % 4.4f' % C6)
 print('Limit        % 4.4f' % 1.322)
