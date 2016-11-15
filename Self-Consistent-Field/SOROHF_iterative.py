@@ -28,13 +28,13 @@ mol = psi4.geometry("""
 symmetry c1
 """)
 
-psi4.set_options({'guess':'core',
-                  'basis':'aug-cc-pvtz',
-                  'scf_type':'df',
-                  'e_convergence':1e-8,
-                  'reference':'rohf'})
+psi4.set_options({'guess': 'core',
+                  'basis': 'aug-cc-pvtz',
+                  'scf_type': 'df',
+                  'e_convergence': 1e-8,
+                  'reference': 'rohf'})
 
-wfn = psi4.core.Wavefunction.build(mol, psi4.get_global_option('BASIS'))
+wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option('BASIS'))
 
 # Set occupations
 nocc = wfn.nalpha()
@@ -42,7 +42,7 @@ ndocc = wfn.nbeta()
 nsocc = nocc - ndocc
 
 # Set defaults
-maxiter = 11
+maxiter = 15
 max_micro = 5
 micro_print = True
 micro_conv = 5.e-3
@@ -85,7 +85,7 @@ def SCF_Hx(x, moFa, moFb, C):
     Co_b = C[:, :ndocc]
     C_right_a = np.dot(C[:, nocc:], x[:, nsocc:].T)
     C_right_b = np.dot(C[:, ndocc:], x[:ndocc, :].T)
-    J, K = scf_helper.compute_jk(psi4, jk, [Co_a, Co_b], [C_right_a, C_right_b])
+    J, K = scf_helper.compute_jk(jk, [Co_a, Co_b], [C_right_a, C_right_b])
     J1, J2 = J
     K1, K2 = K
 
@@ -141,7 +141,7 @@ t = time.time()
 for SCF_ITER in range(1, maxiter + 1):
 
     # Build a and b fock matrices
-    J, K = scf_helper.compute_jk(psi4, jk, [C[:, :nocc], C[:, :ndocc]])
+    J, K = scf_helper.compute_jk(jk, [C[:, :nocc], C[:, :ndocc]])
     J = J[0] + J[1]
     Fa = H + J - K[0]
     Fb = H + J - K[1]
@@ -190,7 +190,7 @@ for SCF_ITER in range(1, maxiter + 1):
         break
 
     if SCF_ITER == maxiter:
-        clean()
+        psi4.core.clean()
         raise Exception("Maximum number of SCF cycles exceeded.")
 
     ediff = abs(SCF_E - Eold)
@@ -270,5 +270,5 @@ print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 print('Final SCF energy: %.8f hartree' % SCF_E)
 
 # Compare to Psi4
-SCF_E_psi = energy('SCF')
+SCF_E_psi = psi4.energy('SCF')
 psi4.driver.p4util.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
