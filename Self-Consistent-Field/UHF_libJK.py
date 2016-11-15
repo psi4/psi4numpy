@@ -14,7 +14,7 @@ import psi4
 
 # Memory for Psi4 in GB
 psi4.core.set_memory(int(2e9), False)
-psi4.core.set_ouput_file('output.dat', False)
+psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
 numpy_memory = 2
@@ -27,7 +27,6 @@ mol = psi4.geometry("""
 symmetry c1
 """)
 
-set {
 psi4.set_options({'guess':'core',
                   'basis':'aug-cc-pvdz',
                   'scf_type':'df',
@@ -45,7 +44,7 @@ D_conv = 1.0E-5
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-wfn = psi4.core.Wavefunction.build(mol, psi4.get_global_option('BASIS'))
+wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option('BASIS'))
 mints = psi4.core.MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 
@@ -93,19 +92,19 @@ Fock_list = []
 DIIS_error = []
 
 # Build a C matrix and share data with the numpy array npC
-Cocca = Matrix(nbf, nocca)
+Cocca = psi4.core.Matrix(nbf, nocca)
 npCa = np.asarray(Cocca)
 npCa[:] = Ca[:, :nocca]
 
-Coccb = Matrix(nbf, noccb)
+Coccb = psi4.core.Matrix(nbf, noccb)
 npCb = np.asarray(Coccb)
 npCb[:] = Cb[:, :noccb]
 
 # Initialize the JK object
-jk = JK.build_JK(wfn.basisset())
+jk = psi4.core.JK.build(wfn.basisset())
 jk.initialize()
-jk.C_left().append(Cocca)
-jk.C_left().append(Coccb)
+jk.C_left_add(Cocca)
+jk.C_left_add(Coccb)
 
 # Build a DIIS helper object
 diisa = DIIS_helper()
