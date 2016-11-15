@@ -29,10 +29,10 @@ mol = psi4.geometry("""
 symmetry c1
 """)
 
-psi4.set_options({'basis':'aug-cc-pvdz',
-                  'scf_type':'df',
-                  'e_convergence':1e-8,
-                  'reference':'uhf'})
+psi4.set_options({'basis': 'aug-cc-pvdz',
+                  'scf_type': 'df',
+                  'e_convergence': 1e-8,
+                  'reference': 'uhf'})
 
 # Set occupations
 nocca = 9
@@ -48,7 +48,7 @@ micro_print = True
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
-wfn = psi4.core.Wavefunction.build(mol, psi4.get_global_option('BASIS'))
+wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option('BASIS'))
 mints = psi4.core.MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 
@@ -98,7 +98,7 @@ def SCF_Hx(xa, xb, moFa, Co_a, Cv_a, moFb, Co_b, Cv_b):
     C_right_a = np.einsum('ia,sa->si', -xa, Cv_a)
     C_right_b = np.einsum('ia,sa->si', -xb, Cv_b)
 
-    J, K = scf_helper.compute_jk(psi4, jk, [Co_a, Co_b], [C_right_a, C_right_b]) 
+    J, K = scf_helper.compute_jk(jk, [Co_a, Co_b], [C_right_a, C_right_b]) 
 
     Jab = J[0] + J[1]
     Hx_a += (Co_a.T).dot(2 * Jab - K[0].T - K[0]).dot(Cv_a)
@@ -133,7 +133,7 @@ t = time.time()
 for SCF_ITER in range(1, maxiter + 1):
 
     # Build Fock matrices
-    J, K = scf_helper.compute_jk(psi4, jk, [Ca[:, :nocca], Cb[:, :noccb]])
+    J, K = scf_helper.compute_jk(jk, [Ca[:, :nocca], Cb[:, :noccb]])
     J = J[0] + J[1]
     Fa = H + J - K[0]
     Fb = H + J - K[1]
@@ -255,7 +255,7 @@ for SCF_ITER in range(1, maxiter + 1):
         Cb, Db = scf_helper.rotate_orbitals(Cb, x_b, True)
 
     if SCF_ITER == maxiter:
-        clean()
+        psi4.core.clean()
         raise Exception("Maximum number of SCF cycles exceeded.")
 
 print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
