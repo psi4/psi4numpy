@@ -11,7 +11,7 @@ import psi4
 
 class helper_SAPT(object):
 
-    def __init__(self, psi, dimer, memory=2):
+    def __init__(self, dimer, memory=2):
         print("\nInitalizing SAPT object...\n")
         tinit_start = time.time()
 
@@ -22,7 +22,7 @@ class helper_SAPT(object):
         dimer.update_geometry()
         nfrags = dimer.nfragments()
         if nfrags != 2:
-            psi.clean()
+            psi4.core.clean()
             raise Exception("Found %d fragments, must be 2." % nfrags)
 
         # Grab monomers in DCBS
@@ -33,17 +33,16 @@ class helper_SAPT(object):
 
         # Compute monomer properties
         tstart = time.time()
-        self.rhfA, self.wfnA = psi.energy('SCF', molecule=monomerA, return_wfn=True)
-        self.V_A = np.asarray(psi.core.MintsHelper(self.wfnA.basisset()).ao_potential())
+        self.rhfA, self.wfnA = psi4.energy('SCF', molecule=monomerA, return_wfn=True)
+        self.V_A = np.asarray(psi4.core.MintsHelper(self.wfnA.basisset()).ao_potential())
         print("RHF for monomer A finished in %.2f seconds." % (time.time() - tstart))
 
         tstart = time.time()
         self.rhfB, self.wfnB = psi4.energy('SCF', molecule=monomerB, return_wfn=True)
-        self.V_B = np.asarray(psi.core.MintsHelper(self.wfnB.basisset()).ao_potential())
+        self.V_B = np.asarray(psi4.core.MintsHelper(self.wfnB.basisset()).ao_potential())
         print("RHF for monomer B finished in %.2f seconds." % (time.time() - tstart))
 
         # Setup a few variables
-        self.psi = psi
         self.memory = memory
         self.nmo = self.wfnA.nmo()
 
@@ -90,13 +89,13 @@ class helper_SAPT(object):
                       's': self.nvirt_B}
 
         # Compute size of ERI tensor in GB
-        dimer_wfn = psi.core.Wavefunction.build(dimer, psi4.core.get_global_option('BASIS'))
-        mints = psi.core.MintsHelper(dimer_wfn.basisset())
+        dimer_wfn = psi4.core.Wavefunction.build(dimer, psi4.core.get_global_option('BASIS'))
+        mints = psi4.core.MintsHelper(dimer_wfn.basisset())
         self.mints = mints
         ERI_Size = (self.nmo ** 4) * 8.e-9
         memory_footprint = ERI_Size * 4
         if memory_footprint > self.memory:
-            self.psi.clean()
+            psi4.core.clean()
             raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory \
                             limit of %4.2f GB." % (memory_footprint, self.memory))
 
@@ -122,7 +121,7 @@ class helper_SAPT(object):
     # Compute MO ERI tensor (v) on the fly
     def v(self, string, phys=True):
         if len(string) != 4:
-            self.psi.clean()
+            psi4.core.clean()
             raise Exception('v: string %s does not have 4 elements' % string)
 
         # ERI's from mints are of type (11|22) - need <12|12>
@@ -140,7 +139,7 @@ class helper_SAPT(object):
     # Grab MO overlap matrices
     def s(self, string):
         if len(string) != 2:
-            self.psi.clean()
+            psi4.core.clean()
             raise Exception('S: string %s does not have 2 elements.' % string)
 
         s1 = string[0]
@@ -168,7 +167,7 @@ class helper_SAPT(object):
     # Grab epsilons, reshape if requested
     def eps(self, string, dim=1):
         if len(string) != 1:
-            self.psi.clean()
+            psi4.core.clean()
             raise Exception('Epsilon: string %s does not have 1 element.' % string)
 
         shape = (-1,) + tuple([1] * (dim - 1))
@@ -181,7 +180,7 @@ class helper_SAPT(object):
     # Grab MO potential matrices
     def potential(self, string, side):
         if len(string) != 2:
-            self.psi.clean()
+            psi4.core.clean()
             raise Exception('Potential: string %s does not have 2 elements.' % string)
 
         s1 = string[0]
@@ -198,7 +197,7 @@ class helper_SAPT(object):
             elif (s1 in self.idx_B) and (s2 in self.idx_A):
                 return self.V_A_AB[self.slices[s2], self.slices[s1]].T
             else:
-                self.psi.clean()
+                psi4.core.clean()
                 raise Exception('No match for %s indices in helper_SAPT.potential.' % string)
 
         elif side == 'B':
@@ -211,16 +210,16 @@ class helper_SAPT(object):
             elif (s1 in self.idx_B) and (s2 in self.idx_A):
                 return self.V_B_AB[self.slices[s2], self.slices[s1]].T
             else:
-                self.psi.clean()
+                psi4.core.clean()
                 raise Exception('No match for %s indices in helper_SAPT.potential.' % string)
         else:
-            self.psi.clean()
+            psi4.core.clean()
             raise Exception('helper_SAPT.potential side must be either A or B, not %s.' % side)
 
     # Compute V tilde, Index as V_{1,2}^{3,4}
     def vt(self, string):
         if len(string) != 4:
-            self.psi.clean()
+            psi4.core.clean()
             raise Exception('Compute tilde{V}: string %s does not have 4 elements' % string)
 
         # Grab left and right strings
@@ -248,7 +247,7 @@ class helper_SAPT(object):
     # Compute CPHF orbitals
     def chf(self, monomer, ind=False):
         if monomer not in ['A', 'B']:
-            self.psi.clean()
+            psi4.core.clean()
             raise Exception('%s is not a valid monomer for CHF.' % monomer)
 
         if monomer == 'A':
