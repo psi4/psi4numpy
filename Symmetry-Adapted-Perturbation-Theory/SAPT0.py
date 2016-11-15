@@ -33,7 +33,7 @@ psi4.set_options({'basis': 'jun-cc-pvdz',
                   'e_convergence': 1e-8,
                   'd_convergence': 1e-8})
 
-sapt = helper_SAPT(psi4, dimer, memory=8)
+sapt = helper_SAPT(dimer, memory=8)
 
 ### Start E100 Electostatics
 elst_timer = sapt_timer('electrostatics')
