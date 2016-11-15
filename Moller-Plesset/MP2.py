@@ -31,11 +31,11 @@ symmetry c1
 """)
 
 
-psi4.set_options({'basis':'aug-cc-pvdz',
-                  'scf_type':'pk',
-                  'mp2_type':'conv',
-                  'e_convergence':1e-8,
-                  'd_convergence':1e-8})
+psi4.set_options({'basis': 'aug-cc-pvdz',
+                  'scf_type': 'pk',
+                  'mp2_type': 'conv',
+                  'e_convergence': 1e-8,
+                  'd_convergence': 1e-8})
 
 # Check energy against psi4?
 check_energy = False

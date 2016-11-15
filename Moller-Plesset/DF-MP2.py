@@ -1,4 +1,4 @@
-# A simple Psi 4 input script to compute MP2 from a RHF reference
+#A simple Psi 4 input script to compute MP2 from a RHF reference
 # Requirements numpy 1.7.2+
 #
 # Algorithm modified from Rob Parrish's most excellent Psi4 plugin example
@@ -33,8 +33,8 @@ symmetry c1
 """)
 
 # Basis used in mp2 density fitting
-psi4.set_options({'basis':'aug-cc-pVDZ',
-                  'df_basis_scf':'aug-cc-pvdz-ri'})
+psi4.set_options({'basis': 'aug-cc-pVDZ',
+                  'df_basis_scf': 'aug-cc-pvdz-ri'})
 
 check_energy = False
 

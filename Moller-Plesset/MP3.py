@@ -27,13 +27,13 @@ H 1 1.1 2 104
 symmetry c1
 """)
 
-psi4.set_options({'basis':'aug-cc-pvdz',
-                  'scf_type':'pk',
-                  'guess':'core',
-                  'mp2_type':'conv',
-                  'freeze_core':'false',
-                  'e_convergence':1e-8,
-                  'd_convergence':1e-8})
+psi4.set_options({'basis': 'aug-cc-pvdz',
+                  'scf_type': 'pk',
+                  'guess': 'core',
+                  'mp2_type': 'conv',
+                  'freeze_core': 'false',
+                  'e_convergence': 1e-8,
+                  'd_convergence': 1e-8})
 
 # First compute RHF energy using Psi4
 scf_e, wfn = psi4.energy('SCF', return_wfn=True)
