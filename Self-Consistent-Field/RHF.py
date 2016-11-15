@@ -29,9 +29,9 @@ H 1 1.1 2 104
 symmetry c1
 """)
 
-psi4.core.set_global_option("basis", "cc-pVDZ")
-psi4.core.set_global_option("scf_type", "pk")
-psi4.core.set_global_option("e_convergence", 1e-8)
+psi4.set_options({'basis': 'cc-pvdz',
+                  'scf_type': 'pk',
+                  'e_convergence': 1e-8})
 
 # Set defaults
 maxiter = 40
