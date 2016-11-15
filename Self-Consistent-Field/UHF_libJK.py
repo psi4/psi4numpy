@@ -27,11 +27,11 @@ mol = psi4.geometry("""
 symmetry c1
 """)
 
-psi4.set_options({'guess':'core',
-                  'basis':'aug-cc-pvdz',
-                  'scf_type':'df',
-                  'e_convergence':1e-8,
-                  'reference':'uhf'})
+psi4.set_options({'guess': 'core',
+                  'basis': 'aug-cc-pvdz',
+                  'scf_type': 'df',
+                  'e_convergence': 1e-8,
+                  'reference': 'uhf'})
 
 # Set occupations
 nocca = 9
