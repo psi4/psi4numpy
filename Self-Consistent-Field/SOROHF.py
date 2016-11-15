@@ -29,11 +29,11 @@ symmetry c1
 
 psi4.set_options({'guess':'core',
                   'basis':'aug-cc-pvdz',
-                  'scf_type':'pk'
-                  'e_convergence':1e-8
+                  'scf_type':'pk',
+                  'e_convergence':1e-8,
                   'reference':'rohf'})
 
-wfn = psi4.core.Wavefunction.build(mol, psi4.get_global_option('BASIS'))
+wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option('BASIS'))
 
 # Set occupations
 nocc = wfn.nalpha()
@@ -271,5 +271,5 @@ print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 print('Final SCF energy: %.8f hartree' % SCF_E)
 
 # Compare to Psi4
-SCF_E_psi = energy('SCF')
+SCF_E_psi = psi4.energy('SCF')
 psi4.driver.p4util.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
