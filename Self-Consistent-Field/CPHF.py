@@ -23,9 +23,9 @@ symmetry c1
 """)
 
 # Set options for CPHF
-psi4.set_options({"basis":"aug-cc-pVDZ",
-                  "scf_type":"df",
-                  "cphf_tasks":['polarizability']})
+psi4.set_options({"basis": "aug-cc-pVDZ",
+                  "scf_type": "df",
+                  "cphf_tasks": ['polarizability']})
 
 # Set defaults
 # Can be direct or iterative
