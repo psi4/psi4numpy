@@ -11,6 +11,10 @@ import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
+# Set Psi4 memory and output options
+psi4.core.set_memory(int(2e9), False)
+psi4.core.set_output_file('output.dat', False)
+
 # Triplet oxygen
 mol = psi4.geometry("""
     0 3
@@ -19,8 +23,8 @@ mol = psi4.geometry("""
 symmetry c1
 """)
 
-psi4.set_options({'basis':'aug-cc-pvdz',
-                  'reference':'uhf'})
+psi4.set_options({'basis': 'aug-cc-pvdz',
+                  'reference': 'uhf'})
 
 nalpha = 9
 nbeta = 7
@@ -31,7 +35,7 @@ E_conv = 1.0E-13
 D_conv = 1.0E-13
 
 # Integral generation from Psi4's MintsHelper
-wfn = psi4.core.Wavefunction.build(mol, psi4.get_global_option('BASIS'))
+wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option('BASIS'))
 mints = psi4.core.MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 V = np.asarray(mints.ao_potential())
@@ -52,10 +56,10 @@ A = np.asarray(A)
 I = np.asarray(mints.ao_eri())
 
 # Steal a good starting guess
-psi4.set_options({'e_convergence',1e-5,
-                  'd_convergence',1e-5,
-                  'maxiter':0,
-                  'guess','sad'})
+psi4.set_options({'e_convergence': 1e-4,
+                  'd_convergence': 1e-4,
+                  'maxiter': 7,
+                  'guess': 'sad'})
 
 scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 Ca = np.array(wfn.Ca())
@@ -205,10 +209,10 @@ print('Spin Contamination Metric: %1.5E\n' % spin_contam)
 print('Final SCF energy: %.8f hartree' % SCF_E)
 
 # Compare to Psi4
-psi4.set_options({'e_convergence':1e-8,
-                  'r_convergence':1e-8,
-                  'scf_type','pk'
-                  'maxiter',100})
+psi4.set_options({'e_convergence': 1e-8,
+                  'r_convergence': 1e-8,
+                  'scf_type': 'pk',
+                  'maxiter': 100})
 
 SCF_E_psi = psi4.energy('SCF')
 psi4.driver.p4util.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
