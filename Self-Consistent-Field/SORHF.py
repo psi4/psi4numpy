@@ -26,10 +26,10 @@ H 1 1.1 2 104
 symmetry c1
 """)
 
-psi4.set_options({'basis':'cc-pvdz',
-                  'guess':'sad',
-                  'd_convergence':1e-13,
-                  'e_convergence':1e-13})
+psi4.set_options({'basis': 'cc-pvdz',
+                  'guess': 'sad',
+                  'd_convergence': 1e-13,
+                  'e_convergence': 1e-13})
 
 # Build objects
 diis = DIIS_helper()
