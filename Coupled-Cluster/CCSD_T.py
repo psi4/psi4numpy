@@ -34,7 +34,7 @@ psi4.set_options({'basis': 'cc-pVDZ'})
 compare_psi4 = True
 
 # Compute CCSD
-ccsd = helper_CCSD(psi4, mol, memory=2)
+ccsd = helper_CCSD(mol, memory=2)
 ccsd.compute_energy()
 
 CCSDcorr_E = ccsd.ccsd_corr_e
