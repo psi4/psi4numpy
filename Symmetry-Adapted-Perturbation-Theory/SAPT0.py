@@ -29,9 +29,9 @@ H   -0.406965400   0.760178410  -1.771744500
 symmetry c1
 """)
 
-psi4.set_options({'basis':'jun-cc-pvdz',
-                  'e_convergence':1e-8,
-                  'd_convergence':1e-8})
+psi4.set_options({'basis': 'jun-cc-pvdz',
+                  'e_convergence': 1e-8,
+                  'd_convergence': 1e-8})
 
 sapt = helper_SAPT(psi4, dimer, memory=8)
 
