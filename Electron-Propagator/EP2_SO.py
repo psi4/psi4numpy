@@ -35,12 +35,12 @@ symmetry c1
 """)
 
 # Set Psi4 Options
-psi4.set_options({'basis':'aug-cc-pvdz',
-                  'scf_type':'pk',
-                  'mp2_type':'conv',
-                  'freeze_core':'false',
-                  'e_convergence':1e-8,
-                  'd_convergence':1e-8})
+psi4.set_options({'basis': 'aug-cc-pvdz',
+                  'scf_type': 'pk',
+                  'mp2_type': 'conv',
+                  'freeze_core': 'false',
+                  'e_convergence': 1e-8,
+                  'd_convergence': 1e-8})
 
 # First compute RHF energy using Psi4
 scf_e, wfn = psi4.energy('SCF', return_wfn=True)

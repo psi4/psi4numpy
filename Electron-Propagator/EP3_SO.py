@@ -41,12 +41,12 @@ H  0.8971830624 0. -0.2925203027
 symmetry c1
 """)
 
-psi4.set_options({'basis':'6-31G',
-                  'scf_type':'pk',
-                  'mp2_type':'conv',
-                  'freeze_core':'false',
-                  'e_convergence':1e-8,
-                  'd_convergence':1e-8})
+psi4.set_options({'basis': '6-31G',
+                  'scf_type': 'pk',
+                  'mp2_type': 'conv',
+                  'freeze_core': 'false',
+                  'e_convergence': 1e-8,
+                  'd_convergence': 1e-8})
 
 # First compute RHF energy using Psi4
 scf_e, wfn = psi4.energy('SCF', return_wfn=True)

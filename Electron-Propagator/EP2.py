@@ -37,10 +37,10 @@ H 1 1.1 2 104
 symmetry c1
 """)
 
-psi4.set_options({'basis':'aug-cc-pvdz',
-                  'scf_type':'pk',
-                  'e_convergence':1e-8,
-                  'd_convergence':1e-8})
+psi4.set_options({'basis': 'aug-cc-pvdz',
+                  'scf_type': 'pk',
+                  'e_convergence': 1e-8,
+                  'd_convergence': 1e-8})
 
 print('\nStarting RHF and integral build...')
 t = time.time()
