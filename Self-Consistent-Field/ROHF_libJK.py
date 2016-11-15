@@ -14,7 +14,7 @@ import psi4
 
 # Memory for Psi4 in GB
 psi4.core.set_memory(int(2e9), False)
-psi4.core.set_output('output.dat', False)
+psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
 numpy_memory = 2
@@ -45,7 +45,7 @@ nsocc = nocc - ndocc
 # Set defaults
 maxiter = 20
 E_conv = 1.0E-8
-D_conv = 1.0E-5
+D_conv = 1.0E-8
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
