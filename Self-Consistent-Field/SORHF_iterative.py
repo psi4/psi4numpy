@@ -14,7 +14,7 @@ import psi4
 
 # Memory for Psi4 in GB
 psi4.core.set_memory(int(2e9), False)
-psi4.core.set_output('output.dat', False)
+psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
 numpy_memory = 2
@@ -41,7 +41,7 @@ micro_print = True
 
 # Build objects
 diis = DIIS_helper()
-hf = helper_HF(psi4, energy, mol, scf_type='DF', guess='CORE')
+hf = helper_HF(mol, scf_type='DF', guess='CORE')
 ndocc = hf.ndocc
 nvirt = hf.nvirt
 

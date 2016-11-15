@@ -12,21 +12,21 @@
 
 import time
 import numpy as np
+import psi4
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 
 
 class helper_HF(object):
 
-    def __init__(self, psi, energy, mol, memory=2, ndocc=None, scf_type='DF', guess='core'):
+    def __init__(self, mol, memory=2, ndocc=None, scf_type='DF', guess='core'):
 
         # Build and all 2D values
         print('Building rank 2 integrals...')
         t = time.time()
-        self.psi = psi
-        psi.core.set_active_molecule(mol)
-        wfn = psi.core.Wavefunction.build(mol, psi.get_global_option('BASIS'))
+        psi4.core.set_active_molecule(mol)
+        wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option('BASIS'))
         self.wfn = wfn
-        self.mints = psi.core.MintsHelper(wfn.basisset())
+        self.mints = psi4.core.MintsHelper(wfn.basisset())
         self.enuc = mol.nuclear_repulsion_energy()
 
         self.S = np.asarray(self.mints.ao_overlap())
@@ -61,7 +61,7 @@ class helper_HF(object):
         print('\nNumber of occupied orbitals: %d' % self.ndocc)
         print('Number of basis functions: %d' % self.nbf)
 
-        self.C_left = psi.Matrix(self.nbf, self.ndocc)
+        self.C_left = psi4.core.Matrix(self.nbf, self.ndocc)
         self.npC_left = np.asarray(self.C_left)
 
         if guess.upper() == 'CORE':
@@ -73,14 +73,14 @@ class helper_HF(object):
             self.Da = np.dot(self.npC_left, self.npC_left.T)
         elif guess.upper() == 'SAD':
             # Cheat and run a quick SCF calculation
-            psi.set_options({'E_CONVERGENCE':1,
+            psi4.set_options({'E_CONVERGENCE':1,
                             'D_CONVERGENCE':1})
-            e, wfn = psi.energy('SCF', return_wfn=True)
+            e, wfn = psi4.energy('SCF', return_wfn=True)
             self.Ca = np.array(wfn.Ca())
             self.npC_left[:] = self.Ca[:, :self.ndocc]
             self.epsilon = np.array(wfn.epsilon_a())
             self.Da = np.dot(self.npC_left, self.npC_left.T)
-            psi.set_options({'E_CONVERGENCE':6,
+            psi4.set_options({'E_CONVERGENCE':6,
                              'D_CONVERGENCE':6})
 
         else:
@@ -92,8 +92,8 @@ class helper_HF(object):
         scf_type = scf_type.upper()
         if scf_type not in ['DF', 'PK', 'DIRECT', 'OUT_OF_CORE']:
             raise Exception('SCF_TYPE %s not supported' % scf_type)
-        psi.set_options({'SCF_TYPE':scf_type})
-        self.jk = psi.core.JK.build(wfn.basisset())
+        psi4.set_options({'SCF_TYPE':scf_type})
+        self.jk = psi4.core.JK.build(wfn.basisset())
         self.jk.initialize()
 #        self.jk.C_left().append(self.C_left)
 
@@ -122,36 +122,35 @@ class helper_HF(object):
         return e, C
 
     def build_fock(self):
-        self.jk.C_left().append(self.C_left)
+        self.jk.C_left_add(self.C_left)
         self.jk.compute()
-        del self.jk.C_left()[0]
+        self.jk.C_clear()
         self.J = np.asarray(self.jk.J()[0])
         self.K = np.asarray(self.jk.K()[0])
         self.F = self.H + self.J * 2 - self.K
         return self.F
 
     def build_jk(self, C_left, C_right=None):
-        lmat = self.psi.Matrix(C_left.shape[0], C_left.shape[1])
+        lmat = psi4.core.Matrix(C_left.shape[0], C_left.shape[1])
         np_lmat = np.asarray(lmat)
         np_lmat[:] = C_left
-        self.jk.C_left().append(lmat)
+        self.jk.C_left_add(lmat)
 
         if C_right is not None:
-            rmat = self.psi.Matrix(C_right.shape[0], C_right.shape[1])
+            rmat = psi4.core.Matrix(C_right.shape[0], C_right.shape[1])
             np_rmat = np.asarray(rmat)
             np_rmat[:] = C_right
-            self.jk.C_right().append(rmat)
+            self.jk.C_right_add(rmat)
 
         self.jk.compute()
         J = np.asarray(self.jk.J()[0])
         K = np.asarray(self.jk.K()[0])
 
-        del self.jk.C_left()[0]
+        self.jk.C_clear()
         del lmat
         del np_lmat
 
         if C_right is not None:
-            del self.jk.C_right()[0]
             del rmat
             del np_rmat
         return J, K
