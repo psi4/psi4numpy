@@ -33,7 +33,7 @@ psi4.set_options({'basis':'cc-pvdz',
 
 # Build objects
 diis = DIIS_helper()
-hf = helper_HF(psi4, mol, scf_type='PK', guess='SAD')
+hf = helper_HF(mol, scf_type='PK', guess='SAD')
 ndocc = hf.ndocc
 nvirt = hf.nvirt
 mints = psi4.core.MintsHelper(hf.wfn.basisset())
