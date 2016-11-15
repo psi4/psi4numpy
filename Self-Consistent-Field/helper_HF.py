@@ -134,13 +134,13 @@ class helper_HF(object):
         lmat = psi4.core.Matrix(C_left.shape[0], C_left.shape[1])
         np_lmat = np.asarray(lmat)
         np_lmat[:] = C_left
-        self.jk.C_left_add(lmat)
+        self.jk.C_left_add(psi4.core.Matrix.from_array(np_lmat, 'C_left'))
 
         if C_right is not None:
             rmat = psi4.core.Matrix(C_right.shape[0], C_right.shape[1])
             np_rmat = np.asarray(rmat)
             np_rmat[:] = C_right
-            self.jk.C_right_add(rmat)
+            self.jk.C_right_add(psi4.core.Matrix.from_array(np_rmat, 'C_right'))
 
         self.jk.compute()
         J = np.asarray(self.jk.J()[0])
@@ -221,8 +221,9 @@ class DIIS_helper(object):
 
         return V
 
-def compute_jk(psi4, jk, c_left, c_right=None):
-    cl = jk.C_left()
+def compute_jk(jk, c_left, c_right=None):
+
+    jk.C_clear()
     if not isinstance(c_left, (list, tuple)):
         c_left = [c_left]
 
@@ -230,13 +231,12 @@ def compute_jk(psi4, jk, c_left, c_right=None):
         mat = psi4.core.Matrix(c.shape[0], c.shape[1])
         np_mat = np.asarray(mat)
         np_mat[:] = c        
-        cl.append(mat)
+        jk.C_left_add(mat)
 
     if c_right is not None:
         if len(c_left) != len(c_right):
             raise ValueError("JK: length of left and right matrices is not equal")
         
-        cr = jk.C_right()
         if not isinstance(c_right, (list, tuple)):
             c_right = [c_right]
 
@@ -244,7 +244,7 @@ def compute_jk(psi4, jk, c_left, c_right=None):
             mat = psi4.core.Matrix(c.shape[0], c.shape[1])
             np_mat = np.asarray(mat)
             np_mat[:] = c        
-            cr.append(mat)
+            jk.C_right_add(mat)
 
     jk.compute()
     J = []
@@ -252,9 +252,8 @@ def compute_jk(psi4, jk, c_left, c_right=None):
     for n in range(len(c_left)):
         J.append(np.array(jk.J()[n]))
         K.append(np.array(jk.K()[n]))
-        del cl[0]
-        if c_right is not None:
-            del cr[0]
+
+    jk.C_clear()
 
     return (J, K)
 
