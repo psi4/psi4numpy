@@ -26,9 +26,9 @@ symmetry c1
 """)
 
 # Set some options
-psi4.set_options({"basis":"cc-pvdz",
-                  "scf_type":"pk",
-                  "e_convergence":1e-8})
+psi4.set_options({"basis": "cc-pvdz",
+                  "scf_type": "pk",
+                  "e_convergence": 1e-8})
 
 # Set defaults
 maxiter = 40
