@@ -27,11 +27,11 @@ mol = psi4.geometry("""
 symmetry c1
 """)
 
-psi4.set_options({'guess':'core',
-                  'basis':'aug-cc-pvdz',
-                  'scf_type':'pk',
-                  'e_convergence':1e-8,
-                  'reference':'rohf'})
+psi4.set_options({'guess': 'core',
+                  'basis': 'aug-cc-pvdz',
+                  'scf_type': 'pk',
+                  'e_convergence': 1e-8,
+                  'reference': 'rohf'})
 
 wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option('BASIS'))
 
