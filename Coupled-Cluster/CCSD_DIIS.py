@@ -36,7 +36,7 @@ compare_psi4 = True
 freeze_core = False
 
 # Build CCSD object
-ccsd = helper_CCSD(psi4, mol, memory=2)
+ccsd = helper_CCSD(mol, memory=2)
 
 ### Setup DIIS
 diis_vals_t1 = [ccsd.t1.copy()]
