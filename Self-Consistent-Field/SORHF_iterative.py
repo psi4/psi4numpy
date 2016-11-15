@@ -26,10 +26,10 @@ H 1 1.1 2 109
 symmetry c1
 """)
 
-psi4.set_options({'scf_type':'df',
-                  'basis':'aug-cc-pvdz',
-                  'e_convergence':1e1,
-                  'd_convergence':1e1})
+psi4.set_options({'scf_type': 'df',
+                  'basis': 'aug-cc-pvdz',
+                  'e_convergence': 1e1,
+                  'd_convergence': 1e1})
 
 # Knobs
 E_conv = 1.e-8
@@ -147,8 +147,8 @@ print('Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t))
 print('Final SCF energy:     %.8f hartree' % hf.scf_e)
 
 # Compute w/ Psi4 and compare
-psi4.set_options({'e_convergence':1e-7,
-                  'd_convergence':1e-7})
+psi4.set_options({'e_convergence': 1e-7,
+                  'd_convergence': 1e-7})
 
 SCF_E_psi = psi4.energy('SCF')
 psi4.driver.p4util.compare_values(SCF_E_psi, hf.scf_e, 6, 'SCF Energy')
