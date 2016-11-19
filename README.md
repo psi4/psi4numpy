@@ -2,7 +2,7 @@
 =============
 
 #####Author: Daniel G. A. Smith
-#####Contact: dsmith@auburn.edu
+#####Contact: dgasmith@gatech.edu
 
 #####Psi4 v1.1
 Note: This repostitory has drifted over time from its original intent. A cleanup pass and update to Psi4 version v1.1 is taking place. Please see the `master` branch for a Psi4 v1.0 compliant Psi4NumPy version. 
@@ -20,12 +20,12 @@ it should be noted the output is printed to the command line instead of merged
 with the psi4 output.
 
 If you have comments, questions, or would like to contribute to the project please
-feel free to email [me](mailto:dsmith@auburn.edu).
+feel free to email [me](mailto:dgasmith@gatech.edu).
 
 A tutorial that covers the basics of numpy can be found [here](http://wiki.scipy.org/Tentative_NumPy_Tutorial).
 
 #####Requirements:
-- [Psi4](https://github.com/psi4/psi4public)
+- [Psi4](https://github.com/psi4/psi4)
 - [Python](python.org) 2.7+
  - [Numpy](scipy.org) 1.7.2+
  - [Scipy](numpy.scipy.org) 0.13.0+
@@ -35,9 +35,9 @@ A tutorial that covers the basics of numpy can be found [here](http://wiki.scipy
 #####Update 11/9/2016
 This update coincides with the Psi4 v1.1 release which allows Psi4 to imported
 as a Python module.  To this end all scripts within this repository have been
-reworked to simply be Python scripts.  To import psi4 locate the
+reworked to Python scripts.  To import psi4 locate the
 `psi4_install/lib` directory and export this to your Python path: `export
-PYTHONPATH=psi4_install/lib'.
+PYTHONPATH=psi4_install/lib`.
 
 ---
 
