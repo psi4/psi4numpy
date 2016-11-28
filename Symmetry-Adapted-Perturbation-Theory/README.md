@@ -7,11 +7,10 @@ The primary operator in SAPT is the intermolecular interaction operator `\tilde{
 As all SAPT quantities will make use of this expression, a SAPT helper object that can automatically build this value greatly simplifies many routine SAPT tasks. In psi4numpy this helper object can be initialized as follow:
 
 ```python
-sapt = helper_SAPT(psi4, energy, dimer, memory=8)
+sapt = helper_SAPT(dimer, memory=8)
 ```
 
-As the helper is external to the main psithon input we must pass both `psi4` and `energy` global objects from the input file.
-The `psi4` object contains many useful tools such as MintsHelper while the `energy` is the main energy driver for psi4 (needed for RHF here). The `dimer` is a psi4 moelcule object created with the standard `mol` tag in psithon. In addition, we set the memory limit to 8GB (default 2GB).
+Where the dimer object is a Psi4 Molecule with exactly two fragments.
 
 Indices used:
 - a - occupied indices of monomer A
