@@ -1,0 +1,2 @@
+## Density Fitting
+This tutorial introduces the concept of constructing approximate two-electron integrals via resultion of the identity, a process commonly referred to as _density fitting_.  First, the tutorial walks the reader through how to construct these integrals with Psi4, specifically using the ```psi4.core.DFTensor``` object, and then uses those density fitted integrals to build a Fock matrix using a simple algorithm.
