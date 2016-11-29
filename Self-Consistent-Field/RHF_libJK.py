@@ -10,9 +10,23 @@ import time
 import numpy as np
 import psi4
 
+# Grab a DIIS object, will be moved up later
+from psi4.driver.procedures.mcscf.diis_helper import DIIS_helper
+
 # Benzene
 mol = psi4.geometry("""
-He
+C  0.000  1.396  0.000
+C  1.209  0.698  0.000
+C  1.209 -0.698  0.000
+C  0.000 -1.396  0.000
+C -1.209 -0.698  0.000
+C -1.209  0.698  0.000
+H  0.000  2.479  0.000
+H  2.147  1.240  0.000
+H  2.147 -1.240  0.000
+H  0.000 -2.479  0.000
+H -2.147 -1.240  0.000
+H -2.147  1.240  0.000
 symmetry c1
 """)
 
@@ -50,13 +64,16 @@ H.add(V)
 A = mints.ao_overlap()
 A.power(-0.5, 1.e-16)
 
+# Build diis
+diis = DIIS_helper(max_vec=6)
+
 # Diagonalize routine
 def build_orbitals(diag):
     Fp = psi4.core.Matrix.triplet(A, diag, A, True, False, True)
 
     Cp = psi4.core.Matrix(nbf, nbf)
-    eigvecs = psi4.core.Vector(nbf)
-    Fp.diagonalize(Cp, eigvecs, psi4.core.DiagonalizeOrder.Ascending)
+    eigvals = psi4.core.Vector(nbf)
+    Fp.diagonalize(Cp, eigvals, psi4.core.DiagonalizeOrder.Ascending)
 
     C = psi4.core.Matrix.doublet(A, Cp, False, False)
 
@@ -105,6 +122,8 @@ for SCF_ITER in range(1, maxiter + 1):
     diis_e = psi4.core.Matrix.triplet(F, D, S, False, False, False)
     diis_e.subtract(psi4.core.Matrix.triplet(S, D, F, False, False, False))
     diis_e = psi4.core.Matrix.triplet(A, diis_e, A, False, False, False)
+    
+    diis.add(F, diis_e)
 
     # SCF energy and update
     FH = F.clone()
@@ -121,6 +140,8 @@ for SCF_ITER in range(1, maxiter + 1):
     Eold = SCF_E
     Dold = D
 
+    F = diis.extrapolate()
+
     # Diagonalize Fock matrix
     C, Cocc, D = build_orbitals(F)
 
@@ -131,4 +152,4 @@ for SCF_ITER in range(1, maxiter + 1):
 print('Total time for SCF iterations: %.3f seconds \n\n' % (time.time() - t))
 
 print('Final SCF energy: %.8f hartree\n' % SCF_E)
-psi4.driver.p4util.compare_values(-2.8557342505784704, SCF_E, 6, 'SCF Energy')
+psi4.driver.p4util.compare_values(-230.7277181465556453, SCF_E, 6, 'SCF Energy')

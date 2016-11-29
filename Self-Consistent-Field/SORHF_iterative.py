@@ -83,7 +83,6 @@ for SCF_ITER in range(1, max_macro):
         break
 
     Eold = hf.scf_e
-    Dold = hf.Da
 
     # Build MO fock ,matrix and gradient
     Co = hf.Ca[:, :ndocc]
@@ -99,8 +98,7 @@ for SCF_ITER in range(1, max_macro):
         iter_type = 'DIIS'
     else:
 
-        # DIIS helper and initial guess
-        sodiis = DIIS_helper()
+        # Initial guess
         eps = np.diag(moF)
         precon = -4 * (eps[:ndocc].reshape(-1, 1) - eps[ndocc:])
 
@@ -123,7 +121,6 @@ for SCF_ITER in range(1, max_macro):
             x += alpha * p
             r -= alpha * Ap
             z = r / precon
-            sodiis.add(x, r)
 
             rms = (np.vdot(r, r) / grad_dot) ** 0.5
 
@@ -135,8 +132,6 @@ for SCF_ITER in range(1, max_macro):
             beta = np.vdot(r, z) / rz_old
             p = z + beta * p
 
-
-        x = sodiis.extrapolate()
         C = rotate_orbitals(hf.Ca, x)
 
         hf.set_Cleft(C)
