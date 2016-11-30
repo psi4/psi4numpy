@@ -43,12 +43,3 @@ A tutorial that covers the basics of NumPy can be found
  - [NumPy](scipy.org) 1.7.2+
  - [Scipy](numpy.scipy.org) 0.13.0+
 
-
----
-#####Update 11/9/2016
-This update coincides with the Psi4 v1.1 release which allows Psi4 to imported
-as a Python module.  To this end all scripts within this repository have been
-reworked to Python scripts.  To import Psi4 locate the
-`Psi4_install/lib` directory and export this to your Python path: `export
-PYTHONPATH=Psi4_install/lib`.
-
