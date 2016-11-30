@@ -47,7 +47,7 @@ t = time.time()
 scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 
 # Grab data from wavfunction class 
-ndocc = wfn.doccpi()[0]
+ndocc = wfn.nalpha()
 nmo = wfn.nmo()
 SCF_E = wfn.energy()
 eps = np.asarray(wfn.epsilon_a())
@@ -79,7 +79,7 @@ print('Computing MP2 energy...')
 t = time.time()
 e_denom = 1 / (Eocc.reshape(-1, 1, 1, 1) - Evirt.reshape(-1, 1, 1) + Eocc.reshape(-1, 1) - Evirt)
 
-# Exactly the same as MP.dat, just written in a different way
+# Get the two spin cases
 MP2corr_OS = np.einsum('iajb,iajb,iajb->', MO, MO, e_denom)
 MP2corr_SS = np.einsum('iajb,iajb,iajb->', MO - MO.swapaxes(1, 3), MO, e_denom)
 print('...MP2 energy computed in %.3f seconds.\n' % (time.time() - t))
@@ -103,6 +103,30 @@ if check_energy:
     psi4.energy('MP2')
     psi4.driver.p4util.compare_values(psi4.core.get_variable('MP2 TOTAL ENERGY'), MP2_E, 6, 'MP2 Energy')
     psi4.driver.p4util.compare_values(psi4.core.get_variable('SCS-MP2 TOTAL ENERGY'), SCS_MP2_E, 6, 'SCS-MP2 Energy')
+
+
+# Natural orbitals as a bonus
+lam_menf = MO + (MO - MO.swapaxes(1,3))
+amp_ienf = MO * e_denom
+
+# Compute occupied and virtual MP2 densities
+Gij = np.einsum('ienf,menf->im', amp_ienf, lam_menf)
+Gab = np.einsum('manf,menf->ea', amp_ienf, lam_menf)
+
+# MP2 Density matrix
+D_occ = 0.25 * (Gij + Gij.T)
+D_occ += np.diag(np.ones(ndocc)) * 2
+D_vir = -0.25 * (Gab + Gab.T)
+
+# Build full D and diagonalize
+D = np.zeros((nmo, nmo))
+D[:ndocc, :ndocc] = D_occ
+D[ndocc:, ndocc:] = D_vir
+
+evals, evecs = np.linalg.eigh(D)
+
+# Question for the audience, what should it be?
+print("\nThe sum of the natural occupation numbers is %6.4f" % np.sum(evals))
 
 
 

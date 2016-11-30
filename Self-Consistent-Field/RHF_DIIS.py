@@ -42,8 +42,8 @@ mints = psi4.core.MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 
 # Get nbf and ndocc for closed shell molecules
-nbf = S.shape[0]
-ndocc = sum(mol.Z(A) for A in range(mol.natom())) / 2
+nbf = wfn.nso()
+ndocc = wfn.nalpha()
 
 print('\nNumber of occupied orbitals: %d' % ndocc)
 print('Number of basis functions: %d' % nbf)

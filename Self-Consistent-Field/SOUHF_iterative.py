@@ -34,10 +34,6 @@ psi4.set_options({'basis': 'aug-cc-pvdz',
                   'e_convergence': 1e-8,
                   'reference': 'uhf'})
 
-# Set occupations
-nocca = 9
-noccb = 7
-
 # Set defaults
 maxiter = 10
 E_conv = 1.0E-8
@@ -52,12 +48,13 @@ wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option('BASIS'))
 mints = psi4.core.MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 
-# Get nbf and ndocc for closed shell molecules
-nbf = S.shape[0]
-ndocc = sum(mol.Z(A) for A in range(mol.natom())) / 2
-ndocc = int(ndocc)
+# Occupations
+nbf = wfn.nso()
+nalpha = wfn.nalpha()
+nbeta = wfn.nbeta()
 
-print('\nNumber of occupied orbitals: %d' % ndocc)
+print('\nNumber of doubly occupied orbitals: %d' % nalpha)
+print('\nNumber of singly occupied orbitals: %d' % (nalpha - nbeta))
 print('Number of basis functions: %d' % nbf)
 
 V = np.asarray(mints.ao_potential())
@@ -88,11 +85,11 @@ def SCF_Hx(xa, xb, moFa, Co_a, Cv_a, moFb, Co_b, Cv_b):
     """
     Compute a hessian vector guess where x is a ov matrix of nonredundant operators.
     """
-    Hx_a  = np.dot(moFa[:nocca, :nocca], xa)
-    Hx_a -= np.dot(xa, moFa[nocca:, nocca:])
+    Hx_a  = np.dot(moFa[:nbeta, :nbeta], xa)
+    Hx_a -= np.dot(xa, moFa[nbeta:, nbeta:])
 
-    Hx_b  = np.dot(moFb[:noccb, :noccb], xb)
-    Hx_b -= np.dot(xb, moFb[noccb:, noccb:])
+    Hx_b  = np.dot(moFb[:nalpha, :nalpha], xb)
+    Hx_b -= np.dot(xb, moFb[nalpha:, nalpha:])
 
     # Build two electron part, M = -4 (4 G_{mnip} - g_{mpin} - g_{npim}) K_{ip}
     C_right_a = np.einsum('ia,sa->si', -xa, Cv_a)
@@ -109,8 +106,8 @@ def SCF_Hx(xa, xb, moFa, Co_a, Cv_a, moFb, Co_b, Cv_b):
 
     return (Hx_a, Hx_b)
 
-Ca, Da = diag_H(H, nocca)    
-Cb, Db = diag_H(H, noccb)    
+Ca, Da = diag_H(H, nbeta)    
+Cb, Db = diag_H(H, nalpha)    
 
 t = time.time()
 E = 0.0
@@ -133,7 +130,7 @@ t = time.time()
 for SCF_ITER in range(1, maxiter + 1):
 
     # Build Fock matrices
-    J, K = scf_helper.compute_jk(jk, [Ca[:, :nocca], Cb[:, :noccb]])
+    J, K = scf_helper.compute_jk(jk, [Ca[:, :nbeta], Cb[:, :nalpha]])
     J = J[0] + J[1]
     Fa = H + J - K[0]
     Fb = H + J - K[1]
@@ -162,16 +159,16 @@ for SCF_ITER in range(1, maxiter + 1):
 
     Eold = SCF_E
 
-    Co_a = Ca[:, :nocca]
-    Cv_a = Ca[:, nocca:]
+    Co_a = Ca[:, :nbeta]
+    Cv_a = Ca[:, nbeta:]
     moF_a = np.dot(Ca.T, Fa).dot(Ca)
-    gradient_a = -4 * moF_a[:nocca, nocca:]
+    gradient_a = -4 * moF_a[:nbeta, nbeta:]
     gradient_norm_a = np.linalg.norm(gradient_a)
 
-    Co_b = Cb[:, :noccb]
-    Cv_b = Cb[:, noccb:]
+    Co_b = Cb[:, :nalpha]
+    Cv_b = Cb[:, nalpha:]
     moF_b = np.dot(Cb.T, Fb).dot(Cb)
-    gradient_b = -4 * moF_b[:noccb, noccb:]
+    gradient_b = -4 * moF_b[:nalpha, nalpha:]
     gradient_norm_b = np.linalg.norm(gradient_b)
 
     gradient_norm = gradient_norm_a + gradient_norm_b
@@ -182,19 +179,19 @@ for SCF_ITER in range(1, maxiter + 1):
         Fb = diisb.extrapolate()
 
         # Diagonalize Fock matrix
-        Ca, Da = diag_H(Fa, nocca)    
-        Cb, Db = diag_H(Fb, noccb)    
+        Ca, Da = diag_H(Fa, nbeta)    
+        Cb, Db = diag_H(Fb, nalpha)    
 
     else:
 
         so_diis = scf_helper.DIIS_helper()
 
         eps_a = np.diag(moF_a)
-        precon_a = -4 * (eps_a[:nocca].reshape(-1, 1) - eps_a[nocca:])
+        precon_a = -4 * (eps_a[:nbeta].reshape(-1, 1) - eps_a[nbeta:])
         x_a = gradient_a / precon_a 
 
         eps_b = np.diag(moF_b)
-        precon_b = -4 * (eps_b[:noccb].reshape(-1, 1) - eps_b[noccb:])
+        precon_b = -4 * (eps_b[:nalpha].reshape(-1, 1) - eps_b[nalpha:])
         x_b = gradient_b / precon_b 
 
         Hx_a, Hx_b = SCF_Hx(x_a, x_b, moF_a, Co_a, Cv_a, moF_b, Co_b, Cv_b)
@@ -237,7 +234,7 @@ for SCF_ITER in range(1, maxiter + 1):
             rms = ((np.linalg.norm(r_a) + np.linalg.norm(r_b)) / denom) ** 0.5
 
             if micro_print:
-                print('Micro Iteration %2d: Rel. RMS = %1.5e (%1.2e, %1.2e)' %  (rot_iter + 1, rms, rms_a, rms_b))
+                print('Micro Iteration %2d: Rel. RMS = %1.5e (a: %1.2e, b: %1.2e)' %  (rot_iter + 1, rms, rms_a, rms_b))
             if rms < micro_conv:
                 break
 
@@ -260,8 +257,8 @@ for SCF_ITER in range(1, maxiter + 1):
 
 print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 
-spin_mat = (Cb[:, :noccb].T).dot(S).dot(Ca[:, :nocca])
-spin_contam = min(nocca, noccb) - np.vdot(spin_mat, spin_mat)
+spin_mat = (Cb[:, :nalpha].T).dot(S).dot(Ca[:, :nbeta])
+spin_contam = min(nbeta, nalpha) - np.vdot(spin_mat, spin_mat)
 print('Spin Contamination Metric: %1.5E\n' % spin_contam)
 
 print('Final SCF energy: %.8f hartree' % SCF_E)

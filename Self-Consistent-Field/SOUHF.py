@@ -26,9 +26,6 @@ symmetry c1
 psi4.set_options({'basis': 'aug-cc-pvdz',
                   'reference': 'uhf'})
 
-nalpha = 9
-nbeta = 7
-
 # Set defaults
 maxiter = 10
 E_conv = 1.0E-13
@@ -40,7 +37,11 @@ mints = psi4.core.MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 V = np.asarray(mints.ao_potential())
 T = np.asarray(mints.ao_kinetic())
-nbf = S.shape[0]
+
+# Occupations
+nbf = wfn.nso()
+nalpha = wfn.nalpha()
+nbeta = wfn.nbeta()
 
 if nbf > 100:
     raise Exception("This has a N^4 memory overhead, killing if nbf > 100.")

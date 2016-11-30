@@ -2,10 +2,6 @@
 # From Szabo and Ostlund page 390
 # Requirements scipy 0.13.0+ and numpy 1.7.2+
 #
-# Algorithms were taken directly from Daniel Crawford's programming website:
-# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
-# Special thanks to Rob Parrish for initial assistance with libmints
-#
 # Created by: Daniel G. A. Smith
 # Date: 7/29/14
 # License: GPL v3.0

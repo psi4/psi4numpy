@@ -78,7 +78,7 @@ for SCF_ITER in range(1, max_macro):
     # SCF energy and update
     scf_e = hf.compute_hf_energy()
     dRMS = np.mean(diis_e ** 2) ** 0.5
-    print 'SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E   %s' % (SCF_ITER, hf.scf_e, (hf.scf_e - Eold), dRMS, iter_type)
+    print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E   %s' % (SCF_ITER, hf.scf_e, (hf.scf_e - Eold), dRMS, iter_type))
     if (abs(hf.scf_e - Eold) < E_conv) and (dRMS < D_conv):
         break
 

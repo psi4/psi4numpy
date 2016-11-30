@@ -33,11 +33,11 @@ nbf = wfn.nmo()
 ndocc = wfn.nalpha()
 nvir = nbf - ndocc
 nov = ndocc * nvir
-print ''
-print 'Ndocc: ', ndocc
-print 'Nvir:  ', nvir
-print 'Nrot:  ', nov
-print ''
+print('')
+print('Ndocc: %d' % ndocc)
+print('Nvir:  %d' % nvir)
+print('Nrot:  %d' % nov)
+print('')
 
 eps_v = epsilon[ndocc:]
 eps_o = epsilon[:ndocc]
@@ -62,8 +62,8 @@ for num in range(3):
     Fia *= -2
     dipoles_xyz.append(Fia)
 
-#print np.array(wfn.Ca_subset("AO", "ALL"))
-#print dipoles_xyz[0]
+#print(np.array(wfn.Ca_subset("AO", "ALL")))
+#print(dipoles_xyz[0])
 
 # Build orbital-Hessian
 t = time.time()
@@ -91,8 +91,8 @@ B11 += v_iajb.swapaxes(0, 2)
 B11 *= 2
 
 # The blocks A - B should be equal to E1 / 2
-print 'A11 - B11 == E1 / 2?',  np.allclose(A11 - B11, E1/2)
-print ''
+print('A11 - B11 == E1 / 2?',  np.allclose(A11 - B11, E1/2))
+print('')
 
 # Reshape and jam it together
 A11.shape = (nov, nov)

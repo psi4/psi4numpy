@@ -2,10 +2,6 @@
 # From Szabo and Ostlund page 390
 # Requirements scipy 0.13.0+ and numpy 1.7.2+
 #
-# Algorithms were taken directly from Daniel Crawford's programming website:
-# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
-# Special thanks to Rob Parrish for initial assistance with libmints
-#
 # Created by: Daniel G. A. Smith
 # Date: 7/29/14
 # License: GPL v3.0
@@ -26,13 +22,6 @@ numpy_memory = 2
 
 # Number of orbitals below the HOMO to compute
 num_orbs = 5
-
-# mol = psi4.geometry("""
-# O
-# H 1 1.1
-# H 1 1.1 2 104
-# symmetry c1
-# """)
 
 mol = psi4.geometry("""
 O -0.0247847074 0. -0.0175254347

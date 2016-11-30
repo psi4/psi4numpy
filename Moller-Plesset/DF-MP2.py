@@ -10,7 +10,6 @@
 #
 
 
-### BETA
 import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
@@ -44,8 +43,8 @@ RHF_E, wfn = psi4.energy('SCF', return_wfn=True)
 print('...RHF finished in %.3f seconds:   %16.10f' % (time.time() - t, RHF_E))
 
 # Grab data from Wavfunction clas
-ndocc = wfn.doccpi()[0]
-nbf = wfn.basisset().nbf()
+ndocc = wfn.nalpha()
+nbf = wfn.nso()
 nvirt = nbf - ndocc
 
 # Split eigenvectors and eigenvalues into o and v

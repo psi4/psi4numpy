@@ -27,15 +27,12 @@ mol = psi4.geometry("""
 symmetry c1
 """)
 
-psi4.set_options({'guess': 'core',
-                  'basis': 'aug-cc-pvdz',
-                  'scf_type': 'df',
+psi4.set_options({'guess':      'core',
+                  'basis':      'aug-cc-pvdz',
+                  'scf_type':   'df',
                   'e_convergence': 1e-8,
-                  'reference': 'uhf'})
+                  'reference':  'uhf'})
 
-# Set occupations
-nocca = 9
-noccb = 7
 
 # Set defaults
 maxiter = 40
@@ -49,11 +46,12 @@ mints = psi4.core.MintsHelper(wfn.basisset())
 S = np.asarray(mints.ao_overlap())
 
 # Get nbf and ndocc for closed shell molecules
-nbf = S.shape[0]
-ndocc = sum(mol.Z(A) for A in range(mol.natom())) / 2
-ndocc = int(ndocc)
+nbf = wfn.nso()
+nalpha = wfn.nalpha()
+nbeta = wfn.nbeta()
 
-print('\nNumber of occupied orbitals: %d' % ndocc)
+print('\nNumber of doubly occupied orbitals: %d' % nbeta)
+print('Number of singly occupied orbitals: %d' % (nalpha - nbeta))
 print('Number of basis functions: %d' % nbf)
 
 V = np.asarray(mints.ao_potential())
@@ -80,8 +78,8 @@ def diag_H(H, nocc):
     D = np.einsum('pi,qi->pq', Cocc, Cocc)
     return (C, D)
     
-Ca, Da = diag_H(H, nocca)    
-Cb, Db = diag_H(H, noccb)    
+Ca, Da = diag_H(H, nalpha)    
+Cb, Db = diag_H(H, nbeta)    
 
 t = time.time()
 E = 0.0
@@ -92,13 +90,13 @@ Fock_list = []
 DIIS_error = []
 
 # Build a C matrix and share data with the numpy array npC
-Cocca = psi4.core.Matrix(nbf, nocca)
+Cocca = psi4.core.Matrix(nbf, nalpha)
 npCa = np.asarray(Cocca)
-npCa[:] = Ca[:, :nocca]
+npCa[:] = Ca[:, :nalpha]
 
-Coccb = psi4.core.Matrix(nbf, noccb)
+Coccb = psi4.core.Matrix(nbf, nbeta)
 npCb = np.asarray(Coccb)
-npCb[:] = Cb[:, :noccb]
+npCb[:] = Cb[:, :nbeta]
 
 # Initialize the JK object
 jk = psi4.core.JK.build(wfn.basisset())
@@ -117,8 +115,8 @@ t = time.time()
 
 for SCF_ITER in range(1, maxiter + 1):
 
-    npCa[:] = Ca[:, :nocca]
-    npCb[:] = Cb[:, :noccb]
+    npCa[:] = Ca[:, :nalpha]
+    npCb[:] = Cb[:, :nbeta]
     jk.compute()
 
     # Build fock matrix
@@ -157,8 +155,8 @@ for SCF_ITER in range(1, maxiter + 1):
     Fb = diisb.extrapolate()
 
     # Diagonalize Fock matrix
-    Ca, Da = diag_H(Fa, nocca)    
-    Cb, Db = diag_H(Fb, noccb)    
+    Ca, Da = diag_H(Fa, nalpha)    
+    Cb, Db = diag_H(Fb, nbeta)    
 
     if SCF_ITER == maxiter:
         clean()
@@ -166,8 +164,8 @@ for SCF_ITER in range(1, maxiter + 1):
 
 print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 
-spin_mat = (Cb[:, :noccb].T).dot(S).dot(Ca[:, :nocca])
-spin_contam = min(nocca, noccb) - np.vdot(spin_mat, spin_mat)
+spin_mat = (Cb[:, :nbeta].T).dot(S).dot(Ca[:, :nalpha])
+spin_contam = min(nalpha, nbeta) - np.vdot(spin_mat, spin_mat)
 print('Spin Contamination Metric: %1.5E\n' % spin_contam)
 
 print('Final SCF energy: %.8f hartree' % SCF_E)
