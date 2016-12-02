@@ -9,6 +9,24 @@ import numpy as np
 import time
 import psi4
 
+
+def integral_transformer(I, C1, C2, C3, C4):
+
+    nbf = np.asarray(C1).shape[0]
+    if np.asarray(C1).shape[1] < np.asarray(C4.shape[1]):
+        v = np.dot(np.asarray(C1).T, np.asarray(I).reshape(nbf, -1))
+        v = np.dot(v.reshape(-1, nbf), C4)
+    else:
+        v = np.dot(np.asarray(I).reshape(-1, nbf), C4)
+        v = np.dot(np.asarray(C1).T, v.reshape(nbf, -1))
+
+    v = v.reshape(C1.shape[1], nbf, nbf, C4.shape[1])
+    v = np.einsum('qA,pqrs->pArs', C2, v)
+    v = np.einsum('rA,pqrs->pqAs', C3, v)
+    return v
+ 
+
+
 class helper_SAPT(object):
 
     def __init__(self, dimer, memory=2):
@@ -128,12 +146,13 @@ class helper_SAPT(object):
         if phys:
             orbitals = [self.orbitals[string[0]], self.orbitals[string[2]],
                         self.orbitals[string[1]], self.orbitals[string[3]]]
-            v = self.mints.mo_transform(self.I, *orbitals)
+
+            v = integral_transformer(self.I, *orbitals)
             return np.asarray(v).swapaxes(1, 2)
         else:
             orbitals = [self.orbitals[string[0]], self.orbitals[string[1]],
                         self.orbitals[string[2]], self.orbitals[string[3]]]
-            v = self.mints.mo_transform(self.I, *orbitals)
+            v = integral_transformer(self.I, *orbitals)
             return np.asarray(v)
 
     # Grab MO overlap matrices
@@ -252,7 +271,7 @@ class helper_SAPT(object):
 
         if monomer == 'A':
             # Form electostatic potential
-            w_n = 2 * np.einsum('saba->bs', self.v('saba'))
+            w_n = 2 * np.einsum('basa->bs', self.v('basa'))
             w_n += self.V_A_BB[self.slices['b'], self.slices['s']]
             eps_ov = (self.eps('b', dim=2) - self.eps('s'))
 
@@ -262,7 +281,7 @@ class helper_SAPT(object):
             no, nv = self.ndocc_B, self.nvirt_B
 
         if monomer == 'B':
-            w_n = 2 * np.einsum('rbab->ar', self.v('rbab'))
+            w_n = 2 * np.einsum('abrb->ar', self.v('abrb'))
             w_n += self.V_B_AA[self.slices['a'], self.slices['r']]
             eps_ov = (self.eps('a', dim=2) - self.eps('r'))
             v_term1 = 'raar'

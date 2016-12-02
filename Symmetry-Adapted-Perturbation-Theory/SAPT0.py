@@ -29,7 +29,7 @@ H   -0.406965400   0.760178410  -1.771744500
 symmetry c1
 """)
 
-psi4.set_options({'basis': 'jun-cc-pvdz',
+psi4.set_options({'basis': 'jun-cc-pVDZ',
                   'e_convergence': 1e-8,
                   'd_convergence': 1e-8})
 
