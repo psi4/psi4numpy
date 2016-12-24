@@ -3,6 +3,7 @@
 These tutorials use the Jupyter notebook environment to offer an interactive, step-by-step introduction to several important concepts in quantum chemistry.  Their goal is to provide the reader with the necessary background to effectively program quantum chemical methods using the machinery provided by Psi4 and NumPy/SciPy.  
 
 Below is a list of the available interactive tutorials, grouped by module:
+
 1. Psi4 Basics
     * Molecule: Overview of the Molecule Class and coordinate input in Psi4
     * BasisSet: Building and manipulating basis sets within Psi4
