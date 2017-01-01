@@ -4,10 +4,10 @@ These tutorials use the Jupyter notebook environment to offer an interactive, st
 
 Below is a list of the available interactive tutorials, grouped by module:
 
-1. Psi4 Basics
-    * Molecule: Overview of the Molecule Class and coordinate input in Psi4
+1. Psi4NumPy Basics
+    * Molecule: Overview of the Molecule class and coordinate input in Psi4
     * BasisSet: Building and manipulating basis sets within Psi4
-    * Wavefunction: Introduction to wavefunction passing in Psi4
+    * Wavefunction: Introduction to the Wavefunction class in Psi4
 
 2. Hartree-Fock: Theory & Implementation
     * Restricted Hartree-Fock: Basic implementation of a self-contained RHF program
@@ -15,13 +15,13 @@ Below is a list of the available interactive tutorials, grouped by module:
     * JK Builds: Comparison of several algorithms for constructing Coulomb & Exchange matrices using full and density-fitted ERIs
     * Tensor Engines: Comparing relative algorithm speed when using `np.einsum()`, `np.dot()`, and direct BLAS calls with Psi4 for tensor contractions
 
-3. Many Body Perturbation Theory 
-    * MP2: Direct algorithm using full ERIs
+3. Møller–Plesset Perturbation Theory 
+    * MP2: Conventional algorithm
     * DF-MP2: Density fitted algorithm
 
-Note: these tutorials are under active construction.
+Note: These tutorials are under active construction.
 
-Jupyter notebooks have the file extension ```.ipynb```.  In order to use these tutorials, Jupyter must first be installed.  Jupyter is available with the [Anaconda](https://www.continuum.io/downloads) python distribution.  Once installed, a Jupyter notebook ```example.ipynb``` may be opened from the command line with
+Jupyter notebooks have the file extension `.ipynb`.  In order to use these tutorials, Jupyter must first be installed.  Jupyter is available with the [Anaconda](https://www.continuum.io/downloads) python distribution.  Once installed, a Jupyter notebook `example.ipynb` may be opened from the command line with
 ```
 jupyter-notebook example.ipynb
 ```
