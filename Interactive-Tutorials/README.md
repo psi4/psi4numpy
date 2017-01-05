@@ -25,3 +25,5 @@ Jupyter notebooks have the file extension `.ipynb`.  In order to use these tutor
 ```
 jupyter-notebook example.ipynb
 ```
+
+These modules and the tutorials contained therein make use of advanced scientific Python programming with NumPy/SciPy, and assume familiarity with these packages to focus more closely on the intricacies of programming quantum chemistry.  Before jumping into Module 1, it is therefore advantageous to at the very least skim through the NumPy quickstart tutorial [here](https://docs.scipy.org/doc/numpy-dev/user/quickstart.html) and SciPy tutorial [here](https://docs.scipy.org/doc/scipy/reference/tutorial/index.html).  For a more thorough introduction to these two packages, please refer to the SciPy Lectures [here](http://www.scipy-lectures.org/).  Good luck and happy programming!
