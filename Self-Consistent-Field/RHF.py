@@ -1,5 +1,5 @@
 # A simple Psi 4 input script to compute a SCF reference
-# Requires umpy 1.7.2+
+# Requires numpy 1.7.2+
 #
 # Algorithms were taken directly from Daniel Crawford's programming website:
 # http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
@@ -58,7 +58,7 @@ print("\nSize of the ERI tensor will be %4.2f GB." % I_Size)
 # Estimate memory usage
 memory_footprint = I_Size * 1.5
 if I_Size > numpy_memory:
-    clean()
+    psi4.core.clean()
     raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory \
                     limit of %4.2f GB." % (memory_footprint, numpy_memory))
 
