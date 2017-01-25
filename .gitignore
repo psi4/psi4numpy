@@ -58,6 +58,7 @@ docs/_build/
 *clean
 *timer.dat
 *.swp
+*.npz
 Test/
 output.dat
 ijk.dat
