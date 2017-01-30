@@ -9,10 +9,12 @@ Below is a list of the available interactive tutorials, grouped by module:
     * BasisSet: Building and manipulating basis sets within Psi4
     * Wavefunction: Introduction to the Wavefunction class in Psi4
 
-3. Linear Algebra
+2. Linear Algebra
 
 3. Hartree-Fock: Theory & Implementation
     * Restricted Hartree-Fock: Basic implementation of a self-contained RHF program
+    * Direct Inversion of the Iterative Subspace: Theory and integration of the DIIS convergence acceleration method into an RHF program
+    * Unrestricted Hartree-Fock: Implementation of the open-shell, unrestricted orbital formulation of Hartree-Fock theory, utilizing DIIS convergence acceleration
     * Density Fitting: Building approximate 2-electron integrals and an example density-fitted Fock matrix with Psi4 and the DFTensor object
     * JK Builds: Comparison of several algorithms for constructing Coulomb & Exchange matrices using full and density-fitted ERIs
     * Tensor Engines: Comparing relative algorithm speed when using `np.einsum()`, `np.dot()`, and direct BLAS calls with Psi4 for tensor contractions
@@ -20,8 +22,8 @@ Below is a list of the available interactive tutorials, grouped by module:
 4. Density Functional Theory (requires Psi4 1.2, beta)
 
 5. Møller–Plesset Perturbation Theory 
-    * MP2: Conventional algorithm
-    * DF-MP2: Density fitted algorithm
+    * Conventional MP2: Overview of Moller-Plesset Perturbation Theory and implementation of a simple second-order Moller-Plesset (MP2) program using conventional, 4-index ERIs.
+    * Density Fitted MP2
 
 
 Note: These tutorials are under active construction.
