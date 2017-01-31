@@ -1,8 +1,6 @@
 Møller–Plesset Perturbation Theory 
 ==================================
 
-
-5. Møller–Plesset Perturbation Theory 
 This module offers the following tutorials which seek to discuss the theory and implementation of Møller–Plesset perturbation theory:
 
 - (5a) Conventional MP2: Introduces the theory of the conventional formulation of second-order Møller–Plesset purturbation theory (MP2), and guides the reader through the implementation of a simple MP2 program.
