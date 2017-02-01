@@ -1,4 +1,5 @@
-## Interactive Tutorials
+Interactive Tutorials
+=====================
 
 These tutorials use the Jupyter notebook environment to offer an interactive, step-by-step introduction to several important concepts in quantum chemistry.  Their goal is to provide the reader with the necessary background to effectively program quantum chemical methods using the machinery provided by Psi4 and NumPy/SciPy.  
 
@@ -11,19 +12,17 @@ Below is a list of the available interactive tutorials, grouped by module:
 
 2. Linear Algebra
 
-3. Hartree-Fock: Theory & Implementation
-    * Restricted Hartree-Fock: Basic implementation of a self-contained RHF program
+3. Hartree-Fock Molecular Orbital Theory
+    * Restricted Hartree-Fock: Implementation of a the closed-shell, restricted orbital formulation of Hartree-Fock theory
     * Direct Inversion of the Iterative Subspace: Theory and integration of the DIIS convergence acceleration method into an RHF program
     * Unrestricted Hartree-Fock: Implementation of the open-shell, unrestricted orbital formulation of Hartree-Fock theory, utilizing DIIS convergence acceleration
-    * Density Fitting: Building approximate 2-electron integrals and an example density-fitted Fock matrix with Psi4 and the DFTensor object
-    * JK Builds: Comparison of several algorithms for constructing Coulomb & Exchange matrices using full and density-fitted ERIs
-    * Tensor Engines: Comparing relative algorithm speed when using `np.einsum()`, `np.dot()`, and direct BLAS calls with Psi4 for tensor contractions
+    * Density Fitting: Overview of the theory and construction of density-fitted ERIs using the ```DFTensor``` class in Psi4, and an illustrative example of a density-fitted Fock build.
 
 4. Density Functional Theory (requires Psi4 1.2, beta)
 
 5. Møller–Plesset Perturbation Theory 
-    * Conventional MP2: Overview of Moller-Plesset Perturbation Theory and implementation of a simple second-order Moller-Plesset (MP2) program using conventional, 4-index ERIs.
-    * Density Fitted MP2
+    * Conventional MP2: Overview and implementation of the conventional formulation of second-order Moller-Plesset Perturbation Theory (MP2), using full 4-index ERIs.
+    * Density Fitted MP2: Discusses the implementation of the density-fitted formulation of MP2 with an efficient algorithm utilizing permutational ERI symmetry.
 
 
 Note: These tutorials are under active construction.
