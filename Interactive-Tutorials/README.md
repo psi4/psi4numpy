@@ -1,7 +1,11 @@
 Interactive Tutorials
 =====================
 
-These tutorials use the Jupyter notebook environment to offer an interactive, step-by-step introduction to several important concepts in quantum chemistry.  Their goal is to provide the reader with the necessary background to effectively program quantum chemical methods using the machinery provided by Psi4 and NumPy/SciPy.  
+These tutorials use the Jupyter notebook environment to offer an interactive,
+step-by-step introduction to several important concepts in quantum chemistry.
+Their goal is to provide the reader with the necessary background to
+effectively program quantum chemical methods using the machinery provided by
+Psi4 and NumPy/SciPy.  
 
 Below is a list of the available interactive tutorials, grouped by module:
 
@@ -19,6 +23,10 @@ Below is a list of the available interactive tutorials, grouped by module:
     * Density Fitting: Overview of the theory and construction of density-fitted ERIs using the ```DFTensor``` class in Psi4, and an illustrative example of a density-fitted Fock build.
 
 4. Density Functional Theory (requires Psi4 1.2, beta)
+    * DFT Grid: Briefly outlines several details of the DFT Grid.
+    * LDA Kernel: Discusses how the local density approximation (LDA) is formed and computed.
+    * GGA and Meta Kernels: Focuses on higher derivates of DFT and exmaines how to compute various functionals.
+    * VV10: A guide to compute the non-local kernel VV10
 
 5. Møller–Plesset Perturbation Theory 
     * Conventional MP2: Overview and implementation of the conventional formulation of second-order Moller-Plesset Perturbation Theory (MP2), using full 4-index ERIs.
@@ -27,9 +35,23 @@ Below is a list of the available interactive tutorials, grouped by module:
 
 Note: These tutorials are under active construction.
 
-Jupyter notebooks have the file extension `.ipynb`.  In order to use these tutorials, Jupyter must first be installed.  Jupyter is available with the [Anaconda](https://www.continuum.io/downloads) python distribution.  Once installed, a Jupyter notebook `example.ipynb` may be opened from the command line with
+Jupyter notebooks have the file extension `.ipynb`.  In order to use these
+tutorials, Jupyter must first be installed.  Jupyter is available with the
+[Anaconda](https://www.continuum.io/downloads) python distribution.  Once
+installed, a Jupyter notebook `example.ipynb` may be opened from the command
+line with
 ```
 jupyter-notebook example.ipynb
 ```
 
-These modules and the tutorials contained therein make use of advanced scientific Python programming with NumPy/SciPy, and assume familiarity with these packages to focus more closely on the intricacies of programming quantum chemistry.  Before jumping into Module 1, it is therefore advantageous to at the very least skim through the NumPy quickstart tutorial [here](https://docs.scipy.org/doc/numpy-dev/user/quickstart.html) and SciPy tutorial [here](https://docs.scipy.org/doc/scipy/reference/tutorial/index.html).  For a more thorough introduction to these two packages, please refer to the SciPy Lectures [here](http://www.scipy-lectures.org/).  Good luck and happy programming!
+These modules and the tutorials contained therein make use of advanced
+scientific Python programming with NumPy/SciPy, and assume familiarity with
+these packages to focus more closely on the intricacies of programming quantum
+chemistry.  Before jumping into Module 1, it is therefore advantageous to at
+the very least skim through the NumPy quickstart tutorial
+[here](https://docs.scipy.org/doc/numpy-dev/user/quickstart.html) and SciPy
+tutorial
+[here](https://docs.scipy.org/doc/scipy/reference/tutorial/index.html).  For a
+more thorough introduction to these two packages, please refer to the SciPy
+Lectures [here](http://www.scipy-lectures.org/).  Good luck and happy
+programming!
