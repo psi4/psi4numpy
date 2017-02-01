@@ -19,7 +19,7 @@ def build_orbitals(diag, A, ndocc):
     Cocc.np[:] = C.np[:, :ndocc]
 
     D = psi4.core.Matrix.doublet(Cocc, Cocc, False, True)
-    return C, Cocc, D
+    return C, Cocc, D, eigvecs
 
 def ks_solver(alias, mol, options, V_builder, jk_type="DF", output="output.dat", restricted=True):
 
@@ -77,7 +77,7 @@ def ks_solver(alias, mol, options, V_builder, jk_type="DF", output="output.dat",
     A.power(-0.5, 1.e-14)
     
     # Build core orbitals
-    C, Cocc, D = build_orbitals(H, A, ndocc)
+    C, Cocc, D, eigs = build_orbitals(H, A, ndocc)
     
     # Setup data for DIIS
     t = time.time()
@@ -152,7 +152,7 @@ def ks_solver(alias, mol, options, V_builder, jk_type="DF", output="output.dat",
         F = diis_obj.extrapolate()
     
         # Diagonalize Fock matrix
-        C, Cocc, D = build_orbitals(F, A, ndocc)
+        C, Cocc, D, eigs = build_orbitals(F, A, ndocc)
     
         if SCF_ITER == maxiter:
             raise Exception("Maximum number of SCF cycles exceeded.")
@@ -161,4 +161,8 @@ def ks_solver(alias, mol, options, V_builder, jk_type="DF", output="output.dat",
     
     print('\nFinal SCF energy: %.8f hartree' % SCF_E)
 
-    return(SCF_E)
+    data = {}
+    data["Da"] = D
+    data["Ca"] = C
+    data["eigenvalues"] = eigs
+    return(SCF_E, data)
