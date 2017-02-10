@@ -85,8 +85,12 @@ for i in range(ndocc):
 
         eps_j = eps_occ[j]
         j_Qv = Qov[:, j, :]
-        tmp = np.dot(i_Qv.T, j_Qv)
+
+        # We can either use einsum here
 #        tmp = np.einsum('Qa,Qb->ab', i_Qv, j_Qv)
+
+        # Or a dot product (DGEMM) for speed)
+        tmp = np.dot(i_Qv.T, j_Qv)
 
         # Diagonal elements
         if i == j:
@@ -95,7 +99,10 @@ for i in range(ndocc):
         else:
             div = 2.0 / (eps_i + eps_j + vv_denom)
 
+        # Opposite spin computation
         MP2corr_OS += np.einsum('ab,ab,ab->', tmp, tmp, div)
+
+        # Notice the same-spin compnent has an "exchange" like term associated with it
         MP2corr_SS += np.einsum('ab,ab,ab->', tmp - tmp.T, tmp, div)
 
 print('...finished computing MP2 energy in %.3f seconds.' % (time.time() - t))
@@ -103,6 +110,7 @@ print('...finished computing MP2 energy in %.3f seconds.' % (time.time() - t))
 MP2corr_E = MP2corr_SS + MP2corr_OS
 MP2_E = RHF_E + MP2corr_E
 
+# These are the canonical SCS MP2 coefficients, many others are available however
 SCS_MP2corr_E = MP2corr_SS / 3 + MP2corr_OS * (6. / 5)
 SCS_MP2_E = RHF_E + SCS_MP2corr_E
 
