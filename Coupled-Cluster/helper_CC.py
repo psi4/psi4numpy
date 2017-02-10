@@ -53,7 +53,7 @@ def ndot(input_string, op1, op2, prefactor=None):
 
     rs = len(idx_removed)
     dim_left, dim_right, dim_removed = 1, 1, 1
-    for key, size in size_dict.iteritems():
+    for key, size in size_dict.items():
         if key in keep_left:
             dim_left *= size
         if key in keep_right:
