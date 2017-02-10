@@ -265,6 +265,9 @@ class helper_SAPT(object):
 
     # Compute CPHF orbitals
     def chf(self, monomer, ind=False):
+
+        # This is effectively the conventional CPHF equations written in a way to conform
+        # to the SAPT papers.
         if monomer not in ['A', 'B']:
             psi4.core.clean()
             raise Exception('%s is not a valid monomer for CHF.' % monomer)
