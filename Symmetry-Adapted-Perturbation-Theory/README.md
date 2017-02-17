@@ -1,6 +1,6 @@
 Symmetry-Adapted-Perturbation-Theory
 ====================================
-The primary operator in SAPT is the intermolecular interaction operator `\tilde{V}`, that is defined as follows:
+The most important operator in SAPT is the intermolecular interaction operator `\tilde{V}`, that is defined as follows:
 
 ![TildeV](../media/SAPT_V_TILDE.png)
 
