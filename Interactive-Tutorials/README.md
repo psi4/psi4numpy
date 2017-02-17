@@ -18,7 +18,7 @@ Below is a list of the available interactive tutorials, grouped by module:
 2. Linear Algebra
 
 3. Hartree-Fock Molecular Orbital Theory
-    * Restricted Hartree-Fock: Implementation of a the closed-shell, restricted orbital formulation of Hartree-Fock theory
+    * Restricted Hartree-Fock: Implementation of the closed-shell, restricted orbital formulation of Hartree-Fock theory
     * Direct Inversion of the Iterative Subspace: Theory and integration of the DIIS convergence acceleration method into an RHF program
     * Unrestricted Hartree-Fock: Implementation of the open-shell, unrestricted orbital formulation of Hartree-Fock theory, utilizing DIIS convergence acceleration
     * Density Fitting: Overview of the theory and construction of density-fitted ERIs in Psi4, and an illustrative example of a density-fitted Fock build.
@@ -26,11 +26,11 @@ Below is a list of the available interactive tutorials, grouped by module:
 4. Density Functional Theory (requires Psi4 1.2, beta)
     * DFT Grid: Briefly outlines several details of the DFT Grid.
     * LDA Kernel: Discusses how the local density approximation (LDA) is formed and computed.
-    * GGA and Meta Kernels: Focuses on higher derivates of DFT and exmaines how to compute various functionals.
-    * VV10: A guide to compute the non-local kernel VV10
+    * GGA and Meta Kernels: Focuses on higher-rung DFT variants and examines how to compute various functionals.
+    * VV10: A guide how to compute the non-local kernel VV10.
 
 5. Møller–Plesset Perturbation Theory 
-    * Conventional MP2: Overview and implementation of the conventional formulation of second-order Moller-Plesset Perturbation Theory (MP2), using full 4-index ERIs.
+    * Conventional MP2: Overview and implementation of the conventional formulation of second-order Møller-Plesset Perturbation Theory (MP2), using full 4-index ERIs.
     * Density Fitted MP2: Discusses the implementation of the density-fitted formulation of MP2 with an efficient, low-memory algorithm utilizing permutational ERI symmetry.
 
 
