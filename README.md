@@ -1,8 +1,7 @@
-![Psi4NumPy](media/psi4banner_numpy.png)
-=============
+![Psi4NumPy](media/psi4banner_numpy_interactive.png)
+[![DOI](https://zenodo.org/badge/22622192.svg)](https://zenodo.org/badge/latestdoi/22622192)
 
-#####Author: Daniel G. A. Smith
-#####Contact: dgasmith@gatech.edu
+=============
 
 #####Psi4 v1.1
 Note: This repostitory has drifted over time from its original intent. A
