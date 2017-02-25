@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ![Psi4NumPy](media/psi4banner_numpy_interactive.png)
+=======
+![Psi4NumPy](media/psi4banner_numpy.png)
+>>>>>>> 17932fd806b027b74c0a5299e669859a88d1b9d6
 [![DOI](https://zenodo.org/badge/22622192.svg)](https://zenodo.org/badge/latestdoi/22622192)
 
 =============
