@@ -11,9 +11,11 @@ Below is a list of the available interactive tutorials, grouped by module:
 
 1. Psi4NumPy Basics
     * Molecule: Overview of the Molecule class and geometry specification in Psi4
+    * Psi4-NumPy Data Sharing: Describes the integration of Psi4 Matrix and NumPy array objects
     * Wavefunction: Building, passing, and using wavefunction objects from Psi4
-    * BasisSet: Building and manipulating basis sets within Psi4
     * MintsHelper: Generating one- and two-electron integrals with Psi4
+    * Tensor Manipulation: Overview of commonly used tensor engines throughout Psi4NumPy 
+    * BasisSet: Building and manipulating basis sets within Psi4
 
 2. Linear Algebra
 
