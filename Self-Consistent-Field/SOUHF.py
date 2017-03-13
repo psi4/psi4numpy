@@ -12,7 +12,7 @@ np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
 # Set Psi4 memory and output options
-psi4.core.set_memory(int(2e9), False)
+psi4.set_memory('2 GB')
 psi4.core.set_output_file('output.dat', False)
 
 # Triplet oxygen

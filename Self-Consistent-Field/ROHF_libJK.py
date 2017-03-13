@@ -13,7 +13,7 @@ np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
 # Memory for Psi4 in GB
-psi4.core.set_memory(int(2e9), False)
+psi4.set_memory('2 GB')
 psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
@@ -107,7 +107,7 @@ t = time.time()
 for SCF_ITER in range(1, maxiter + 1):
 
     # Build a and b fock matrices
-    J, K = scf_helper.compute_jk(psi4, jk, [C[:, :nocc], C[:, :ndocc]])
+    J, K = scf_helper.compute_jk(jk, [C[:, :nocc], C[:, :ndocc]])
     J = J[0] + J[1]
     Fa = H + J - K[0]
     Fb = H + J - K[1]
