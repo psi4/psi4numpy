@@ -15,6 +15,10 @@ import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
+# Set memory & output
+psi4.set_memory('2 GB')
+psi4.core.set_output_file('output.dat', False)
+
 mol = psi4.geometry(""" 
 C    1.39410    0.00000   0.00000
 C    0.69705   -1.20732   0.00000
