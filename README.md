@@ -43,9 +43,9 @@ A tutorial that covers the basics of NumPy can be found
 ### Requirements:
 
 - [Psi4](https://github.com/Psi4/Psi4) 1.1+
-- [Python](python.org) 2.7+
- - [NumPy](scipy.org) 1.7.2+
- - [Scipy](numpy.scipy.org) 0.13.0+
+- [Python](https://python.org) 2.7+
+ - [NumPy](http://www.numpy.org) 1.7.2+
+ - [Scipy](https://scipy.org) 0.13.0+
 
 ### Psi4 v1.1
 This repostitory has recently been updated to be compatible with Psi4 version 1.1.
