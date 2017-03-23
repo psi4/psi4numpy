@@ -11,8 +11,8 @@
 
 The overall goal of the Psi4NumPy project is to provide an interactive quantum chemistry
 framework for reference implementations, rapid prototyping, development, and education.
-To do this, quantities relevant to quantum chemistry are computed with the <span 'font-variant: 
-small-caps'> Psi4 </span> electronic structure package, and subsequently manipulated 
+To do this, quantities relevant to quantum chemistry are computed with the
+<span style="font-variant:small-caps;"> Psi4 </span> electronic structure package, and subsequently manipulated 
 using the Numerical Python (NumPy) package.  This combination
 provides an interface that is both simple to use and remains relatively fast
 to execute. 
