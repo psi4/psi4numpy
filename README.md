@@ -1,9 +1,13 @@
-![Psi4NumPy](media/psi4banner_numpy_interactive.png)
-[![DOI](https://zenodo.org/badge/22622192.svg)](https://zenodo.org/badge/latestdoi/22622192)
+<p align="center">
+<br>
+<img src="media/psi4banner_numpy_interactive.png" alt="Psi4NumPy banner logo" height=200> <br>
+<a href="https://zenodo.org/badge/latestdoi/22622192"> <img src="https://zenodo.org/badge/22622192.svg" /></a>
+<br>
+</p>
 
 =============
 
-#####Overview
+###Overview
 
 The overall goal of the Psi4NumPy project is to provide an interactive quantum chemistry
 framework for reference implementations, rapid prototyping, development, and education.
@@ -26,7 +30,7 @@ interactive environment, removing the gap between theory and implementation.
 If you have comments, questions, or would like to contribute to the project
 please feel free to email [me](mailto:dgasmith@gatech.edu).
 
-#####Getting Started
+###Getting Started
 To begin using Psi4NumPy:
 - Obtain recent versions of Psi4, NumPy, and SciPy (see Requirements for version details)
 - Locate the `Psi4_install/lib` directory and execute the following:
