@@ -11,8 +11,8 @@
 
 The overall goal of the Psi4NumPy project is to provide an interactive quantum chemistry
 framework for reference implementations, rapid prototyping, development, and education.
-To do this, quantities relevant to quantum chemistry are computed with the <span 'font-variant: 
-small-caps'> Psi4 </span> electronic structure package, and subsequently manipulated 
+To do this, quantities relevant to quantum chemistry are computed with the
+Psi4 electronic structure package, and subsequently manipulated 
 using the Numerical Python (NumPy) package.  This combination
 provides an interface that is both simple to use and remains relatively fast
 to execute. 
@@ -43,9 +43,9 @@ A tutorial that covers the basics of NumPy can be found
 ### Requirements:
 
 - [Psi4](https://github.com/Psi4/Psi4) 1.1+
-- [Python](python.org) 2.7+
- - [NumPy](scipy.org) 1.7.2+
- - [Scipy](numpy.scipy.org) 0.13.0+
+- [Python](https://python.org) 2.7+
+ - [NumPy](http://www.numpy.org) 1.7.2+
+ - [Scipy](https://scipy.org) 0.13.0+
 
 ### Psi4 v1.1
 This repostitory has recently been updated to be compatible with Psi4 version 1.1.
