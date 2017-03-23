@@ -5,9 +5,9 @@
 <br>
 </p>
 
-=============
+---
 
-###Overview
+### Overview
 
 The overall goal of the Psi4NumPy project is to provide an interactive quantum chemistry
 framework for reference implementations, rapid prototyping, development, and education.
@@ -30,24 +30,23 @@ interactive environment, removing the gap between theory and implementation.
 If you have comments, questions, or would like to contribute to the project
 please feel free to email [me](mailto:dgasmith@gatech.edu).
 
-###Getting Started
+### Getting Started
 To begin using Psi4NumPy:
 - Obtain recent versions of Psi4, NumPy, and SciPy (see Requirements for version details)
-- Locate the `Psi4_install/lib` directory and execute the following:
-```export PYTHONPATH=Psi4_install/lib```
+- Locate the `Psi4_install/lib` directory and execute the following: ```export PYTHONPATH=Psi4_install/lib```
 
-All scripts should then be run as conventional Python scripts, `python -c "import Psi4"`.
+All scripts should then be run as conventional Python scripts, ```python -c "import Psi4"```.
 
 A tutorial that covers the basics of NumPy can be found
 [here](http://wiki.scipy.org/Tentative_NumPy_Tutorial).
 
-#####Requirements:
+### Requirements:
 
 - [Psi4](https://github.com/Psi4/Psi4) 1.1+
 - [Python](python.org) 2.7+
  - [NumPy](scipy.org) 1.7.2+
  - [Scipy](numpy.scipy.org) 0.13.0+
 
-#####Psi4 v1.1
+### Psi4 v1.1
 This repostitory has recently been updated to be compatible with Psi4 version 1.1.
 Please see the `v1.0` branch for a Psi4 v1.0 compliant Psi4NumPy version. 
