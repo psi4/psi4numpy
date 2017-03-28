@@ -31,6 +31,11 @@ If you have comments, questions, or would like to contribute to the project
 please feel free to email [me](mailto:dgasmith@gatech.edu).
 
 ### Getting Started
+
+New users can either follow the
+[Getting Started](https://github.com/psi4/psi4numpy/blob/master/Tutorials/01_Psi4NumPy-Basics/1a_Getting-Started.ipynb)
+notebook or follow the less verbose directions below.
+
 To begin using Psi4NumPy:
 - Obtain recent versions of Psi4, NumPy, and SciPy (see Requirements for version details)
 - Locate the `Psi4_install/lib` directory and execute the following: ```export PYTHONPATH=Psi4_install/lib```
