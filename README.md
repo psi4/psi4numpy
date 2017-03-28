@@ -35,7 +35,7 @@ To begin using Psi4NumPy:
 - Obtain recent versions of Psi4, NumPy, and SciPy (see Requirements for version details)
 - Locate the `Psi4_install/lib` directory and execute the following: ```export PYTHONPATH=Psi4_install/lib```
 
-All scripts should then be run as conventional Python scripts, ```python -c "import Psi4"```.
+All scripts should then be run as conventional Python scripts, ```python -c "import psi4"```.
 
 A tutorial that covers the basics of NumPy can be found
 [here](http://wiki.scipy.org/Tentative_NumPy_Tutorial).
