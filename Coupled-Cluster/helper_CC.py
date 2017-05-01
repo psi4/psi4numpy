@@ -196,6 +196,7 @@ class helper_CCSD(object):
 
         # Integral generation from Psi4's MintsHelper
         self.MO = np.asarray(mints.mo_spin_eri(self.C, self.C))
+        print self.MO
         print("Size of the ERI tensor is %4.2f GB, %d basis functions." % (ERI_Size, self.nmo))
 
         # Update nocc and nvirt
@@ -218,13 +219,25 @@ class helper_CCSD(object):
         # Compute Fock matrix
         self.F = H + np.einsum('pmqm->pq', self.MO[:, self.slice_o, :, self.slice_o])
 
+        print('\nFock matrix...\n')
+        print(self.F)
+
         ### Build D matrices
         print('\nBuilding denominator arrays...')
         Focc = np.diag(self.F)[self.slice_o]
         Fvir = np.diag(self.F)[self.slice_v]
 
+	print("\nFocc and Fvir\n")
+        print(Focc)
+        print(Fvir)
+
         self.Dia = Focc.reshape(-1, 1) - Fvir
         self.Dijab = Focc.reshape(-1, 1, 1, 1) + Focc.reshape(-1, 1, 1) - Fvir.reshape(-1, 1) - Fvir
+
+	print("\nD1 and D2\n")
+        print(self.Dia)
+        print(self.Dijab)
+
 
         ### Construct initial guess
         print('Building initial guess...')
@@ -232,6 +245,10 @@ class helper_CCSD(object):
         self.t1 = np.zeros((self.nocc, self.nvirt))
         # t^{ab}_{ij}
         self.t2 = self.MO[self.slice_o, self.slice_o, self.slice_v, self.slice_v] / self.Dijab
+
+        print('\n Initial T1 and T2\n')
+        print(self.t1)
+        print(self.t2)
 
         print('\n..initialed CCSD in %.3f seconds.\n' % (time.time() - time_init))
 
