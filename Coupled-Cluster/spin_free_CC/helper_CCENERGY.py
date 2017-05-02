@@ -113,7 +113,7 @@ def ndot(input_string, op1, op2, prefactor=None):
         return np.einsum(tdot_result + '->' + output_ind, new_view)
 
 
-class helper_CCSD_SF(object):
+class helper_CCENERGY(object):
 
     def __init__(self, mol, freeze_core=False, memory=2):
 
@@ -628,7 +628,7 @@ class helper_CCSD_SF(object):
                     self.t2 += ci[num] * diis_vals_t2[num + 1]
 
             # End DIIS amplitude update
-# End CCSD class
+# End helper_CCENERGY class
 
 if __name__ == "__main__":
     arr4 = np.random.rand(4, 4, 4, 4)
