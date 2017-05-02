@@ -17,7 +17,8 @@ from helper_CC import *
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
-psi4.core.set_memory(int(2e9), False)
+#psi4.core.set_memory(int(2e9), False)
+psi4.set_memory(int(2e9), False)
 psi4.core.set_output_file('ccsd_sf.dat', False)
 
 numpy_memory = 2

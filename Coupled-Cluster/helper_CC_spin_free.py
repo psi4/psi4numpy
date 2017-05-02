@@ -197,9 +197,10 @@ class helper_CCSD_SF(object):
 
         # Integral generation from Psi4's MintsHelper
         ##self.MO = np.asarray(mints.mo_spin_eri(self.C, self.C))
-        #self.MO = np.asarray(mints.mo_eri(self.C, self.C, self.C, self.C))
-        self.MO = np.asarray(mints.mo_eri(self.C, self.C))
-        print self.MO
+        self.MO = np.asarray(mints.mo_eri(self.C, self.C, self.C, self.C))
+        self.MO = self.MO.swapaxes(1,2)
+        #self.MO = np.asarray(mints.mo_eri(self.C, self.C))
+        #print (self.MO)
         print("Size of the ERI tensor is %4.2f GB, %d basis functions." % (ERI_Size, self.nmo))
 
         # Update nocc and nvirt
@@ -223,24 +224,24 @@ class helper_CCSD_SF(object):
         self.F = H + 2.0 * np.einsum('pmqm->pq', self.MO[:, self.slice_o, :, self.slice_o])
         self.F -= np.einsum('pmmq->pq', self.MO[:, self.slice_o, self.slice_o, :])
 
-	print("\nFock matrix\n")
-	print(self.F)
+        #print("\nFock matrix\n")
+        #print(self.F)
 
         ### Build D matrices
         print('\nBuilding denominator arrays...')
         Focc = np.diag(self.F)[self.slice_o]
         Fvir = np.diag(self.F)[self.slice_v]
 
-	print("\nFocc and Fvir\n")
-	print(Focc)
-	print(Fvir)
+        #print("\nFocc and Fvir\n")
+        #print(Focc)
+        #print(Fvir)
 
         self.Dia = Focc.reshape(-1, 1) - Fvir
         self.Dijab = Focc.reshape(-1, 1, 1, 1) + Focc.reshape(-1, 1, 1) - Fvir.reshape(-1, 1) - Fvir
 
-	print("\nD1 and D2\n")
-	print(self.Dia)
-	print(self.Dijab)
+        #print("\nD1 and D2\n")
+        #print(self.Dia)
+        #print(self.Dijab)
 
         ### Construct initial guess
         print('Building initial guess...')
@@ -249,9 +250,9 @@ class helper_CCSD_SF(object):
         # t^{ab}_{ij}
         self.t2 = self.MO[self.slice_o, self.slice_o, self.slice_v, self.slice_v] / self.Dijab
 
-	print("\nT1 and T2\n")
-	print(self.t1)
-	print(self.t2)
+        #print("\nT1 and T2\n")
+        #print(self.t1)
+        #print(self.t2)
 
 
         print('\n..initialed CCSD in %.3f seconds.\n' % (time.time() - time_init))
@@ -430,7 +431,7 @@ class helper_CCSD_SF(object):
         r_T2 -= first.swapaxes(0,1).swapaxes(2,3)
 
         # P^(ab)_(ij) {-t_imab Fmi_mj }
-	tmp = ndot('imab,mj->ijab', self.t2, Fmi, prefactor=1.0) 
+        tmp = ndot('imab,mj->ijab', self.t2, Fmi, prefactor=1.0) 
         r_T2 -= tmp
         r_T2 -= tmp.swapaxes(0,1).swapaxes(2,3)
 
@@ -463,37 +464,37 @@ class helper_CCSD_SF(object):
         r_T2 -= tmp.swapaxes(0,1).swapaxes(2,3)
 	
 	# P...
-	r_T2 += ndot('imae,mbej->ijab', self.t2, Wmbej, prefactor=1.0)
-	r_T2 += ndot('imea,mbej->ijab', self.t2, Wmbej, prefactor=-1.0)
+        r_T2 += ndot('imae,mbej->ijab', self.t2, Wmbej, prefactor=1.0)
+        r_T2 += ndot('imea,mbej->ijab', self.t2, Wmbej, prefactor=-1.0)
 
-	r_T2 += ndot('imae,mbej->ijab', self.t2, Wmbej, prefactor=1.0)
-	r_T2 += ndot('imae,mbje->ijab', self.t2, Wmbje, prefactor=1.0)
+        r_T2 += ndot('imae,mbej->ijab', self.t2, Wmbej, prefactor=1.0)
+        r_T2 += ndot('imae,mbje->ijab', self.t2, Wmbje, prefactor=1.0)
 
-	r_T2 += ndot('mjae,mbie->ijab', self.t2, Wmbje, prefactor=1.0)
-	r_T2 += ndot('imeb,maje->ijab', self.t2, Wmbje, prefactor=1.0)
+        r_T2 += ndot('mjae,mbie->ijab', self.t2, Wmbje, prefactor=1.0)
+        r_T2 += ndot('imeb,maje->ijab', self.t2, Wmbje, prefactor=1.0)
 
-	r_T2 += ndot('jmbe,maei->ijab', self.t2, Wmbej, prefactor=1.0)
-	r_T2 += ndot('jmbe,maie->ijab', self.t2, Wmbje, prefactor=1.0)
+        r_T2 += ndot('jmbe,maei->ijab', self.t2, Wmbej, prefactor=1.0)
+        r_T2 += ndot('jmbe,maie->ijab', self.t2, Wmbje, prefactor=1.0)
 
-	r_T2 += ndot('jmbe,maei->ijab', self.t2, Wmbej, prefactor=1.0)
-	r_T2 += ndot('jmeb,maei->ijab', self.t2, Wmbej, prefactor=-1.0)
+        r_T2 += ndot('jmbe,maei->ijab', self.t2, Wmbej, prefactor=1.0)
+        r_T2 += ndot('jmeb,maei->ijab', self.t2, Wmbej, prefactor=-1.0)
 	
 	# P....
 
-	tmp = ndot('ie,ma->imea', self.t1, self.t1)
-	r_T2 -= ndot('imea,mbej->ijab', tmp, self.get_MO('ovvo'))
+        tmp = ndot('ie,ma->imea', self.t1, self.t1)
+        r_T2 -= ndot('imea,mbej->ijab', tmp, self.get_MO('ovvo'))
 
-	tmp = ndot('ie,mb->imeb', self.t1, self.t1)
-	r_T2 -= ndot('imeb,maje->ijab', tmp, self.get_MO('ovov'))
+        tmp = ndot('ie,mb->imeb', self.t1, self.t1)
+        r_T2 -= ndot('imeb,maje->ijab', tmp, self.get_MO('ovov'))
 
-	tmp = ndot('je,ma->jmea', self.t1, self.t1)
-	r_T2 -= ndot('jmea,mbie->ijab', tmp, self.get_MO('ovov'))
+        tmp = ndot('je,ma->jmea', self.t1, self.t1)
+        r_T2 -= ndot('jmea,mbie->ijab', tmp, self.get_MO('ovov'))
 
-	tmp = ndot('je,mb->jmeb', self.t1, self.t1)
-	r_T2 -= ndot('jmeb,maei->ijab', tmp, self.get_MO('ovvo'))
+        tmp = ndot('je,mb->jmeb', self.t1, self.t1)
+        r_T2 -= ndot('jmeb,maei->ijab', tmp, self.get_MO('ovvo'))
 
-	r_T2 -= ndot('ma,mbij->ijab', self.t1, Zmbij)	
-	r_T2 -= ndot('ma,mbij->jiba', self.t1, Zmbij)	
+        r_T2 -= ndot('ma,mbij->ijab', self.t1, Zmbij)	
+        r_T2 -= ndot('ma,mbij->jiba', self.t1, Zmbij)	
 
         ## P_(ij) * P_(ab)
         ## (ij - ji) * (ab - ba)
@@ -517,8 +518,8 @@ class helper_CCSD_SF(object):
         #rhs_T2 += Pab.swapaxes(2, 3)
 
         ### Update T1 and T2 amplitudes
-        self.t1 = r_T1 / self.Dia
-        self.t2 = r_T2 / self.Dijab
+        self.t1 += r_T1 / self.Dia
+        self.t2 += r_T2 / self.Dijab
 
     def compute_corr_energy(self):
         ### Compute CCSD correlation energy using current amplitudes
@@ -527,16 +528,16 @@ class helper_CCSD_SF(object):
         #CCSDcorr_E += 0.5 * np.einsum('ijab,ia,jb->', self.get_MO('oovv'), self.t1, self.t1)
 
         CCSDcorr_E = 2.0 * np.einsum('ia,ia->', self.get_F('ov'), self.t1)
-        #tmp_tau = self.build_tau()
+        tmp_tau = self.build_tau()
         #print self.get_MO('oovv')
-	CCSDcorr_E += 2.0 * np.einsum('ijab,ijab->', self.t2, self.get_MO('oovv'))
-	CCSDcorr_E -= 1.0 * np.einsum('ijba,ijab->', self.t2, self.get_MO('oovv'))
+        CCSDcorr_E += 2.0 * np.einsum('ijab,ijab->', tmp_tau, self.get_MO('oovv'))
+        CCSDcorr_E -= 1.0 * np.einsum('ijab,ijba->', tmp_tau, self.get_MO('oovv'))
 
         self.ccsd_corr_e = CCSDcorr_E
         self.ccsd_e = self.rhf_e + self.ccsd_corr_e
         return CCSDcorr_E
 
-    def compute_energy(self, e_conv=1.e-8, maxiter=20, max_diis=8):
+    def compute_energy(self, e_conv=1.e-13, maxiter=50, max_diis=8):
         ### Setup DIIS
         diis_vals_t1 = [self.t1.copy()]
         diis_vals_t2 = [self.t2.copy()]
@@ -558,6 +559,14 @@ class helper_CCSD_SF(object):
             oldt2 = self.t2.copy()
 
             self.update()
+            print("\nT1 and T2\n")
+            norm = np.einsum('ia,ia->',self.t1, self.t1)
+            norm = np.sqrt(norm/(2*self.nocc )) 
+            print(norm)
+            #print(self.t1)		
+            #print(self.t2)		
+  
+
 
             # Compute CCSD correlation energy
             CCSDcorr_E = self.compute_corr_energy()
