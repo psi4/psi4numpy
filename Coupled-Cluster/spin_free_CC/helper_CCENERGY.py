@@ -164,30 +164,21 @@ class helper_CCENERGY(object):
             self.npC = np.asarray(self.C)
             self.npC[:] = oldC[:, self.nfzc:]
 
-            # Update epsilon array
             self.ndocc -= self.nfzc
 
         else:
             self.C = self.wfn.Ca()
             self.npC = np.asarray(self.C)
 
-        mints = psi4.core.MintsHelper(self.wfn.basisset())
-        H = np.asarray(mints.ao_kinetic()) + np.asarray(mints.ao_potential())
+        self.mints = psi4.core.MintsHelper(self.wfn.basisset())
+        H = np.asarray(self.mints.ao_kinetic()) + np.asarray(self.mints.ao_potential())
         self.nmo = H.shape[0]
 
-        # Update H, transform to MO basis and tile for alpha/beta spin
+        # Update H, transform to MO basis 
         H = np.einsum('uj,vi,uv', self.npC, self.npC, H)
-        #H = np.repeat(H, 2, axis=0)
-        #H = np.repeat(H, 2, axis=1)
 
-        # Make H block diagonal
-        #spin_ind = np.arange(H.shape[0], dtype=np.int) % 2
-        #H *= (spin_ind.reshape(-1, 1) == spin_ind)
-
-        #Make spin-orbital MO
         print('Starting AO ->  MO transformation...')
 
-        #ERI_Size = (self.nmo ** 4) * 128.e-9
         ERI_Size = self.nmo  * 128.e-9
         memory_footprint = ERI_Size * 5
         if memory_footprint > self.memory:
@@ -196,11 +187,8 @@ class helper_CCENERGY(object):
                             limit of %4.2f GB." % (memory_footprint, self.memory))
 
         # Integral generation from Psi4's MintsHelper
-        ##self.MO = np.asarray(mints.mo_spin_eri(self.C, self.C))
-        self.MO = np.asarray(mints.mo_eri(self.C, self.C, self.C, self.C))
+        self.MO = np.asarray(self.mints.mo_eri(self.C, self.C, self.C, self.C))
         self.MO = self.MO.swapaxes(1,2)
-        #self.MO = np.asarray(mints.mo_eri(self.C, self.C))
-        #print (self.MO)
         print("Size of the ERI tensor is %4.2f GB, %d basis functions." % (ERI_Size, self.nmo))
 
         # Update nocc and nvirt
@@ -210,38 +198,22 @@ class helper_CCENERGY(object):
         # Make slices
         self.slice_nfzc = slice(0, self.nfzc)
         self.slice_o = slice(self.nfzc, self.nocc + self.nfzc)
-        #self.slice_v = slice(self.nocc + self.nfzc, self.nso)
         self.slice_v = slice(self.nocc + self.nfzc, self.nmo)
-        #self.slice_a = slice(0, self.nso)
         self.slice_a = slice(0, self.nmo)
         self.slice_dict = {'f': self.slice_nfzc, 'o' : self.slice_o, 'v' : self.slice_v,
                            'a' : self.slice_a}
 
-        #Extend eigenvalues
-        #self.eps = np.repeat(self.eps, 2)
-
         # Compute Fock matrix
         self.F = H + 2.0 * np.einsum('pmqm->pq', self.MO[:, self.slice_o, :, self.slice_o])
         self.F -= np.einsum('pmmq->pq', self.MO[:, self.slice_o, self.slice_o, :])
-
-        #print("\nFock matrix\n")
-        #print(self.F)
 
         ### Build D matrices
         print('\nBuilding denominator arrays...')
         Focc = np.diag(self.F)[self.slice_o]
         Fvir = np.diag(self.F)[self.slice_v]
 
-        #print("\nFocc and Fvir\n")
-        #print(Focc)
-        #print(Fvir)
-
         self.Dia = Focc.reshape(-1, 1) - Fvir
         self.Dijab = Focc.reshape(-1, 1, 1, 1) + Focc.reshape(-1, 1, 1) - Fvir.reshape(-1, 1) - Fvir
-
-        #print("\nD1 and D2\n")
-        #print(self.Dia)
-        #print(self.Dijab)
 
         ### Construct initial guess
         print('Building initial guess...')
@@ -249,11 +221,6 @@ class helper_CCENERGY(object):
         self.t1 = np.zeros((self.nocc, self.nvirt))
         # t^{ab}_{ij}
         self.t2 = self.MO[self.slice_o, self.slice_o, self.slice_v, self.slice_v] / self.Dijab
-
-        #print("\nT1 and T2\n")
-        #print(self.t1)
-        #print(self.t2)
-
 
         print('\n..initialed CCSD in %.3f seconds.\n' % (time.time() - time_init))
 
@@ -273,14 +240,6 @@ class helper_CCENERGY(object):
             raise Exception('get_F: string %s must have 4 elements.' % string)
         return self.F[self.slice_dict[string[0]], self.slice_dict[string[1]]]
 
-
-    #Build Lpqrs = 2<pq|rs> - <pq|sr> 
-    #def build_L(self):
-    #    #tmp =  self.get_MO('aaaa').copy()
-    #    tmp = self.MO[self.slice_a, self.slice_a, self.slice_a, self.slice_a]
-    #    Lpqrs = 2.0 * tmp
-    #    #Lpqrs -= tmp.swapaxes(2,3) 
-    #    return Lpqrs 
 
     #Bulid Eqn 9: tilde{\Tau})
     def build_tilde_tau(self):
@@ -345,19 +304,6 @@ class helper_CCENERGY(object):
 
         Wmnij += ndot('ijef,mnef->mnij', self.build_tau(), self.get_MO('oovv'), prefactor=1.0)
         return Wmnij
-
-
-    #Build Eqn 7:
-    #def build_Wabef(self):
-
-    #    Wabef = self.get_MO('vvvv').copy()
-
-    #    Pab = ndot('mb,amef->abef', self.t1, self.get_MO('vovv'))
-    #    Wabef -= Pab
-    #    Wabef += Pab.swapaxes(0, 1)
-
-    #    Wabef += ndot('mnab,mnef->abef', self.build_tau(), self.get_MO('oovv'), prefactor=0.25)
-    #    return Wabef
 
 
     #Build Eqn 8:
@@ -496,40 +442,13 @@ class helper_CCENERGY(object):
         r_T2 -= ndot('ma,mbij->ijab', self.t1, Zmbij)	
         r_T2 -= ndot('ma,mbij->jiba', self.t1, Zmbij)	
 
-        ## P_(ij) * P_(ab)
-        ## (ij - ji) * (ab - ba)
-        ## ijab - ijba -jiab + jiba
-        #tmp = ndot('ie,mbej->mbij', self.t1, self.get_MO('ovvo'))
-        #tmp = ndot('ma,mbij->ijab', self.t1, tmp)
-        #Wmbej = self.build_Wmbej()
-        #Pijab = ndot('imae,mbej->ijab', self.t2, Wmbej) - tmp
-
-        #rhs_T2 += Pijab
-        #rhs_T2 -= Pijab.swapaxes(2, 3)
-        #rhs_T2 -= Pijab.swapaxes(0, 1)
-        #rhs_T2 += Pijab.swapaxes(0, 1).swapaxes(2, 3)
-
-        #Pij = ndot('ie,abej->ijab', self.t1, self.get_MO('vvvo'))
-        #rhs_T2 += Pij
-        #rhs_T2 -= Pij.swapaxes(0, 1)
-
-        #Pab = ndot('ma,mbij->ijab', self.t1, self.get_MO('ovoo'))
-        #rhs_T2 -= Pab
-        #rhs_T2 += Pab.swapaxes(2, 3)
-
         ### Update T1 and T2 amplitudes
         self.t1 += r_T1 / self.Dia
         self.t2 += r_T2 / self.Dijab
 
     def compute_corr_energy(self):
-        ### Compute CCSD correlation energy using current amplitudes
-        #CCSDcorr_E = np.einsum('ia,ia->', self.get_F('ov'), self.t1)
-        #CCSDcorr_E += 0.25 * np.einsum('ijab,ijab->', self.get_MO('oovv'), self.t2)
-        #CCSDcorr_E += 0.5 * np.einsum('ijab,ia,jb->', self.get_MO('oovv'), self.t1, self.t1)
-
         CCSDcorr_E = 2.0 * np.einsum('ia,ia->', self.get_F('ov'), self.t1)
         tmp_tau = self.build_tau()
-        #print self.get_MO('oovv')
         CCSDcorr_E += 2.0 * np.einsum('ijab,ijab->', tmp_tau, self.get_MO('oovv'))
         CCSDcorr_E -= 1.0 * np.einsum('ijab,ijba->', tmp_tau, self.get_MO('oovv'))
 
@@ -559,14 +478,6 @@ class helper_CCENERGY(object):
             oldt2 = self.t2.copy()
 
             self.update()
-            print("\nT1 and T2\n")
-            norm = np.einsum('ia,ia->',self.t1, self.t1)
-            norm = np.sqrt(norm/(2*self.nocc )) 
-            print(norm)
-            #print(self.t1)		
-            #print(self.t2)		
-  
-
 
             # Compute CCSD correlation energy
             CCSDcorr_E = self.compute_corr_energy()

@@ -116,17 +116,20 @@ def ndot(input_string, op1, op2, prefactor=None):
 
 class helper_CCRESPONSE(object):
 
-    def __init__(self, ccsd, hbar, memory=2):
+    def __init__(self, pert, ccsd, hbar, cclambda, memory=2):
 
         # Integral generation from Psi4's MintsHelper
         time_init = time.time()
 
+        self.pert = pert
         self.MO = ccsd.MO
         self.ndocc = ccsd.ndocc
         self.nmo = ccsd.nmo
         self.nfzc = 0
         self.nocc = ccsd.ndocc 
         self.nvirt = ccsd.nmo - ccsd.nocc - ccsd.nfzc
+
+	self.mints = ccsd.mints
 
         self.slice_nfzc = slice(0, self.nfzc)
         self.slice_o = slice(self.nfzc, self.nocc + self.nfzc)
@@ -137,10 +140,9 @@ class helper_CCRESPONSE(object):
 
        
         self.F = ccsd.F
-        self.dia = ccsd.dia
-        self.dijab = ccsd.dijab
         self.t1 = ccsd.t1
         self.t2 = ccsd.t2
+
 
         self.ttau  =  hbar.ttau
         self.L     =  hbar.L
@@ -156,12 +158,20 @@ class helper_CCRESPONSE(object):
         self.Hovvv =  hbar.Hovvv
         self.Hovoo =  hbar.Hovoo
 
-	self.l1 = 2.0 * self.t1
-        tmp = self.t2
-	self.l2 = 2.0 * (2.0 * tmp - tmp.swapaxes(2,3))
 
+	self.l1 = cclambda.l1
+        self.l2 = cclambda.l2
 
-        print('\n..initialed CCHBAR in %.3f seconds.\n' % (time.time() - time_init))
+        self.Dia = self.Hoo.reshape(-1, 1) - self.Hvv + omega
+        self.Dijab = self.Hoo.reshape(-1, 1, 1, 1) + self.Hoo.reshape(-1, 1, 1) - self.Hvv.reshape(-1, 1) - self.Hvv + omega
+
+	#self.muX = np.asarray(self.mints.ao_dipole()[0])
+	#self.muY = np.asarray(self.mints.ao_dipole()[1])
+	#self.muZ = np.asarray(self.mints.ao_dipole()[2])
+        #self.pert_dict = {'0' : self.muX, '1' : self.muY, '2' : self.muZ}
+
+ 
+        print('\n..initialed CCRESPONSE in %.3f seconds.\n' % (time.time() - time_init))
     # occ orbitals i, j, k, l, m, n
     # virt orbitals a, b, c, d, e, f
     # all oribitals p, q, r, s, t, u, v
@@ -179,51 +189,165 @@ class helper_CCRESPONSE(object):
             raise Exception('get_F: string %s must have 4 elements.' % string)
         return self.F[self.slice_dict[string[0]], self.slice_dict[string[1]]]
 
+
+    def get_pert(self, string):
+        if len(string) != 2:
+            psi4.core.clean()
+            raise Exception('get_F: string %s must have 4 elements.' % string)
+        return self.pert[self.slice_dict[string[0]], self.slice_dict[string[1]]]
+
+    def build_Aoo(self):
+        Aoo = self.get_pert('oo').copy()
+        Aoo += ndot('ie,me->mi', self.t1, self.get_pert('ov'))
+	return Aoo
+
+    def build_Aov(self):
+        Aov = self.get_pert('ov').copy()
+        return Aov
+
+    def build_Avo(self):
+        Avo =  self.get_pert('vo').copy()
+        Avo += ndot('ae,ie->ai', self.get_pert('vv'), self.t1)
+        Avo -= ndot('ma,mi->ai', self.t1, self.get_pert('oo'))
+        Avo += ndot('miea,me->ai', self.t2, self.get_pert('ov'), prefactor=2.0)
+        Avo += ndot('imea,me->ai', self.t2, self.get_pert('ov'), prefactor=-1.0)
+        tmp = ndot('ie,ma->imea', self.t1, self.t1)
+        Avo -= ndot('imea,me->ai', tmp, self.get_pert('ov'))
+        return Avo 
+
+    def build_Avv(self):
+        Avv =  self.get_pert('vv').copy()
+        Avv -= ndot('ma,me->ae', self.t1, self.get_pert('ov'))
+        return Avv
+        
+    def build_Aovoo(self):
+        Aovoo = 0
+        Aovoo += ndot('ijeb,me->mbij', self.t2, self.get_pert('ov'))
+        return Aovoo
+
+    def build_Avvvo(self):
+        Avvvo = 0
+        Avvvo -= ndot('miab,me->abei', self.t2, self.get_pert('ov'))
+        return Avvvo
+
+    def build_Avvoo(self):
+        Avvoo = 0
+        Avvoo += ndot('ijeb,ae->abij', self.t2, self.get_pert('vv'))
+        Avvoo -= ndot('mjab,mi->abij', self.t2, self.get_pert('oo'))
+        return Avvoo
+
+
     def build_Goo(self):
         self.Goo = 0
-        self.Goo += np.dot('mjab,ijab->mi', self.t2, self.l2)
+        self.Goo += np.dot('mjab,ijab->mi', self.t2, self.y2)
         return self.Goo
 
     def build_Gvv(self):
         self.Gvv = 0
-        self.Gvv -= ndot('ijab,ijeb->ae', self.l2, self.t2)
+        self.Gvv -= ndot('ijab,ijeb->ae', self.y2, self.t2)
         return self.Gvv
 
-    def update(self):
-        r_l1  = 2.0 * self.Hov.copy() 
-        r_l1 += ndot('ie,ea->ia', self.l1, self.Hvv)
-        r_l1 -= ndot('im,ma->ia', self.Hoo, self.l1)
-        r_l1 += ndot('ieam,me->ia', self.Hovvo, self.l1, prefactor=2.0)
-        r_l1 += ndot('iema,me->ia', self.Hovov, self.l1, prefactor=-1.0)
-        r_l1 += ndot('imef,efam->ia', self.l2, self.Hvvvo)
-        r_l1 -= ndot('iemn,mnae->ia', self.Hovoo, self.l2)
-        r_l1 -= ndot('eifa,ef->ia', self.Hvovv, self.build_Gvv(), prefactor=2.0)
-        r_l1 -= ndot('eiaf,ef->ia', self.Hvovv, self.build_Gvv(), prefactor=-1.0)
-        r_l1 -= ndot('mina,mn->ia', self.Hooov, self.build_Goo(), prefactor=2.0)
-        r_l1 -= ndot('imna,mn->ia', self.Hooov, self.build_Goo(), prefactor=-1.0)
+    def build_Zvv(self):
+        Zvv = 0
+        Zvv += ndot('amef,mf->ae', self.Hvovv, self.x1, prefactor=2.0)
+        Zvv += ndot('amfe,mf->ae', self.Hvovv, self.x1, prefactor=-1.0)
+        Zvv -= ndot('mnaf,mnef->ae', self.x2, self.L)
+        return Zvv
 
-	self.l1 += r_l1/self.dia
+    def build_Zoo(self):
+        Zoo = 0
+        Zoo -= ndot('mnie,ne->mi', self.Hooov, self.x1, prefactor=2.0)
+        Zoo -= ndot('nmie,ne->mi', self.Hooov, self.x1, prefactor=-1.0)
+        Zoo -= ndot('mnef,inef->mi', self.L, self.x2)
+        return Zoo
 
-        r_l2 = self.L.copy()
-        r_l2 += ndot('ia,jb->ijab', self.l1, self.Hov, prefactor=2.0)
-        r_l2 -= ndot('ja,ib->ijab', self.l1, self.Hov)
-        r_l2 += ndot('ijeb,ea->ijab', self.l2, self.Hvv)
-        r_l2 -= ndot('im,mjab->ijab', self.Hoo, self.l2)
-        r_l2 += ndot('ijmn,mnab->ijab', self.Hoooo, self.l2, prefactor=0.5)
-        r_l2 += ndot('ijef,efab->ijab', self.l2, self.Hvvvv, prefactor=0.5)
-        r_l2 += ndot('ie,ejab->ijab', self.l1, self.Hvovv, prefactor=2.0)
-        r_l2 += ndot('ie,ejba->ijab', self.l1, self.Hvovv, prefactor=-1.0)
-        r_l2 -= ndot('mb,jima->ijab', self.l1, self.Hooov, prefactor=2.0)
-        r_l2 -= ndot('mb,ijma->ijab', self.l1, self.Hooov, prefactor=-1.0)
-        r_l2 += ndot('ieam,mjeb->ijab', self.Hovvo, self.l2, prefactor=2.0)
-        r_l2 += ndot('iema,mjeb->ijab', self.Hovov, self.l2, prefactor=-1.0)
-        r_l2 -= ndot('mibe,jema->ijab', self.l2, self.Hovov)
-        r_l2 -= ndot('mieb,jeam->ijab', self.l2, self.Hovvo)
-        r_l2 += ndot('ijeb,ae->ijab', self.L, self.build_Gvv())
-        r_l2 -= ndot('mi,mjab->ijab', self.build_Goo(), self.L)
+    def update_X(self):
+        r_x1  = self.Avo.copy() 
+        r_x1 -= omega * self.x1
+        r_x1 += ndot('ie,ae->ia', self.x1, self.Hvv)
+        r_x1 -= ndot('mi,ma->ia', self.Hoo, self.x1)
+        r_x1 += ndot('maei,me->ia', self.Hovvo, self.x1, prefactor=2.0)
+        r_x1 += ndot('maie,me->ia', self.Hovvo, self.x1, prefactor=-1.0)
+        r_x1 += ndot('miea,me->ia', self.x2, self.Hov, prefactor=2.0)
+        r_x1 += ndot('imea,me->ia', self.x2, self.Hov, prefactor=-1.0)
+        r_x1 += ndot('imef,amef->ia', self.x2, self.Hvovv, prefactor=2.0)
+        r_x1 += ndot('imef,amfe->ia', self.x2, self.Hvovv, prefactor=-1.0)
+        r_x1 -= ndot('mnie,mnae->ia', self.Hooov, self.x2, prefactor=2.0)
+        r_x1 -= ndot('nmie,mnae->ia', self.Hooov, self.x2, prefactor=-1.0)
+
+	self.x1 += r_x1/self.Dia
+
+        r_x2 = self.build_Avvoo.copy()
+        r_x2 -= 0.5 * omega * self.x2
+        r_x2 += ndot('ie,abej->ijab', self.x1, self.Hvvvo)
+        r_x2 -= ndot('mbij,ma->ijab', self.Hovoo, self.x1)
+
+        r_x2 += ndot('mi,mjab->ijab', self.build_Zoo, self.t2)
+        r_x2 += ndot('ijeb,ae->ijab', self.t2, self.build_Zvv)
+
+        r_x2 += ndot('ijeb,ae->ijab', self.x2, self.Hvv)
+        r_x2 -= ndot('mi,mjab->ijab', self.Hoo, self.x2)
+
+        r_x2 += ndot('mnij,mnab->ijab', self.Hoooo, self.x2, prefactor=0.5)
+        r_x2 += ndot('ijef,abef->ijab', self.x2, self.Hvvvv, prefactor=0.5)
+
+        r_x2 -= ndot('imeb,maje->ijab', self.x2, self.Hovov)
+        r_x2 -= ndot('imea,mbej->ijab', self.x2, self.Hovvo)
+
+        r_x2 += ndot('miea,mbej->ijab', self.x2, self.Hovvo, prefactor=2.0)
+        r_x2 += ndot('miea,mbje->ijab', self.x2, self.Hovov, prefactor=-1.0)
        
-        self.l2 += r_l2 + r_l2.swapaxes(0,1).swapaxes(2,3)
-        self.l2 += self.l2/self.dijab
+        self.x2 += r_x2 + r_x2.swapaxes(0,1).swapaxes(2,3)
+        self.x2 += self.x2/self.Dijab
+
+    def update_Y(self):
+        r_y1  = 2.0 * self.Aov.copy()
+        r_y1 += omega * self.y1
+        r_y1 += ndot('ie,ea->ia', self.y1, self.Hvv)
+        r_y1 -= ndot('im,ma->ia', self.Hoo, self.y1)
+        r_y1 += ndot('ieam,me->ia', self.Hovvo, self.y1, prefactor=2.0)
+        r_y1 += ndot('iema,me->ia', self.Hovov, self.y1, prefactor=-1.0)
+        r_y1 += ndot('imef,efam->ia', self.y2, self.Hvvvo)
+        r_y1 -= ndot('iemn,mnae->ia', self.Hovoo, self.y2)
+        r_y1 -= ndot('eifa,ef->ia', self.Hvovv, self.build_Gvv(), prefactor=2.0)
+        r_y1 -= ndot('eiaf,ef->ia', self.Hvovv, self.build_Gvv(), prefactor=-1.0)
+        r_y1 -= ndot('mina,mn->ia', self.Hooov, self.build_Goo(), prefactor=2.0)
+        r_y1 -= ndot('imna,mn->ia', self.Hooov, self.build_Goo(), prefactor=-1.0)
+
+        r_y1 += ndot('imae,me->ia', self.L, self.x1, prefactor=2.0)
+        r_y1 -= ndot('im,ma->ia', self.build_Aoo, self.l1)
+        r_y1 += ndot('ie,ea->ia', self.l1, self.build_Avv)
+        r_y1 += ndot('imfe,feam->ia', self.l2, self.build_Avvoo)
+
+        r_y1 -= ndot('ienm,mnea->ia', self.build_Aovoo, self.l2, prefactor=0.5)
+        r_y1 -= ndot('iemn,mnae->ia', self.build_Aovoo, self.l2, prefactor=0.5)
+
+        tmp   = ndot('ma,me->ae', self.Hov, self.x1)
+        r_y1 -= ndot('ie,ae->ia', self.l1, tmp)
+
+        tmp   = ndot('ie,me->im', self.Hov, self.x1)
+        r_y1 -= ndot('im,ma->ia', tmp, self.l1)
+
+        tmp   = ndot('me,ne->mn', self.x1, self.l1)
+        r_y1 -= ndot('mina,mn->ia', self.Hooov, tmp, prefactor=2.0)
+        r_y1 -= ndot('imna,mn->ia', self.Hooov, tmp, prefactor=-1.0)
+
+        tmp   = ndot('me,na->mnea', self.x1, self.l1)
+        r_y1 -= ndot('imne,mnea->ia', self.Hooov, tmp, prefactor=2.0)
+        r_y1 -= ndot('mine,mnea->ia', self.Hooov, tmp, prefactor=-1.0)
+
+        tmp   = ndot('me,ne->mn', self.x1, self.l1)
+        r_y1 -= ndot('mina,mn->ia', self.Hooov, tmp, prefactor=2.0)
+        r_y1 -= ndot('imna,mn->ia', self.Hooov, tmp, prefactor=-1.0)
+
+        tmp   = ndot('me,na->mnea', self.x1, self.l1)
+        r_y1 -= ndot('imne,mnea->ia', self.Hooov, tmp, prefactor=2.0)
+        r_y1 -= ndot('mine,mnea->ia', self.Hooov, tmp, prefactor=-1.0)
+
+
+
+        self.y1 += r_y1/self.Dia 
+
 
 
 
