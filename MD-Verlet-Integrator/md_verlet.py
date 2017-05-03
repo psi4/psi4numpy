@@ -45,12 +45,7 @@ def molec_dyn(timestep,max_md_step,veloc0,grad_method,trajec = True,opt=False):
     md_energy.write('Trajectory Number\tEnergy (Hartree)\n')
     md_energy.write('{0:>3d}\t\t\t{1:10.8f}\n'.format(1,energy))
     for i in range(1,max_md_step+1):
-        print pos
-        print '\n'
-        print veloc
-        print '\n'
-        print accel
-        print '************************************\n'
+        
         # Saving energies and trajectory points
         md_energy.write('{0:>3d}\t\t\t{1:10.8f}\n'.format(i,energy))
         if trajec:
@@ -85,22 +80,5 @@ def md_trajectories(max_md_step):
         with open('md_step_'+str(i)+'.xyz')as infile:
             outfile.write(infile.read())
     os.system('rm md_step*')
-
-## Calculating Forces using the Lennard-Jones potential
-#def get_forces(pos,sigma,eps,natoms):
-#    force = np.zeros((natoms,3))
-#    E = 0
-#    direc = np.zeros(3)
-#    # Calculate the total energy of the system and the force
-#    for i in range(natoms):
-#      for j in range(natoms):
-#        if i!=j:
-#          r = np.linalg.norm(pos[i,:]-pos[j,:])
-#          direc = (pos[i,:]-pos[j,:])/r
-#          force[i,:] -= 4*eps*(-12*sigma**12/r**13+6*sigma**6/r**7)*direc
-#        if j>i:
-#          E += 4*eps*((sigma/r)**12-(sigma/r)**6)
-#    return E,force
-
 
 molec_dyn(timestep,max_md_step,veloc0,grad_method,trajec,opt)
