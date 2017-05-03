@@ -14,7 +14,7 @@ fs_timeau = 41.34137314
 amu2au = 1822.8884850
 
 #MD Options
-timestep =  5                       # Time step for each iteration in fs
+timestep =  5                       # Time step for each iteration in time atomic units
 max_md_step = 10000                 # Number of MD iterations
 veloc0 = np.zeros((2,3))            # Numpy array (natoms,3) with inital velocities
 trajec = True                       # Boolean: Save all trajectories in a single xyz file (md_trajectories)  for visualization
