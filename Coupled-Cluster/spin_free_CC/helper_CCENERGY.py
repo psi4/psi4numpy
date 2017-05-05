@@ -212,7 +212,13 @@ class helper_CCENERGY(object):
         Focc = np.diag(self.F)[self.slice_o]
         Fvir = np.diag(self.F)[self.slice_v]
 
+        print(Focc)
+        tmp = Focc.reshape(-1,1)
+        print(tmp)
+        print(Fvir)
+
         self.Dia = Focc.reshape(-1, 1) - Fvir
+        print(self.Dia)
         self.Dijab = Focc.reshape(-1, 1, 1, 1) + Focc.reshape(-1, 1, 1) - Fvir.reshape(-1, 1) - Fvir
 
         ### Construct initial guess

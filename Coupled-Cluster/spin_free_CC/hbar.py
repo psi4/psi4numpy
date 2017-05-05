@@ -15,6 +15,7 @@ import numpy as np
 from helper_CCENERGY import *
 from helper_CCHBAR import *
 from helper_CCLAMBDA import *
+from helper_CCRESPONSE import *
 np.set_printoptions(precision=15, linewidth=200, suppress=True)
 import psi4
 
@@ -52,6 +53,11 @@ cchbar.build_HBAR()
 
 cclambda = helper_CCLAMBDA(ccsd,cchbar)
 cclambda.compute_lambda()
+
+muX_ao = np.asarray(ccsd.mints.ao_dipole()[0])
+muX_mo= np.einsum('uj,vi,uv', ccsd.npC, ccsd.npC, muX_ao)
+ccresponse = helper_CCRESPONSE(muX_mo, ccsd, cchbar, cclambda)
+ccresponse.solve('right')
 
 #ccsd = helper_CCSD(mol, memory=2)
 #ccsd.compute_energy()

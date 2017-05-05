@@ -277,8 +277,8 @@ class helper_CCLAMBDA(object):
             # Check convergence
             if (abs(pseudoenergy - pseudoenergy_old) < r_conv):
                 print('\nCCLAMBDA has converged in %.3f seconds!' % (time.time() - cclambda_tstart))
-                print(self.l1)
-                print(self.l2)
+                #print(self.l1)
+                #print(self.l2)
                 return pseudoenergy
 
             # Add DIIS vectors
