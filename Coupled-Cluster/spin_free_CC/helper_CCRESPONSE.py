@@ -322,21 +322,21 @@ class helper_CCRESPONSE(object):
         l2x2oooo -= ndot('oief,mnef->oimn', l2, x2)
         return l2x2oooo
 
-    def Hvovvx1oo(self, Hvovv, x1):
-        Hvovvx1oo = 0
-        Hvovvx1oo -= ndot('imne,me->in', Hvovv, x1, prefactor=2.0)
-        Hvovvx1oo -= ndot('mine,me->in', Hvovv, x1, prefactor=-1.0)
-        return Hvovvx1oo
+    def Hooovx1oo(self, Hooov, x1):
+        Hooovx1oo = 0
+        Hooovx1oo += ndot('imne,me->in', Hooov, x1, prefactor=2.0)
+        Hooovx1oo += ndot('mine,me->in', Hooov, x1, prefactor=-1.0)
+        return Hooovx1oo
 
-    def Hooovx1vv(self, Hooov, x1):
-        Hooovx1vv = 0
-        Hooovx1vv -= ndot('fmae,me->fa', Hooov, x1, prefactor=2.0)
-        Hooovx1vv -= ndot('fmea,me->fa', Hooov, x1, prefactor=-1.0)
-        return Hooovx1vv
+    def Hvovvx1vv(self, Hvovv, x1):
+        Hvovvx1vv = 0
+        Hvovvx1vv += ndot('fmae,me->fa', Hvovv, x1, prefactor=2.0)
+        Hvovvx1vv += ndot('fmea,me->fa', Hvovv, x1, prefactor=-1.0)
+        return Hvovvx1vv
 
     def update_X(self):
         r_x1  = self.Avo.copy() 
-        r_x1 -= omega * self.x1
+        r_x1 -= omega * self.x1.copy()
         r_x1 += ndot('ie,ae->ia', self.x1, self.Hvv)
         r_x1 -= ndot('mi,ma->ia', self.Hoo, self.x1)
         r_x1 += ndot('maei,me->ia', self.Hovvo, self.x1, prefactor=2.0)
@@ -385,10 +385,10 @@ class helper_CCRESPONSE(object):
         r_y1 += ndot('iema,me->ia', self.Hovov, self.y1, prefactor=-1.0)
         r_y1 += ndot('imef,efam->ia', self.y2, self.Hvvvo)
         r_y1 -= ndot('iemn,mnae->ia', self.Hovoo, self.y2)
-        r_y1 -= ndot('eifa,ef->ia', self.Hvovv, self.build_Gvv(), prefactor=2.0)
-        r_y1 -= ndot('eiaf,ef->ia', self.Hvovv, self.build_Gvv(), prefactor=-1.0)
-        r_y1 -= ndot('mina,mn->ia', self.Hooov, self.build_Goo(), prefactor=2.0)
-        r_y1 -= ndot('imna,mn->ia', self.Hooov, self.build_Goo(), prefactor=-1.0)
+        r_y1 -= ndot('eifa,ef->ia', self.Hvovv, self.build_Gvv(self.y2, self.t2), prefactor=2.0)
+        r_y1 -= ndot('eiaf,ef->ia', self.Hvovv, self.build_Gvv(self.y2, self.t2), prefactor=-1.0)
+        r_y1 -= ndot('mina,mn->ia', self.Hooov, self.build_Goo(self.t2, self.y2), prefactor=2.0)
+        r_y1 -= ndot('imna,mn->ia', self.Hooov, self.build_Goo(self.t2, self.y2), prefactor=-1.0)
 
 	# Inhomogenous terms 
 
@@ -397,29 +397,21 @@ class helper_CCRESPONSE(object):
         r_y1 -= ndot('im,ma->ia', self.build_Aoo, self.l1)
         r_y1 += ndot('ie,ea->ia', self.l1, self.build_Avv)
         r_y1 += ndot('imfe,feam->ia', self.l2, self.build_Avvoo)
-
         r_y1 -= ndot('ienm,mnea->ia', self.build_Aovoo, self.l2, prefactor=0.5)
         r_y1 -= ndot('iemn,mnae->ia', self.build_Aovoo, self.l2, prefactor=0.5)
-
         r_y1 -= ndot('mi,ma->ia', self.build_x1l1oo(self.x1,self.l1), self.Hov)	# q
         r_y1 -= ndot('ie,ea->ia', self.Hov, self.build_x1l1vv(self.x1,self.l1))	# q
-
         r_y1 -= ndot('mn,mina->ia', self.build_x1l1oo(self.x1,self.l1), self.Hooov, prefactor=2.0)	# q
         r_y1 -= ndot('mn,imna->ia', self.build_x1l1oo(self.x1,self.l1), self.Hooov, prefactor=-1.0)	# q
-
         r_y1 -= ndot('mena,imne->ia', self.build_x1l1ovov(self.x1,self.l1), self.Hooov, prefactor=2.0)	# q
         r_y1 -= ndot('mena,mine->ia', self.build_x1l1ovov(self.x1,self.l1), self.Hooov, prefactor=-1.0)	# q
-
         r_y1 += ndot('meif,fmae->ia', self.build_x1l1ovov(self.x1,self.l1), self.Hvovv, prefactor=2.0)	# q
         r_y1 += ndot('meif,fmea->ia', self.build_x1l1ovov(self.x1,self.l1), self.Hvovv, prefactor=-1.0)	# q
-
         r_y1 += ndot('ef,fiea->ia', self.build_x1l1vv(self.x1,self.l1), self.Hvovv, prefactor=2.0)	# q
         r_y1 += ndot('ef,fiae->ia', self.build_x1l1vv(self.x1,self.l1), self.Hvovv, prefactor=-1.0)	# q
-
         r_y1 += ndot('ianf,nf->ia', self.build_Lx2ovov(self.x1,self.l1), self.l1)	# r
         r_y1 -= ndot('ni,na->ia', self.build_Goo(self.x2, self.L), self.l1)	# r
         r_y1 -= ndot('ie,ea->ia', self.l1, self.build_Goo(self.x2, self.L))	# r
-
         r_y1 -= ndot('mnif,mfna->ia', self.build_x1l2ooov(self.x1,self.l2), self.Hovov)	# s
         r_y1 -= ndot('ifne,enaf->ia', self.Hovov, self.build_x1l2vovv(self.x1,self.l2))	# s
         r_y1 -= ndot('minf,mfan->ia', self.build_x1l2ooov(self.x1,self.l2), self.Hovvo)	# s
@@ -433,13 +425,10 @@ class helper_CCRESPONSE(object):
 
         tmp  =  ndot('nb,fb->nf', self.x1, self.build_Gvv(self.t2, self.l2))  
         r_y1 -= ndot('inaf,nf->nf', self.L, tmp)  
-
         tmp  =  ndot('me,fa->mefa', self.x1, self.build_Gvv(self.t2, self.l2))  
         r_y1 -= ndot('mief,mefa->ia', self.L, tmp)  
-
         tmp  =  ndot('me,ni->meni', self.x1, self.build_Goo(self.t2, self.l2))  
         r_y1 -= ndot('meni,mnea->ia', tmp, self.L)  
-
         tmp  =  ndot('jf,nj->fn', self.x1, self.build_Gvv(self.t2, self.l2))  
         r_y1 -= ndot('inaf,fn->ia', self.L, tmp)  
 
@@ -449,7 +438,6 @@ class helper_CCRESPONSE(object):
 
         r_y1  -=  ndot('mi,ma->ia', self.build_Goo(self.x2, self.l2), self.Hov)  # t
         r_y1  -=  ndot('ie,ea->ia', self.Hov, self.build_Gvv(self.x2, self.l2))  # t
-
         r_y1  -=  ndot('igne,gnea->ia', self.build_l2x2ovov_1(self.l2, self.x2), self.Hvovv)  # t
         r_y1  -=  ndot('igne,gnae->ia', self.build_l2x2ovov_2(self.l2, self.x2), self.Hvovv)  # t
         r_y1  -=  ndot('gief,gaef->ia', self.build_l2x2vvvv(self.l2, self.x2), self.Hvovv)  # t
@@ -457,7 +445,6 @@ class helper_CCRESPONSE(object):
         r_y1  +=  ndot('igme,gmea->ia', self.build_l2x2ovov_3(self.l2, self.x2), self.Hvovv, prefactor=-1.0) # t
         r_y1  +=  ndot('giea,ge->ia', self.Hvovv, self.build_Gvv(self.l2, self.x2), prefactor=2.0)  # t
         r_y1  +=  ndot('giae,ge->ia', self.Hvovv, self.build_Gvv(self.l2, self.x2), prefactor=-1.0)  # t
-
         r_y1  +=  ndot('oimn,mnoa->ia', self.build_l2x2oooo(self.l2, self.x2), self.Hooov)  # t
         r_y1  -=  ndot('inoe,oane->ia', self.Hooov, self.build_l2x2ovov_2(self.l2, self.x2))  # t
         r_y1  +=  ndot('miof,oamf->ia', self.Hooov, self.build_l2x2ovov_1(self.l2, self.x2))  # t
@@ -467,9 +454,11 @@ class helper_CCRESPONSE(object):
         r_y1  -=  ndot('mioe,oame->ia', self.Hooov, self.build_l2x2ovov_3(self.l2, self.x2), prefactor=-1.0) # t
 
 
-	# y1 over above, y2 starting below
+	# y1 over !! 
+
+	# Homogenous terms of Y2 equations 
         
-        r_y2 = 0.5 * omega * self.y2
+        r_y2 = 0.5 * omega * self.y2.copy()
         r_y2 += ndot('ia,jb->ijab', self.y1, self.Hov, prefactor=2.0)
         r_y2 -= ndot('ja,ib->ijab', self.y1, self.Hov)
         r_y2 += ndot('ijeb,ea->ijab', self.y2, self.Hvv)
@@ -484,8 +473,54 @@ class helper_CCRESPONSE(object):
         r_y2 += ndot('iema,mjeb->ijab', self.Hovov, self.y2, prefactor=-1.0)
         r_y2 -= ndot('mibe,jema->ijab', self.y2, self.Hovov)
         r_y2 -= ndot('mieb,jeam->ijab', self.y2, self.Hovvo)
-        r_y2 += ndot('ijeb,ae->ijab', self.L, self.build_Gvv())
-        r_y2 -= ndot('mi,mjab->ijab', self.build_Goo(), self.L)
+        r_y2 += ndot('ijeb,ae->ijab', self.L, self.build_Gvv(self.y2, self.t2))
+        r_y2 -= ndot('mi,mjab->ijab', self.build_Goo(self.t2, self.y2), self.L)
+
+	# InHomogenous terms of Y2 equations 
+
+        r_y2 += ndot('ia,jb->ijab', self.l1, self.build_Aov, prefactor=2.0) # o
+        r_y2 -= ndot('ja,ib->ijab', self.l1, self.build_Aov) # o
+        r_y2 += ndot('ijeb,ea->ijab', self.l2, self.build_Avv) # p
+        r_y2 -= ndot('im,mjab->ijab', self.build_Aoo, self.l2) # p
+
+        r_y2 -= ndot('mieb,meja->ijab', self.L, self.build_x1l1ovov(self.x1, self.l1)) # u
+        r_y2 -= ndot('ijae,eb->ijab', self.L, self.build_x1l1vv(self.x1, self.l1)) # u
+        r_y2 -= ndot('mi,jmba->ijab', self.build_x1l1oo(self.x1, self.l1), self.L) # u
+        r_y2 += ndot('imae,mejb->ijab', self.L, self.build_x1l1ovov(self.x1, self.l1), prefactor=2.0) # u
+
+        r_y2 -= ndot('mijb,ma->ijab', self.build_x1l2ooov(self.x1, self.l2), self.Hov) # w
+        r_y2 -= ndot('ie,ejba->ijab', self.Hov, self.build_x1l2vovv(self.x1, self.l2)) # w
+        r_y2 -= ndot('mijf,fmba->ijab', self.build_x1l2ooov(self.x1, self.l1), self.Hvovv) # w
+        r_y2 -= ndot('fibe,ejfa->ijab', self.Hvovv, self.build_x1l2vovv(self.x1, self.l2)) # w
+        r_y2 += ndot('ijfb,fa->ijab', self.l2, self.Hvovvx1vv(self.Hvovv, self.x1)) # w
+        r_y2 += ndot('fiea,ejbf->ijab', self.Hvovv, self.build_x1l2vovv(self.x1, self.l2), prefactor=2.0) # w
+        r_y2 += ndot('fiae,ejbf->ijab', self.Hvovv, self.build_x1l2vovv(self.x1, self.l2), prefactor=-1.0) # w
+        r_y2 += ndot('minb,jmna->ijab', self.build_x1l2ooov(self.x1, self.l2), self.Hooov) # w
+        r_y2 += ndot('mnib,mjna->ijab', self.build_x1l2ooov(self.x1, self.l2), self.Hooov) # w
+        r_y2 += ndot('jine,enba->ijab', self.Hooov, self.build_x1l2vovv(self.x1, self.l2)) # w
+        r_y2 -= ndot('mina,mnjb->ijab', self.Hooov, self.build_x1l2ooov(self.x1, self.l2), prefactor=2.0) # w
+        r_y2 -= ndot('imna,mnjb->ijab', self.Hooov, self.build_x1l2ooov(self.x1, self.l2), prefactor=-1.0) # w
+        r_y2 -= ndot('in,jnba->ijab', self.Hooovx1oo(self.Hooov, self.x1)) # w
+
+        
+        r_y2 += ndot('ijmn,mnab->ijab', self.build_l2x2oooo(self.l2, self.x2), self.get_MO('mnab'), prefactor=0.5) # x
+        r_y2 += ndot('ibne,jnae->ijab', self.build_l2x2ovov_2(self.l2, self.x2), self.get_MO('jnae'), prefactor=0.5) # x same.2
+        r_y2 += ndot('ibne,njae->ijab', self.build_l2x2ovov_1(self.l2, self.x2), self.get_MO('njae'), prefactor=0.5) # x same.1
+        r_y2 += ndot('ibne,jnea->ijab', self.build_l2x2ovov_1(self.l2, self.x2), self.get_MO('jnea'), prefactor=0.5) # x same.1
+        r_y2 += ndot('ibne,njea->ijab', self.build_l2x2ovov_2(self.l2, self.x2), self.get_MO('njea'), prefactor=0.5) # x same.2
+        r_y2 += ndot('ijfe,baef->ijab', self.get_MO('ijfe'), self.build_l2x2vvvv(self.l2, self.x2), prefactor=0.5) # x
+
+        r_y2 -= ndot('inae,jbne->ijab', self.L, self.build_l2x2ovov_2(self.l2, self.x2), prefactor=1.0) # x 
+        r_y2 -= ndot('in,jnba->ijab', self.build_Goo(self.L, self.x2), self.l2, prefactor=1.0) # x 
+        r_y2 -= ndot('ijfb,af->ijab', self.l2, self.build_Gvv(self.L, self.x2), prefactor=1.0) # x 
+
+        r_y2 -= ndot('ijae,be->ijab', self.L, self.build_Gvv(self.l2, self.x2), prefactor=1.0) # x 
+        r_y2 -= ndot('imab,jm->ijab', self.L, self.build_Goo(self.l2, self.x2), prefactor=1.0) # x 
+        r_y2 -= ndot('ibme,mjea->ijab', self.build_l2x2ovov_3(self.l2, self.x2), self.L, prefactor=1.0) # x 
+
+
+        r_y2 += ndot('imae,jbme->ijab', self.L, self.build_l2x2ovov_3(self.l2, self.x2), prefactor=2.0) # x 
+
 
         self.y2 += r_y2 + r_y2.swapaxes(0,1).swapaxes(2,3)
         self.y2 += self.y2/self.Dijab
