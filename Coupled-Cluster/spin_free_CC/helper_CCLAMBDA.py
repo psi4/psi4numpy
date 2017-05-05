@@ -114,9 +114,9 @@ def ndot(input_string, op1, op2, prefactor=None):
         return np.einsum(tdot_result + '->' + output_ind, new_view)
 
 
-class helper_CCLAMBDA_SF(object):
+class helper_CCLAMBDA(object):
 
-    def __init__(self, ccsd, hbar, memory=2):
+    def __init__(self, ccsd, hbar):
 
         # Integral generation from Psi4's MintsHelper
         time_init = time.time()
@@ -137,8 +137,8 @@ class helper_CCLAMBDA_SF(object):
 
        
         self.F = ccsd.F
-        self.dia = ccsd.dia
-        self.dijab = ccsd.dijab
+        self.Dia = ccsd.Dia
+        self.Dijab = ccsd.Dijab
         self.t1 = ccsd.t1
         self.t2 = ccsd.t2
 
@@ -153,15 +153,14 @@ class helper_CCLAMBDA_SF(object):
         self.Hooov =  hbar.Hooov
         self.Hovvo =  hbar.Hovvo
         self.Hovov =  hbar.Hovov
-        self.Hovvv =  hbar.Hovvv
+        self.Hvvvo =  hbar.Hvvvo
         self.Hovoo =  hbar.Hovoo
 
-	self.l1 = 2.0 * self.t1
+        self.l1 = 2.0 * self.t1
         tmp = self.t2
-	self.l2 = 2.0 * (2.0 * tmp - tmp.swapaxes(2,3))
+        self.l2 = 2.0 * (2.0 * tmp - tmp.swapaxes(2,3))
 
-
-        print('\n..initialed CCHBAR in %.3f seconds.\n' % (time.time() - time_init))
+        print('\n..initialed CCLAMBDA in %.3f seconds.\n' % (time.time() - time_init))
     # occ orbitals i, j, k, l, m, n
     # virt orbitals a, b, c, d, e, f
     # all oribitals p, q, r, s, t, u, v
@@ -179,9 +178,16 @@ class helper_CCLAMBDA_SF(object):
             raise Exception('get_F: string %s must have 4 elements.' % string)
         return self.F[self.slice_dict[string[0]], self.slice_dict[string[1]]]
 
+    def get_L(self, string):
+        if len(string) != 4:
+            psi4.core.clean()
+            raise Exception('get_MO: string %s must have 4 elements.' % string)
+        return (self.L[self.slice_dict[string[0]], self.slice_dict[string[1]],
+                       self.slice_dict[string[2]], self.slice_dict[string[3]]])
+
     def build_Goo(self):
         self.Goo = 0
-        self.Goo += np.dot('mjab,ijab->mi', self.t2, self.l2)
+        self.Goo += ndot('mjab,ijab->mi', self.t2, self.l2)
         return self.Goo
 
     def build_Gvv(self):
@@ -202,9 +208,7 @@ class helper_CCLAMBDA_SF(object):
         r_l1 -= ndot('mina,mn->ia', self.Hooov, self.build_Goo(), prefactor=2.0)
         r_l1 -= ndot('imna,mn->ia', self.Hooov, self.build_Goo(), prefactor=-1.0)
 
-	self.l1 += r_l1/self.dia
-
-        r_l2 = self.L.copy()
+        r_l2 = self.get_L('oovv').copy()
         r_l2 += ndot('ia,jb->ijab', self.l1, self.Hov, prefactor=2.0)
         r_l2 -= ndot('ja,ib->ijab', self.l1, self.Hov)
         r_l2 += ndot('ijeb,ea->ijab', self.l2, self.Hvv)
@@ -219,17 +223,25 @@ class helper_CCLAMBDA_SF(object):
         r_l2 += ndot('iema,mjeb->ijab', self.Hovov, self.l2, prefactor=-1.0)
         r_l2 -= ndot('mibe,jema->ijab', self.l2, self.Hovov)
         r_l2 -= ndot('mieb,jeam->ijab', self.l2, self.Hovvo)
-        r_l2 += ndot('ijeb,ae->ijab', self.L, self.build_Gvv())
-        r_l2 -= ndot('mi,mjab->ijab', self.build_Goo(), self.L)
-       
-        self.l2 += r_l2 + r_l2.swapaxes(0,1).swapaxes(2,3)
-        self.l2 += self.l2/self.dijab
+        r_l2 += ndot('ijeb,ae->ijab', self.get_L('oovv'), self.build_Gvv())
+        r_l2 -= ndot('mi,mjab->ijab', self.build_Goo(), self.get_L('oovv'))
+      
+        self.l1 += r_l1/self.Dia
+
+        tmp = r_l2
+        tmp += r_l2.swapaxes(0,1).swapaxes(2,3) 
+        self.l2 += tmp/self.Dijab
+
+        #print(self.l1)
+        #print(self.l2)
 
 
 
     def pseudoenergy(self):
         pseudoenergy = 0
+        #tmp = ndot('ia,jb->ijab', self.l1, self.l1)
         pseudoenergy += ndot('ijab,ijab->', self.get_MO('oovv'), self.l2, prefactor=0.5)
+        #pseudoenergy += ndot('ijab,ijab->', self.get_MO('oovv'), tmp, prefactor=0.5)
         return pseudoenergy
 
  
@@ -244,7 +256,7 @@ class helper_CCLAMBDA_SF(object):
         cclambda_tstart = time.time()
 
         pseudoenergy_old = self.pseudoenergy()
-        print("CCLAMBDA Iteration %3d: pseudoenergy = %.12f   dE = % .5E   MP2" % (0, pseudoenergy_old, -pseudoenergy_old))
+        print("CCLAMBDA Iteration %3d: pseudoenergy = %.15f   dE = % .5E   MP2" % (0, pseudoenergy_old, -pseudoenergy_old))
 
         # Iterate!
         diis_size = 0
@@ -257,14 +269,16 @@ class helper_CCLAMBDA_SF(object):
             self.update()
 
             # Compute lambda 
-            pseudoenergy = self.compute_lambda()
+            pseudoenergy = self.pseudoenergy()
 
             # Print CCLAMBDA iteration information
-            print('CCLAMBDA Iteration %3d: pseudoenergy = %.12f   dE = % .5E   DIIS = %d' % (CCLAMBDA_iter, pseudoenergy, (pseudoenergy - pseudoenergy_old), diis_size))
+            print('CCLAMBDA Iteration %3d: pseudoenergy = %.15f   dE = % .5E   DIIS = %d' % (CCLAMBDA_iter, pseudoenergy, (pseudoenergy - pseudoenergy_old), diis_size))
 
             # Check convergence
             if (abs(pseudoenergy - pseudoenergy_old) < r_conv):
-                print('\nCCLAMBDA has converged in %.3f seconds!' % (time.time() - ccsd_tstart))
+                print('\nCCLAMBDA has converged in %.3f seconds!' % (time.time() - cclambda_tstart))
+                print(self.l1)
+                print(self.l2)
                 return pseudoenergy
 
             # Add DIIS vectors

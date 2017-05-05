@@ -129,7 +129,7 @@ class helper_CCRESPONSE(object):
         self.nocc = ccsd.ndocc 
         self.nvirt = ccsd.nmo - ccsd.nocc - ccsd.nfzc
 
-	self.mints = ccsd.mints
+        self.mints = ccsd.mints
 
         self.slice_nfzc = slice(0, self.nfzc)
         self.slice_o = slice(self.nfzc, self.nocc + self.nfzc)
@@ -159,7 +159,7 @@ class helper_CCRESPONSE(object):
         self.Hovoo =  hbar.Hovoo
 
 
-	self.l1 = cclambda.l1
+        self.l1 = cclambda.l1
         self.l2 = cclambda.l2
 
         self.Dia = self.Hoo.reshape(-1, 1) - self.Hvv + omega
@@ -199,7 +199,7 @@ class helper_CCRESPONSE(object):
     def build_Aoo(self):
         Aoo = self.get_pert('oo').copy()
         Aoo += ndot('ie,me->mi', self.t1, self.get_pert('ov'))
-	return Aoo
+        return Aoo
 
     def build_Aov(self):
         Aov = self.get_pert('ov').copy()
@@ -348,7 +348,7 @@ class helper_CCRESPONSE(object):
         r_x1 -= ndot('mnie,mnae->ia', self.Hooov, self.x2, prefactor=2.0)
         r_x1 -= ndot('nmie,mnae->ia', self.Hooov, self.x2, prefactor=-1.0)
 
-	self.x1 += r_x1/self.Dia
+        self.x1 += r_x1/self.Dia
 
         r_x2 = self.build_Avvoo.copy()
         r_x2 -= 0.5 * omega * self.x2
@@ -560,66 +560,77 @@ class helper_CCRESPONSE(object):
 
 
 
-    def pseudoenergy(self):
-        pseudoenergy = 0
-        pseudoenergy += ndot('ijab,ijab->', self.get_MO('oovv'), self.l2, prefactor=0.5)
-        return pseudoenergy
+    def pseudoresponse(self, hand):
+        polar1 = 0
+        polar2 = 0
+        if hand == 'right':
+            z1 = self.x1 ; z2 = self.x2
+        else:
+            z1 = self.y1 ; z2 = self.y2
+        polar1 += ndot('ia,ai->', z1, self.build_Avo(), prefactor=2.0)
+        polar2 += ndot('ijab,abij->', z2, self.build_Avvoo(), prefactor=4.0)
+        polar2 += ndot('ijba,abij->', z2, self.build_Avvoo(), prefactor=-2.0)
+        return polar1 + polar2 
 
  
 
-    def compute_lambda(self, r_conv=1.e-13, maxiter=50, max_diis=8):
+    def solve(self, hand, r_conv=1.e-13, maxiter=50, max_diis=8):
         ### Setup DIIS
-        diis_vals_l1 = [self.l1.copy()]
-        diis_vals_l2 = [self.l2.copy()]
+        if hand == 'right':
+            z1 = self.x1 ; z2 = self.x2
+        else:
+            z1 = self.y1 ; z2 = self.y2
+
+        diis_vals_z1 = [z1.copy()]
+        diis_vals_z2 = [z2.copy()]
         diis_errors = []
 
         ### Start Iterations
-        cclambda_tstart = time.time()
-
-        pseudoenergy_old = self.pseudoenergy()
-        print("CCLAMBDA Iteration %3d: pseudoenergy = %.12f   dE = % .5E   MP2" % (0, pseudoenergy_old, -pseudoenergy_old))
+        ccresponse_tstart = time.time()
+        pseudoresponse_old = self.pseudoresponse(hand)
+        print("CCRESPONSE Iteration %3d: pseudoresponse = %.12f   dE = % .5E " % (0, pseudoresponse_old, -pseudoresponse_old))
 
         # Iterate!
         diis_size = 0
-        for CCLAMBDA_iter in range(1, maxiter + 1):
+        for CCRESPONSE_iter in range(1, maxiter + 1):
 
             # Save new amplitudes
-            oldl1 = self.l1.copy()
-            oldl2 = self.l2.copy()
+            oldz1 = z1.copy()
+            oldz2 = z2.copy()
+            if hand == 'right':
+                self.update_X()
+            else:
+                self.update_Y()
+            pseudoresponse = self.pseudoresponse(hand)
 
-            self.update()
-
-            # Compute lambda 
-            pseudoenergy = self.compute_lambda()
-
-            # Print CCLAMBDA iteration information
-            print('CCLAMBDA Iteration %3d: pseudoenergy = %.12f   dE = % .5E   DIIS = %d' % (CCLAMBDA_iter, pseudoenergy, (pseudoenergy - pseudoenergy_old), diis_size))
+            # Print CCRESPONSE iteration information
+            print('CCRESPONSE Iteration %3d: pseudoresponse = %.12f   dE = % .5E   DIIS = %d' % (CCRESPONSE_iter, pseudoresponse, (pseudoresponse - pseudoresponse_old), diis_size))
 
             # Check convergence
-            if (abs(pseudoenergy - pseudoenergy_old) < r_conv):
-                print('\nCCLAMBDA has converged in %.3f seconds!' % (time.time() - ccsd_tstart))
-                return pseudoenergy
+            if (abs(pseudoresponse - pseudoresponse_old) < r_conv):
+                print('\nCCLAMBDA has converged in %.3f seconds!' % (time.time() - ccresponse_tstart))
+                return pseudoresponse
 
             # Add DIIS vectors
-            diis_vals_l1.append(self.l1.copy())
-            diis_vals_l2.append(self.l2.copy())
+            diis_vals_z1.append(z1.copy())
+            diis_vals_z2.append(z2.copy())
 
             # Build new error vector
-            error_l1 = (diis_vals_l1[-1] - oldl1).ravel()
-            error_l2 = (diis_vals_l2[-1] - oldl2).ravel()
-            diis_errors.append(np.concatenate((error_l1, error_l2)))
+            error_z1 = (diis_vals_z1[-1] - oldz1).ravel()
+            error_z2 = (diis_vals_z2[-1] - oldz2).ravel()
+            diis_errors.append(np.concatenate((error_z1, error_z2)))
 
             # Update old energy
-            pseudoenergy_old = pseudoenergy
+            pseudoresponse_old = pseudoresponse
 
-            if CCLAMBDA_iter >= 1:
+            if CCRESPONSE_iter >= 1:
                 # Limit size of DIIS vector
-                if (len(diis_vals_l1) > max_diis):
-                    del diis_vals_l1[0]
-                    del diis_vals_l2[0]
+                if (len(diis_vals_z1) > max_diis):
+                    del diis_vals_z1[0]
+                    del diis_vals_z2[0]
                     del diis_errors[0]
 
-                diis_size = len(diis_vals_l1) - 1
+                diis_size = len(diis_vals_z1) - 1
 
                 # Build error matrix B
                 B = np.ones((diis_size + 1, diis_size + 1)) * -1
@@ -642,11 +653,11 @@ class helper_CCRESPONSE(object):
                 ci = np.linalg.solve(B, resid)
 
                 # Calculate new amplitudes
-                self.l1[:] = 0
-                self.l2[:] = 0
+                z1[:] = 0
+                z2[:] = 0
                 for num in range(diis_size):
-                    self.l1 += ci[num] * diis_vals_l1[num + 1]
-                    self.l2 += ci[num] * diis_vals_l2[num + 1]
+                    z1 += ci[num] * diis_vals_z1[num + 1]
+                    z2 += ci[num] * diis_vals_z2[num + 1]
 
 
 

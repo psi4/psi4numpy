@@ -13,7 +13,9 @@
 import time
 import numpy as np
 from helper_CCENERGY import *
-np.set_printoptions(precision=5, linewidth=200, suppress=True)
+from helper_CCHBAR import *
+from helper_CCLAMBDA import *
+np.set_printoptions(precision=15, linewidth=200, suppress=True)
 import psi4
 
 #psi4.core.set_memory(int(2e9), False)
@@ -42,8 +44,14 @@ ccsd.compute_energy()
 CCSDcorr_E = ccsd.ccsd_corr_e
 CCSD_E = ccsd.ccsd_e
 
-print('\nFinal CCSD correlation energy:          % 16.10f' % CCSDcorr_E)
-print('Total CCSD energy:                      % 16.10f' % CCSD_E)
+print('\nFinal CCSD correlation energy:          % 16.15f' % CCSDcorr_E)
+print('Total CCSD energy:                      % 16.15f' % CCSD_E)
+
+cchbar = helper_CCHBAR(ccsd)
+cchbar.build_HBAR()
+
+cclambda = helper_CCLAMBDA(ccsd,cchbar)
+cclambda.compute_lambda()
 
 #ccsd = helper_CCSD(mol, memory=2)
 #ccsd.compute_energy()

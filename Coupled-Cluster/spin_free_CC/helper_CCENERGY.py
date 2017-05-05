@@ -127,8 +127,8 @@ class helper_CCENERGY(object):
         print('Computing RHF reference.')
         psi4.core.set_active_molecule(mol)
         psi4.set_module_options('SCF', {'SCF_TYPE':'PK'})
-        psi4.set_module_options('SCF', {'E_CONVERGENCE':10e-10})
-        psi4.set_module_options('SCF', {'D_CONVERGENCE':10e-10})
+        psi4.set_module_options('SCF', {'E_CONVERGENCE':10e-13})
+        psi4.set_module_options('SCF', {'D_CONVERGENCE':10e-13})
 
         # Core is frozen by default
         if not freeze_core:
@@ -442,9 +442,16 @@ class helper_CCENERGY(object):
         r_T2 -= ndot('ma,mbij->ijab', self.t1, Zmbij)	
         r_T2 -= ndot('ma,mbij->jiba', self.t1, Zmbij)	
 
+
         ### Update T1 and T2 amplitudes
         self.t1 += r_T1 / self.Dia
         self.t2 += r_T2 / self.Dijab
+
+        rms = np.einsum('ia,ia->', r_T1, r_T1)
+        rms += np.einsum('ijab,ijab->', r_T2, r_T2)
+
+        return np.sqrt(rms)
+
 
     def compute_corr_energy(self):
         CCSDcorr_E = 2.0 * np.einsum('ia,ia->', self.get_F('ov'), self.t1)
@@ -467,7 +474,7 @@ class helper_CCENERGY(object):
 
         # Compute MP2 energy
         CCSDcorr_E_old = self.compute_corr_energy()
-        print("CCSD Iteration %3d: CCSD correlation = %.12f   dE = % .5E   MP2" % (0, CCSDcorr_E_old, -CCSDcorr_E_old))
+        print("CCSD Iteration %3d: CCSD correlation = %.15f   dE = % .5E   MP2" % (0, CCSDcorr_E_old, -CCSDcorr_E_old))
 
         # Iterate!
         diis_size = 0
@@ -477,16 +484,17 @@ class helper_CCENERGY(object):
             oldt1 = self.t1.copy()
             oldt2 = self.t2.copy()
 
-            self.update()
+            rms = self.update()
 
             # Compute CCSD correlation energy
             CCSDcorr_E = self.compute_corr_energy()
 
             # Print CCSD iteration information
-            print('CCSD Iteration %3d: CCSD correlation = %.12f   dE = % .5E   DIIS = %d' % (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old), diis_size))
+            print('CCSD Iteration %3d: CCSD correlation = %.15f   dE = % .5E   DIIS = %d' % (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old), diis_size))
 
             # Check convergence
-            if (abs(CCSDcorr_E - CCSDcorr_E_old) < e_conv):
+            #if (abs(CCSDcorr_E - CCSDcorr_E_old) < e_conv):
+            if (rms < e_conv):
                 print('\nCCSD has converged in %.3f seconds!' % (time.time() - ccsd_tstart))
                 return CCSDcorr_E
 

@@ -113,7 +113,7 @@ def ndot(input_string, op1, op2, prefactor=None):
         return np.einsum(tdot_result + '->' + output_ind, new_view)
 
 
-class helper_CCHBAR_SF(object):
+class helper_CCHBAR(object):
 
     def __init__(self, ccsd, memory=2):
 
@@ -136,11 +136,17 @@ class helper_CCHBAR_SF(object):
 
        
         self.F = ccsd.F
-        self.dia = ccsd.dia
-        self.dijab = ccsd.dijab
+        self.Dia = ccsd.Dia
+        self.Dijab = ccsd.Dijab
         self.t1 = ccsd.t1
         self.t2 = ccsd.t2
+        #print(self.t1)
+        #print(self.t2)
         print('\n..initialed CCHBAR in %.3f seconds.\n' % (time.time() - time_init))
+
+        tmp = self.MO.copy()
+        self.L = 2.0 * tmp
+        self.L -= tmp.swapaxes(2,3)
     # occ orbitals i, j, k, l, m, n
     # virt orbitals a, b, c, d, e, f
     # all oribitals p, q, r, s, t, u, v
@@ -152,128 +158,172 @@ class helper_CCHBAR_SF(object):
         return self.MO[self.slice_dict[string[0]], self.slice_dict[string[1]],
                        self.slice_dict[string[2]], self.slice_dict[string[3]]]
 
+    def get_L(self, string):
+        if len(string) != 4:
+            psi4.core.clean()
+            raise Exception('get_L: string %s must have 4 elements.' % string)
+        return (self.L[self.slice_dict[string[0]], self.slice_dict[string[1]],
+                       self.slice_dict[string[2]], self.slice_dict[string[3]]])
+
+
     def get_F(self, string):
         if len(string) != 2:
             psi4.core.clean()
             raise Exception('get_F: string %s must have 4 elements.' % string)
         return self.F[self.slice_dict[string[0]], self.slice_dict[string[1]]]
 
-        def build_tau(self):
-        ttau = self.t2.copy()
+    def build_tau(self):
+        self.ttau = self.t2.copy()
         tmp = np.einsum('ia,jb->ijab', self.t1, self.t1)
         self.ttau += tmp
         return self.ttau
 
-        def build_L(self):
-            tmp = self.MO.copy()
-            self.L = 2.0 * tmp - tmp.swapaxes(2,3)
-            return self.L
-       
-        def build_Hov(self):
-            self.Hov = self.get_F('ov').copy()
-            self.Hov += ndot('nf,mnef->me', self.t1, self.build_L())
-            return self.Hov
+    #def build_L(self):
+    #    tmp = self.get_MO('oovv').copy()
+    #    self.L = 2.0 * tmp - tmp.swapaxes(2,3)
+    #    return self.L
+  
+    def build_Hov(self):
+        self.Hov = self.get_F('ov').copy()
+        self.Hov += ndot('nf,mnef->me', self.t1, self.get_L('oovv'))
+        return self.Hov
 
-        def build_Hoo(self):
-            self.Hoo = self.get_F('oo').copy()
-            self.Hoo += ndot('ie,me->mi', self.t1, self.get_F('ov'))
-            self.Hoo += ndot('ne,mnie->mi', self.t1, self.build_L())
-            self.Hoo += ndot('inef,mnef->mi', self.build_tau, self.build_L())
-            return self.Hoo
+    def build_Hoo(self):
+        self.Hoo = self.get_F('oo').copy()
+        self.Hoo += ndot('ie,me->mi', self.t1, self.get_F('ov'))
+        self.Hoo += ndot('ne,mnie->mi', self.t1, self.get_L('ooov'))
+        self.Hoo += ndot('mnef,inef->mi', self.get_L('oovv'), self.build_tau())
+        return self.Hoo
 
-        def build_Hvv(self):
-            self.Hvv = self.get_F('vv').copy()
-            self.Hvv -= ndot('me,ma->ae', self.get_F('ov'), self.t1)
-            self.Hvv += ndot('mf,amef->ae', self.t1, self.build_L())
-            self.Hvv -= ndot('mnfa,mnfe->ae', self.build_tau, self.build_L())
-            return self.Hvv
+    def build_Hvv(self):
+        self.Hvv = self.get_F('vv').copy()
+        self.Hvv -= ndot('ma,me->ae', self.t1, self.get_F('ov'))
+        self.Hvv += ndot('amef,mf->ae', self.get_L('vovv'), self.t1)
+        self.Hvv -= ndot('mnfa,mnfe->ae', self.build_tau(), self.get_L('oovv'))
+        return self.Hvv
 
-	def build_Hoooo(self):
-            self.Hoooo = self.get_MO('oooo').copy()
-            self.Hoooo += ndot('je,mnie->mnij', self.t1, self.get_MO('ooov'), prefactor=2.0)
-            self.Hoooo += ndot('ijef,mnef->mnij', self.build_tau, self.get_MO('oovv'))
-            return self.Hoooo
+    def build_Hoooo(self):
+        self.Hoooo = self.get_MO('oooo').copy()
+        self.Hoooo += ndot('je,mnie->mnij', self.t1, self.get_MO('ooov'), prefactor=2.0)
+        self.Hoooo += ndot('mnef,ijef->mnij', self.get_MO('oovv'), self.build_tau())
+        return self.Hoooo
 
-	def build_Hvvvv(self):
-            self.Hvvvv = self.get_MO('vvvv').copy()
-            self.Hvvvv -= ndot('mb,amef->abef', self.t1, self.get_MO('vovv'), prefactor=2.0)
-            self.Hvvvv += ndot('mnab,mnef->mnij', self.build_tau, self.get_MO('oovv'))
-            return self.Hvvvv
-            
-        def build_Hvovv(self):
-            self.Hvovv = self.get_MO('vovv').copy()
-            self.Hvovv -= ndot('na,nmef->amef', self.t1, self.get_MO('oovv'))
-            return self.Hvovv
+    def build_Hvvvv(self):
+        self.Hvvvv = self.get_MO('vvvv').copy()
+        self.Hvvvv -= ndot('mb,amef->abef', self.t1, self.get_MO('vovv'), prefactor=2.0)
+        self.Hvvvv += ndot('mnab,mnef->abef', self.build_tau(), self.get_MO('oovv'))
+        return self.Hvvvv
+        
+    def build_Hvovv(self):
+        self.Hvovv = self.get_MO('vovv').copy()
+        self.Hvovv -= ndot('na,nmef->amef', self.t1, self.get_MO('oovv'))
+        return self.Hvovv
 
-        def build_Hooov(self):
-            self.Hooov = self.get_MO('ooov').copy()
-            self.Hooov += ndot('if,nmef->mnie', self.t1, self.get_MO('oovv'))
-            return self.Hooov
+    def build_Hooov(self):
+        self.Hooov = self.get_MO('ooov').copy()
+        self.Hooov += ndot('if,nmef->mnie', self.t1, self.get_MO('oovv'))
+        return self.Hooov
 
-        def build_Hovvo(self):
-            self.Hovvo = self.get_MO('ovvo').copy()
-            self.Hovvo += ndot('jf,mbef->mbej', self.t1, self.get_MO('ovvv'))
-            self.Hovvo -= ndot('nb,mnej->mbej', self.t1, self.get_MO('oovo'))
-            self.Hovvo -= ndot('njbf,mnef->mbej', self.build_tau(), self.get_MO('oovv'))
-            self.Hovvo += ndot('njfb,mnef->mbej', self.t2, self.build_L())
-            return self.Hovvo
+    def build_Hovvo(self):
+        self.Hovvo = self.get_MO('ovvo').copy()
+        self.Hovvo += ndot('jf,mbef->mbej', self.t1, self.get_MO('ovvv'))
+        self.Hovvo -= ndot('nb,mnej->mbej', self.t1, self.get_MO('oovo'))
+        self.Hovvo -= ndot('njbf,mnef->mbej', self.build_tau(), self.get_MO('oovv'))
+        self.Hovvo += ndot('njfb,mnef->mbej', self.t2, self.get_L('oovv'))
+        return self.Hovvo
 
-        def build_Hovov(self):
-            self.Hovov = self.get_MO('ovov').copy()
-            self.Hovov += ndot('jf,bmef->mbje', self.t1, self.get_MO('vovv'))
-            self.Hovov -= ndot('nb,mnje->mbje', self.t1, self.get_MO('ooov'))
-            self.Hovov -= ndot('jnfb,nmef->mbje', self.build_tau(), self.get_MO('oovv'))
-            return self.Hovov
+    def build_Hovov(self):
+        self.Hovov = self.get_MO('ovov').copy()
+        self.Hovov += ndot('jf,bmef->mbje', self.t1, self.get_MO('vovv'))
+        self.Hovov -= ndot('nb,mnje->mbje', self.t1, self.get_MO('ooov'))
+        self.Hovov -= ndot('jnfb,nmef->mbje', self.build_tau(), self.get_MO('oovv'))
+        return self.Hovov
 
-        def build_Hvvvo(self):
-            self.Hvvvo =  self.get_MO('vvvo').copy()
-            self.Hvvvo += ndot('if,abef->abei', self.t1, self.get_MO('vvvv'))
-            self.Hvvvo -= ndot('mb,amei->abei', self.t1, self.get_MO('vovo'))
-            self.Hvvvo -= ndot('ma,bmie->abei', self.t1, self.get_MO('voov'))
-            self.Hvvvo -= ndot('imfa,mbef->abei', self.build_tau(), self.get_MO('ovvv'))
-            self.Hvvvo -= ndot('imfb,amef->abei', self.build_tau(), self.get_MO('vovv'))
-            self.Hvvvo += ndot('mnab,mnei->abei', self.build_tau(), self.get_MO('oovo'))
-            self.Hvvvo -= ndot('me,miab->abei', self.get_F('ov'), self.t2)
-            self.Hvvvo += ndot('mifb,amef->abei', self.t2, self.build_L())
-            tmp =    ndot('mnef,if->mnei', self.get_MO('oovv'), self.t1)
-            self.Hvvvo += ndot('mnab,mnei->abei', self.t2, tmp)
-            tmp =    ndot('mnef,ma->anef', self.get_MO('oovv'), self.t1)
-            self.Hvvvo += ndot('infb,anef->abei', self.t2, tmp)
-            tmp =    ndot('mnef,nb->mefb', self.get_MO('oovv'), self.t1)
-            self.Hvvvo += ndot('miaf,mefb->abei', self.t2, tmp)
-            tmp =    ndot('mnfe,mf->ne', self.build_L(), self.t1)
-            self.Hvvvo += ndot('niab,ne->abei', self.t2, tmp)
-            tmp =    ndot('mnfe,na->mafe', self.build_L(), self.t1)
-            self.Hvvvo += ndot('mifb,mafe->abei', self.t2, tmp)
-            tmp1 =   ndot('if,ma->imfa', self.t1, self.t1)
-            tmp2 =   ndot('mnef,nb->mbef', self.get_MO('oovv'), self.t1)
-            self.Hvvvo += ndot('imfa,mbef->abei', tmp1, tmp2)
-            return Hvvvo
+    def build_Hvvvo(self):
+        self.Hvvvo =  self.get_MO('vvvo').copy()
+        self.Hvvvo += ndot('if,abef->abei', self.t1, self.get_MO('vvvv'))
+        self.Hvvvo -= ndot('mb,amei->abei', self.t1, self.get_MO('vovo'))
+        self.Hvvvo -= ndot('ma,bmie->abei', self.t1, self.get_MO('voov'))
+        self.Hvvvo -= ndot('imfa,mbef->abei', self.build_tau(), self.get_MO('ovvv'))
+        self.Hvvvo -= ndot('imfb,amef->abei', self.build_tau(), self.get_MO('vovv'))
+        self.Hvvvo += ndot('mnab,mnei->abei', self.build_tau(), self.get_MO('oovo'))
+        self.Hvvvo -= ndot('me,miab->abei', self.get_F('ov'), self.t2)
+        self.Hvvvo += ndot('mifb,amef->abei', self.t2, self.get_L('vovv'))
+        tmp =    ndot('mnef,if->mnei', self.get_MO('oovv'), self.t1)
+        self.Hvvvo += ndot('mnab,mnei->abei', self.t2, tmp)
+        tmp =    ndot('mnef,ma->anef', self.get_MO('oovv'), self.t1)
+        self.Hvvvo += ndot('infb,anef->abei', self.t2, tmp)
+        tmp =    ndot('mnef,nb->mefb', self.get_MO('oovv'), self.t1)
+        self.Hvvvo += ndot('miaf,mefb->abei', self.t2, tmp)
+        tmp =    ndot('mnfe,mf->ne', self.get_L('oovv'), self.t1)
+        self.Hvvvo -= ndot('niab,ne->abei', self.t2, tmp)
+        tmp =    ndot('mnfe,na->mafe', self.get_L('oovv'), self.t1)
+        self.Hvvvo -= ndot('mifb,mafe->abei', self.t2, tmp)
+        tmp1 =   ndot('if,ma->imfa', self.t1, self.t1)
+        tmp2 =   ndot('mnef,nb->mbef', self.get_MO('oovv'), self.t1)
+        self.Hvvvo += ndot('imfa,mbef->abei', tmp1, tmp2)
+        return self.Hvvvo
 
-        def build_Hovoo(self):
-            self.Hovoo =  self.get_MO('vvov').copy()
-            self.Hovoo += ndot('je,mbie->mbij', self.t1, self.get_MO('ovov'))
-            self.Hovoo += ndot('ie,bmje->mbij', self.t1, self.get_MO('voov'))
-            self.Hovoo -= ndot('nb,mnij->mbij', self.t1, self.get_MO('oovv'))
-            self.Hovoo -= ndot('ineb,nmje->mbij', self.build_tau(), self.get_MO('ooov'))
-            self.Hovoo -= ndot('jneb,mnie->mbij', self.build_tau(), self.get_MO('ooov'))
-            self.Hovoo += ndot('ijef,mbef->mbij', self.build_tau(), self.get_MO('ovvv'))
-            self.Hovoo += ndot('me,ijeb->mbij', self.get_F('ov'), self.t2)
-            self.Hovoo += ndot('njeb,mnie->mbij', self.t2, self.build_L())
-            tmp =    ndot('mnef,jf->mnej', self.get_MO('oovv'), self.t1)
-            self.Hovoo -= ndot('ineb,mnej->mbij', self.t2, tmp)
-            tmp =    ndot('mnef,ie->mnif', self.get_MO('oovv'), self.t1)
-            self.Hovoo -= ndot('jnfb,mnif->mbij', self.t2, tmp)
-            tmp =    ndot('mnef,nb->mefb', self.get_MO('oovv'), self.t1)
-            self.Hovoo -= ndot('ijef,mefb->mbij', self.t2, tmp)
-            tmp =    ndot('mnef,njfb->mejb', self.build_L(), self.t2)
-            self.Hovoo += ndot('mejb,ie->mbij', tmp, self.t1)
-            tmp =    ndot('mnef,nf->me', self.build_L(), self.t1)
-            self.Hovoo += ndot('me,ijeb->mbij', tmp, self.t2)
-            tmp1 =   ndot('ie,jf->ijef', self.t1, self.t1)
-            tmp2 =   ndot('mnef,nb->mbef', self.get_MO('oovv'), self.t1)
-            self.Hovoo -= ndot('mbef,ijef->mbij', tmp2, tmp1)
-            return Hovoo
+    def build_Hovoo(self):
+        self.Hovoo =  self.get_MO('ovoo').copy()
+        self.Hovoo += ndot('mbie,je->mbij', self.get_MO('ovov'), self.t1)
+        self.Hovoo += ndot('ie,bmje->mbij', self.t1, self.get_MO('voov'))
+        self.Hovoo -= ndot('nb,mnij->mbij', self.t1, self.get_MO('oooo'))
+        self.Hovoo -= ndot('ineb,nmje->mbij', self.build_tau(), self.get_MO('ooov'))
+        self.Hovoo -= ndot('jneb,mnie->mbij', self.build_tau(), self.get_MO('ooov'))
+        self.Hovoo += ndot('ijef,mbef->mbij', self.build_tau(), self.get_MO('ovvv'))
+        self.Hovoo += ndot('me,ijeb->mbij', self.get_F('ov'), self.t2)
+        self.Hovoo += ndot('njeb,mnie->mbij', self.t2, self.get_L('ooov'))
+        tmp =    ndot('mnef,jf->mnej', self.get_MO('oovv'), self.t1)
+        self.Hovoo -= ndot('ineb,mnej->mbij', self.t2, tmp)
+        tmp =    ndot('mnef,ie->mnif', self.get_MO('oovv'), self.t1)
+        self.Hovoo -= ndot('jnfb,mnif->mbij', self.t2, tmp)
+        tmp =    ndot('mnef,nb->mefb', self.get_MO('oovv'), self.t1)
+        self.Hovoo -= ndot('ijef,mefb->mbij', self.t2, tmp)
+        tmp =    ndot('mnef,njfb->mejb', self.get_L('oovv'), self.t2)
+        self.Hovoo += ndot('mejb,ie->mbij', tmp, self.t1)
+        tmp =    ndot('mnef,nf->me', self.get_L('oovv'), self.t1)
+        self.Hovoo += ndot('me,ijeb->mbij', tmp, self.t2)
+        tmp1 =   ndot('ie,jf->ijef', self.t1, self.t1)
+        tmp2 =   ndot('mnef,nb->mbef', self.get_MO('oovv'), self.t1)
+        self.Hovoo -= ndot('mbef,ijef->mbij', tmp2, tmp1)
+        return self.Hovoo
+    
+    def build_HBAR(self):
+        self.build_Hov()
+        print('\n Hov \n')
+        print(self.Hov)
+        self.build_Hoo()
+        print('\n Hoo \n')
+        print(self.Hoo)
+        self.build_Hvv()
+        print('\n Hvv \n')
+        print(self.Hvv)
+        self.build_Hoooo()
+        print('\n Hoooo \n')
+        print(self.Hoooo)
+        self.build_Hvvvv()
+        print('\n Hvvvv \n')
+        print(self.Hvvvv)
+        self.build_Hvovv()
+        print('\n Hvovv \n')
+        print(self.Hvovv)
+        self.build_Hooov()
+        print('\n Hoovv \n')
+        print(self.Hooov)
+        self.build_Hovvo()
+        print('\n Hovvo \n')
+        print(self.Hovvo)
+        self.build_Hovov()
+        print('\n Hovov \n')
+        print(self.Hovov)
+        self.build_Hvvvo()
+        print('\n Hvvvo \n')
+        print(self.Hvvvo)
+        self.build_Hovoo()
+        print('\n Hovoo \n')
+        print(self.Hovoo)
+
 
 
 # End CCHBAR class
