@@ -242,8 +242,8 @@ class helper_CCRESPONSE(object):
 
     def build_Avvoo(self):
         Avvoo = 0
-        Avvoo += ndot('ijeb,ae->abij', self.t2, self.get_pert('vv'))
-        Avvoo -= ndot('mjab,mi->abij', self.t2, self.get_pert('oo'))
+        Avvoo += ndot('ijeb,ae->abij', self.t2, self.build_Avv())
+        Avvoo -= ndot('mjab,mi->abij', self.t2, self.build_Aoo())
         return Avvoo
 
 
@@ -379,9 +379,10 @@ class helper_CCRESPONSE(object):
 
         r_x2 += ndot('miea,mbej->ijab', self.x2, self.Hovvo, prefactor=2.0)
         r_x2 += ndot('miea,mbje->ijab', self.x2, self.Hovov, prefactor=-1.0)
-       
-        self.x2 += r_x2 + r_x2.swapaxes(0,1).swapaxes(2,3)
-        self.x2 += self.x2/self.Dijab
+      
+        self.x2 += r_x2/self.Dijab 
+        self.x2 += r_x2.swapaxes(0,1).swapaxes(2,3)/self.Dijab
+        #self.x2 = self.x2/self.Dijab
 
     def update_Y(self):
 
@@ -594,7 +595,11 @@ class helper_CCRESPONSE(object):
         ### Start Iterations
         ccresponse_tstart = time.time()
         pseudoresponse_old = self.pseudoresponse(hand)
-        print("CCRESPONSE Iteration %3d: pseudoresponse = %.12f   dE = % .5E " % (0, pseudoresponse_old, -pseudoresponse_old))
+        print("CCRESPONSE Iteration %3d: pseudoresponse = %.15f   dE = % .5E " % (0, pseudoresponse_old, -pseudoresponse_old))
+        print('\nAvo\n')
+        print(self.build_Avo())
+        print('\nAvvoo\n')
+        print(self.build_Avvoo())
 
         # Iterate!
         diis_size = 0
@@ -610,11 +615,11 @@ class helper_CCRESPONSE(object):
             pseudoresponse = self.pseudoresponse(hand)
 
             # Print CCRESPONSE iteration information
-            print('CCRESPONSE Iteration %3d: pseudoresponse = %.12f   dE = % .5E   DIIS = %d' % (CCRESPONSE_iter, pseudoresponse, (pseudoresponse - pseudoresponse_old), diis_size))
+            print('CCRESPONSE Iteration %3d: pseudoresponse = %.15f   dE = % .5E   DIIS = %d' % (CCRESPONSE_iter, pseudoresponse, (pseudoresponse - pseudoresponse_old), diis_size))
 
             # Check convergence
             if (abs(pseudoresponse - pseudoresponse_old) < r_conv):
-                print('\nCCLAMBDA has converged in %.3f seconds!' % (time.time() - ccresponse_tstart))
+                print('\nCCRESPONSE has converged in %.3f seconds!' % (time.time() - ccresponse_tstart))
                 return pseudoresponse
 
             # Add DIIS vectors
@@ -668,7 +673,7 @@ class helper_CCRESPONSE(object):
 
 
 
-# End CCLAMBDA class
+# End CCRESPONSE class
 
 if __name__ == "__main__":
     arr4 = np.random.rand(4, 4, 4, 4)
