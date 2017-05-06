@@ -121,6 +121,9 @@ class helper_CCLINRESP(object):
         # Integral generation from Psi4's MintsHelper
         time_init = time.time()
 
+        self.ccpert_x = ccpert_x
+        self.ccpert_y = ccpert_y
+
         self.pert_x = ccpert_x.pert
         self.pert_y = ccpert_y.pert
 
@@ -139,52 +142,46 @@ class helper_CCLINRESP(object):
 
         print('\n..initialed CCLINRESP in %.3f seconds.\n' % (time.time() - time_init))
 
-    def get_pert(self, pert, string):
-        if len(string) != 2:
-            psi4.core.clean()
-            raise Exception('get_F: string %s must have 4 elements.' % string)
-        return pert[self.slice_dict[string[0]], self.slice_dict[string[1]]]
-
     def linresp(self):
-        polar1 = 0
-        polar2 = 0
-        polar1 += ndot("ai,ia->", ccpert_x.build_Avo(), self.y1_y)
-        polar1 += ndot("abij,ijab->", ccpert_x.build_Avvoo(), self.y2_y, prefactor=0.5)
-        polar1 += ndot("baji,ijab->", ccpert_x.build_Avvoo(), self.y2_y, prefactor=0.5)
+        self.polar1 = 0
+        self.polar2 = 0
+        self.polar1 += ndot("ai,ia->", self.ccpert_x.build_Avo(), self.y1_y)
+        self.polar1 += ndot("abij,ijab->", self.ccpert_x.build_Avvoo(), self.y2_y, prefactor=0.5)
+        self.polar1 += ndot("baji,ijab->", self.ccpert_x.build_Avvoo(), self.y2_y, prefactor=0.5)
 
-        tmp = ndot('ia,jb->ijab', self.l1, self.get_pert(self.pert_x, 'ov'))
-        polar2 += ndot('ijab,ijab->', tmp, self.x2_y, prefactor=2.0) 
-        polar2 += ndot('ijab,ijba->', tmp, self.x2_y, prefactor=-1.0) 
+        tmp = ndot('ia,jb->ijab', self.l1, self.ccpert_x.build_Aov())
+        self.polar2 += ndot('ijab,ijab->', tmp, self.x2_y, prefactor=2.0) 
+        self.polar2 += ndot('ijab,ijba->', tmp, self.x2_y, prefactor=-1.0) 
  
         tmp = ndot('ia,ic->ac', self.l1, self.x1_y)
-        polar2 += ndot('ac,ac->', tmp, ccpert_x.build_Avv()) 
+        self.polar2 += ndot('ac,ac->', tmp, self.ccpert_x.build_Avv()) 
         tmp = ndot('ia,ka->ik', self.l1, self.x1_y)
-        polar2 -= ndot('ik,ki->', tmp, ccpert_x.build_Aoo()) 
+        self.polar2 -= ndot('ik,ki->', tmp, self.ccpert_x.build_Aoo()) 
 
-        tmp = ndot('ijbc,bcaj->ia', self.l2, ccpert_x.build_Avvvo())
-        polar2 += ndot('ia,ia->', tmp, self.x1_y)) 
+        tmp = ndot('ijbc,bcaj->ia', self.l2, self.ccpert_x.build_Avvvo())
+        self.polar2 += ndot('ia,ia->', tmp, self.x1_y) 
 
-        tmp = ndot('ijab,kbij->ak', self.l2, ccpert_x.build_Aovoo())
-        polar2 -= ndot('ak,ka->', tmp, self.x1_y), prefactor=0.5) 
+        tmp = ndot('ijab,kbij->ak', self.l2, self.ccpert_x.build_Aovoo())
+        self.polar2 -= ndot('ak,ka->', tmp, self.x1_y, prefactor=0.5) 
 
-        tmp = ndot('ijab,kaji->bk', self.l2, ccpert_x.build_Aovoo())
-        polar2 -= ndot('bk,kb->', tmp, self.x1_y), prefactor=0.5) 
+        tmp = ndot('ijab,kaji->bk', self.l2, self.ccpert_x.build_Aovoo())
+        self.polar2 -= ndot('bk,kb->', tmp, self.x1_y, prefactor=0.5) 
 
         tmp = ndot('ijab,kjab->ik', self.l2, self.x2_y)
-        polar2 -= ndot('ik,ki->', tmp, ccpert_x.build_Aoo()), prefactor=0.5) 
+        self.polar2 -= ndot('ik,ki->', tmp, self.ccpert_x.build_Aoo(), prefactor=0.5) 
 
         tmp = ndot('ijab,kiba->jk', self.l2, self.x2_y,)
-        polar2 -= ndot('jk,kj->', tmp, ccpert_x.build_Aoo()), prefactor=0.5) 
+        self.polar2 -= ndot('jk,kj->', tmp, self.ccpert_x.build_Aoo(), prefactor=0.5) 
 
         tmp = ndot('ijab,ijac->bc', self.l2, self.x2_y,)
-        polar2 += ndot('bc,bc->', tmp, ccpert_x.build_Avv()), prefactor=0.5) 
+        self.polar2 += ndot('bc,bc->', tmp, self.ccpert_x.build_Avv(), prefactor=0.5) 
 
         tmp = ndot('ijab,ijcb->ac', self.l2, self.x2_y,)
-        polar2 += ndot('ac,ac->', tmp, ccpert_x.build_Avv()), prefactor=0.5) 
+        self.polar2 += ndot('ac,ac->', tmp, self.ccpert_x.build_Avv(), prefactor=0.5) 
       
-        polar2 += ndot("ia,ia->", self.get_pert(self.pert_x, 'ov'), self.x1_y)
+        self.polar2 += ndot("ia,ia->", self.ccpert_x.build_Aov(), self.x1_y, prefactor=2.0)
 
-        return -1.0 * (polar1 + polar2)
+        #return -1.0 * (self.polar1 + self.polar2)
 
 # End CCLINRESP class
 
