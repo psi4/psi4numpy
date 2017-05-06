@@ -68,6 +68,8 @@ ccresponse_Y.solve('right')
 ccresponse_Z.solve('right')
 
 ccresponse_X.solve('left')
+ccresponse_Y.solve('left')
+ccresponse_Z.solve('left')
 #ccsd = helper_CCSD(mol, memory=2)
 #ccsd.compute_energy()
 #
