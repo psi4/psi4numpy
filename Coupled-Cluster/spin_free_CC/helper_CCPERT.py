@@ -114,7 +114,7 @@ def ndot(input_string, op1, op2, prefactor=None):
         return np.einsum(tdot_result + '->' + output_ind, new_view)
 
 
-class helper_CCRESPONSE(object):
+class helper_CCPERT(object):
 
     def __init__(self, pert, ccsd, hbar, cclambda, memory=2):
 
@@ -174,7 +174,7 @@ class helper_CCRESPONSE(object):
         self.x2 = tmp.swapaxes(0,2).swapaxes(1,3)/(self.Dijab + self.omega)
         self.y2 = tmp.swapaxes(0,2).swapaxes(1,3)/(self.Dijab + self.omega)
  
-        print('\n..initialed CCRESPONSE in %.3f seconds.\n' % (time.time() - time_init))
+        print('\n..initialed CCPERT in %.3f seconds.\n' % (time.time() - time_init))
     # occ orbitals i, j, k, l, m, n
     # virt orbitals a, b, c, d, e, f
     # all oribitals p, q, r, s, t, u, v
@@ -597,9 +597,9 @@ class helper_CCRESPONSE(object):
         diis_errors = []
 
         ### Start Iterations
-        ccresponse_tstart = time.time()
+        ccpert_tstart = time.time()
         pseudoresponse_old = self.pseudoresponse(hand)
-        print("CCRESPONSE Iteration %3d: pseudoresponse = %.15f   dE = % .5E " % (0, pseudoresponse_old, -pseudoresponse_old))
+        print("CCPERT Iteration %3d: pseudoresponse = %.15f   dE = % .5E " % (0, pseudoresponse_old, -pseudoresponse_old))
         #print('\nAvo\n')
         #print(self.build_Avo())
         #print('\nAvvoo\n')
@@ -607,7 +607,7 @@ class helper_CCRESPONSE(object):
 
         # Iterate!
         diis_size = 0
-        for CCRESPONSE_iter in range(1, maxiter + 1):
+        for CCPERT_iter in range(1, maxiter + 1):
 
             # Save new amplitudes
             oldz1 = z1.copy()
@@ -618,12 +618,12 @@ class helper_CCRESPONSE(object):
                 self.update_Y()
             pseudoresponse = self.pseudoresponse(hand)
 
-            # Print CCRESPONSE iteration information
-            print('CCRESPONSE Iteration %3d: pseudoresponse = %.15f   dE = % .5E   DIIS = %d' % (CCRESPONSE_iter, pseudoresponse, (pseudoresponse - pseudoresponse_old), diis_size))
+            # Print CCPERT iteration information
+            print('CCPERT Iteration %3d: pseudoresponse = %.15f   dE = % .5E   DIIS = %d' % (CCPERT_iter, pseudoresponse, (pseudoresponse - pseudoresponse_old), diis_size))
 
             # Check convergence
             if (abs(pseudoresponse - pseudoresponse_old) < r_conv):
-                print('\nCCRESPONSE has converged in %.3f seconds!' % (time.time() - ccresponse_tstart))
+                print('\nCCPERT has converged in %.3f seconds!' % (time.time() - ccpert_tstart))
                 return pseudoresponse
 
             # Add DIIS vectors
@@ -638,7 +638,7 @@ class helper_CCRESPONSE(object):
             # Update old energy
             pseudoresponse_old = pseudoresponse
 
-            if CCRESPONSE_iter >= 1:
+            if CCPERT_iter >= 1:
                 # Limit size of DIIS vector
                 if (len(diis_vals_z1) > max_diis):
                     del diis_vals_z1[0]
@@ -677,7 +677,7 @@ class helper_CCRESPONSE(object):
 
 
 
-# End CCRESPONSE class
+# End CCPERT class
 
 if __name__ == "__main__":
     arr4 = np.random.rand(4, 4, 4, 4)

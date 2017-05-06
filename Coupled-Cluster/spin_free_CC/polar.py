@@ -15,7 +15,8 @@ import numpy as np
 from helper_CCENERGY import *
 from helper_CCHBAR import *
 from helper_CCLAMBDA import *
-from helper_CCRESPONSE import *
+from helper_CCPERT import *
+from helper_CCLINRESP import *
 np.set_printoptions(precision=15, linewidth=200, suppress=True)
 import psi4
 
@@ -53,6 +54,7 @@ cchbar.build_HBAR()
 
 cclambda = helper_CCLAMBDA(ccsd,cchbar)
 cclambda.compute_lambda()
+omega = 0.0
 
 muX_ao = np.asarray(ccsd.mints.ao_dipole()[0])
 muY_ao = np.asarray(ccsd.mints.ao_dipole()[1])
@@ -60,21 +62,17 @@ muZ_ao = np.asarray(ccsd.mints.ao_dipole()[2])
 muX_mo= np.einsum('uj,vi,uv', ccsd.npC, ccsd.npC, muX_ao)
 muY_mo= np.einsum('uj,vi,uv', ccsd.npC, ccsd.npC, muY_ao)
 muZ_mo= np.einsum('uj,vi,uv', ccsd.npC, ccsd.npC, muZ_ao)
-ccresponse_X = helper_CCRESPONSE(muX_mo, ccsd, cchbar, cclambda)
-ccresponse_Y = helper_CCRESPONSE(muY_mo, ccsd, cchbar, cclambda)
-ccresponse_Z = helper_CCRESPONSE(muZ_mo, ccsd, cchbar, cclambda)
-ccresponse_X.solve('right')
-ccresponse_Y.solve('right')
-ccresponse_Z.solve('right')
+ccpert_X = helper_CCPERT(muX_mo, ccsd, cchbar, cclambda, omega)
+ccpert_Y = helper_CCPERT(muY_mo, ccsd, cchbar, cclambda, omega)
+ccpert_Z = helper_CCPERT(muZ_mo, ccsd, cchbar, cclambda, omega)
+ccpert_X.solve('right')
+ccpert_Y.solve('right')
+ccpert_Z.solve('right')
 
-ccresponse_X.solve('left')
-ccresponse_Y.solve('left')
-ccresponse_Z.solve('left')
-#ccsd = helper_CCSD(mol, memory=2)
-#ccsd.compute_energy()
-#
-#CCSDcorr_E = ccsd.ccsd_corr_e
-#CCSD_E = ccsd.ccsd_e
-#
-#print('\nFinal CCSD correlation energy:          % 16.10f' % CCSDcorr_E)
-#print('Total CCSD energy:                      % 16.10f' % CCSD_E)
+ccpert_X.solve('left')
+ccpert_Y.solve('left')
+ccpert_Z.solve('left')
+
+polar = helper_CCLINRESP(cclambda, ccpert_X, ccpert_X)
+print('\nPolarizability xx\n')
+print(polar)
