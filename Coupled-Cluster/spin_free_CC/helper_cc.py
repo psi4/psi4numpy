@@ -210,17 +210,16 @@ class helper_ccenergy(object):
         self.F -= np.einsum('pmmq->pq', self.MO[:, self.slice_o, self.slice_o, :])
 
         ### Build D matrices
-        print('\nBuilding denominator arrays...')
         Focc = np.diag(self.F)[self.slice_o]
         Fvir = np.diag(self.F)[self.slice_v]
 
-        print(Focc)
+        #print(Focc)
         tmp = Focc.reshape(-1,1)
-        print(tmp)
-        print(Fvir)
+        #print(tmp)
+        #print(Fvir)
 
         self.Dia = Focc.reshape(-1, 1) - Fvir
-        print(self.Dia)
+        #print(self.Dia)
         self.Dijab = Focc.reshape(-1, 1, 1, 1) + Focc.reshape(-1, 1, 1) - Fvir.reshape(-1, 1) - Fvir
 
         ### Construct initial guess
@@ -230,7 +229,7 @@ class helper_ccenergy(object):
         # t^{ab}_{ij}
         self.t2 = self.MO[self.slice_o, self.slice_o, self.slice_v, self.slice_v] / self.Dijab
 
-        print('\n..initialed CCSD in %.3f seconds.\n' % (time.time() - time_init))
+        print('\n..initialized CCSD in %.3f seconds.\n' % (time.time() - time_init))
 
     # occ orbitals i, j, k, l, m, n
     # virt orbitals a, b, c, d, e, f
@@ -586,7 +585,7 @@ class helper_cchbar(object):
         self.t2 = ccsd.t2
         #print(self.t1)
         #print(self.t2)
-        print('\n..initialed CCHBAR in %.3f seconds.\n' % (time.time() - time_init))
+        print('\nBuilding appropriate pieces of similarity transformed hamiltonian ...')
 
         tmp = self.MO.copy()
         self.L = 2.0 * tmp
@@ -625,6 +624,7 @@ class helper_cchbar(object):
         self.build_Hovoo()
         #print('\n Hovoo \n')
         #print(self.Hovoo)
+        print('\n..CCHBAR completed !!')
 
     # occ orbitals i, j, k, l, m, n
     # virt orbitals a, b, c, d, e, f
@@ -809,7 +809,6 @@ class helper_cclambda(object):
         tmp = self.t2
         self.l2 = 2.0 * (2.0 * tmp - tmp.swapaxes(2,3))
 
-        print('\n..initialed CCLAMBDA in %.3f seconds.\n' % (time.time() - time_init))
     # occ orbitals i, j, k, l, m, n
     # virt orbitals a, b, c, d, e, f
     # all oribitals p, q, r, s, t, u, v
@@ -896,6 +895,7 @@ class helper_cclambda(object):
 
 
     def compute_lambda(self, r_conv=1.e-13, maxiter=50, max_diis=8):
+        print('\n Solving lambda equations ...\n')
         ### Setup DIIS
         diis_vals_l1 = [self.l1.copy()]
         diis_vals_l2 = [self.l2.copy()]
@@ -984,12 +984,13 @@ class helper_cclambda(object):
 
 class helper_ccpert(object):
 
-    def __init__(self, pert, ccsd, hbar, cclambda, memory=2):
+    def __init__(self, name, pert, ccsd, hbar, cclambda, memory=2):
 
         # Integral generation from Psi4's MintsHelper
         time_init = time.time()
 
         self.pert = pert
+        self.name = name
         self.MO = ccsd.MO
         self.ndocc = ccsd.ndocc
         self.nmo = ccsd.nmo
@@ -1042,7 +1043,6 @@ class helper_ccpert(object):
         self.x2 = tmp.swapaxes(0,2).swapaxes(1,3)/(self.Dijab + self.omega)
         self.y2 = tmp.swapaxes(0,2).swapaxes(1,3)/(self.Dijab + self.omega)
 
-        print('\n..initialed CCPERT in %.3f seconds.\n' % (time.time() - time_init))
     # occ orbitals i, j, k, l, m, n
     # virt orbitals a, b, c, d, e, f
     # all oribitals p, q, r, s, t, u, v
@@ -1433,7 +1433,7 @@ class helper_ccpert(object):
         ### Start Iterations
         ccpert_tstart = time.time()
         pseudoresponse_old = self.pseudoresponse(hand)
-        print("CCPERT Iteration %3d: pseudoresponse = %.15f   dE = % .5E " % (0, pseudoresponse_old, -pseudoresponse_old))
+        print("CCPERT_%s Iteration %3d: pseudoresponse = %.15f   dE = % .5E " % (self.name, 0, pseudoresponse_old, -pseudoresponse_old))
         #print('\nAvo\n')
         #print(self.build_Avo())
         #print('\nAvvoo\n')
@@ -1453,11 +1453,11 @@ class helper_ccpert(object):
             pseudoresponse = self.pseudoresponse(hand)
 
             # Print CCPERT iteration information
-            print('CCPERT Iteration %3d: pseudoresponse = %.15f   dE = % .5E   DIIS = %d' % (CCPERT_iter, pseudoresponse, (pseudoresponse - pseudoresponse_old), diis_size))
+            print('CCPERT_%s Iteration %3d: pseudoresponse = %.15f   dE = % .5E   DIIS = %d' % (self.name, CCPERT_iter, pseudoresponse, (pseudoresponse - pseudoresponse_old), diis_size))
 
             # Check convergence
             if (abs(pseudoresponse - pseudoresponse_old) < r_conv):
-                print('\nCCPERT has converged in %.3f seconds!' % (time.time() - ccpert_tstart))
+                print('\nCCPERT_%s has converged in %.3f seconds!' % (self.name, time.time() - ccpert_tstart))
                 return pseudoresponse
 
             # Add DIIS vectors
@@ -1535,7 +1535,6 @@ class helper_cclinresp(object):
         self.y1_y = ccpert_y.y1
         self.y2_y = ccpert_y.y2
 
-        print('\n..initialed CCLINRESP in %.3f seconds.\n' % (time.time() - time_init))
 
     def linresp(self):
         self.polar1 = 0
@@ -1575,6 +1574,8 @@ class helper_cclinresp(object):
         self.polar2 += ndot('ac,ac->', tmp, self.ccpert_x.build_Avv(), prefactor=0.5)
 
         self.polar2 += ndot("ia,ia->", self.ccpert_x.build_Aov(), self.x1_y, prefactor=2.0)
+
+        return -1.0*(self.polar1 + self.polar2)
 
 # End cclinresp class
 

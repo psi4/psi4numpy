@@ -11,7 +11,7 @@ import psi4
 
 #psi4.core.set_memory(int(2e9), False)
 psi4.set_memory(int(2e9), False)
-psi4.core.set_output_file('output_new.dat', False)
+psi4.core.set_output_file('output.dat', False)
 
 numpy_memory = 2
 
@@ -39,31 +39,48 @@ print('\nFinal CCSD correlation energy:          % 16.15f' % CCSDcorr_E)
 print('Total CCSD energy:                      % 16.15f' % CCSD_E)
 
 cchbar = helper_cchbar(ccsd)
-#cchbar.build_HBAR()
 
 cclambda = helper_cclambda(ccsd,cchbar)
 cclambda.compute_lambda()
 omega = 0.0
 
-muX_ao = np.asarray(ccsd.mints.ao_dipole()[0])
-muY_ao = np.asarray(ccsd.mints.ao_dipole()[1])
-muZ_ao = np.asarray(ccsd.mints.ao_dipole()[2])
-muX_mo= np.einsum('uj,vi,uv', ccsd.npC, ccsd.npC, muX_ao)
-muY_mo= np.einsum('uj,vi,uv', ccsd.npC, ccsd.npC, muY_ao)
-muZ_mo= np.einsum('uj,vi,uv', ccsd.npC, ccsd.npC, muZ_ao)
-ccpert_X = helper_ccpert(muX_mo, ccsd, cchbar, cclambda, omega)
-ccpert_Y = helper_ccpert(muY_mo, ccsd, cchbar, cclambda, omega)
-ccpert_Z = helper_ccpert(muZ_mo, ccsd, cchbar, cclambda, omega)
-ccpert_X.solve('right')
-ccpert_Y.solve('right')
-ccpert_Z.solve('right')
+cart = {0:'X', 1: 'Y', 2: 'Z'}
+mu = {}
+ccpert = {}
+polar_AB = {}
 
-ccpert_X.solve('left')
-ccpert_Y.solve('left')
-ccpert_Z.solve('left')
 
-cclinresp = helper_cclinresp(cclambda, ccpert_Z, ccpert_Z)
-cclinresp.linresp()
-print('\nPolarizability --\n')
-polar = -1.0 * (cclinresp.polar1 + cclinresp.polar2)
-print(polar)
+for i in range(0,3):
+    string = "MU_" + cart[i]
+    mu[string] = np.einsum('uj,vi,uv', ccsd.npC, ccsd.npC, np.asarray(ccsd.mints.ao_dipole()[i]))
+    ccpert[string] = helper_ccpert(string, mu[string], ccsd, cchbar, cclambda, omega)
+    print('\nsolving right hand perturbed amplitudes for %s\n' % string)
+    ccpert[string].solve('right')
+    print('\nsolving left hand perturbed amplitudes for %s\n'% string)
+    ccpert[string].solve('left')
+    
+print('\n Calculating Polarizability tensor:\n')
+
+for a in range(0,3):
+    str_a = "MU_" + cart[a]
+    for b in range(0,3):
+        str_b = "MU_" + cart[b]
+        str_ab = "<<" + str_a + ";" + str_b + ">>"
+        polar_AB[str_ab]= helper_cclinresp(cclambda, ccpert[str_a], ccpert[str_b]).linresp()    
+
+print('\nPolarizability tensor (symmetrized):\n')
+
+for a in range(0,3):
+    str_a = "MU_" + cart[a]
+    for b in range(0,a+1):
+        str_b = "MU_" + cart[b]
+        str_ab = "<<" + str_a + ";" + str_b + ">>"
+        str_ba = "<<" + str_b + ";" + str_a + ">>"
+        value = 0.5*(polar_AB[str_ab] + polar_AB[str_ba])
+        polar_AB[str_ab] = value
+        polar_AB[str_ba] = value
+        print(str_ab + ":" + str(value))
+    
+    
+    
+
