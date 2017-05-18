@@ -10,6 +10,10 @@ import numpy as np
 np.set_printoptions(precision=5, linewidth=200, threshold=2000, suppress=True)
 import psi4
 
+# Set memory & output file
+psi4.set_memory('2 GB')
+psi4.core.set_output_file('output.dat', False)
+
 # Set molecule to dimer
 mol = psi4.geometry("""
 Be  0  0  0
