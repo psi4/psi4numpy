@@ -1,10 +1,10 @@
-'''
-Created on Jan 24, 2015
+# A Class Construction the Hamiltonian Matrix
+#
+# Created by: Tianyuan Zhang
+# Date: 1/24/15
+# License: GPL v3.0
+#
 
-@author: tianyuanzhang
-'''
-# from sp_integrals.AntisymmetrizedTwoElectronIntegrals import AntiSymTwoElectronInt
-# from sp_math.PsithonMath import spat2SpinMatrix
 from itertools import combinations
 from Determinant import Determinant_bits
 from scipy.sparse import csr_matrix
@@ -18,9 +18,6 @@ class MatrixElements:
     '''
     def __init__(self, nmo, ndocc, H_spin, mo_spin_eri):
         """Constructor for MatrixElements"""
-#         self.rhf = rhf
-#         self.antiSym2eInt = AntiSymTwoElectronInt.createFrom2eIntSpatial(self.rhf.calc2eIntMO())
-#         self.Hspin = spat2SpinMatrix(self.rhf.calcCoreHamiltonianMO())
         self.numberOfBasis = nmo
         self.numOCC = ndocc
         self.Hspin = H_spin
@@ -129,7 +126,6 @@ class MatrixElements:
         for m in xrange(length-1):
             for n in xrange(m+1, length):
                 Relem += self.antiSym2eInt[spinObtList[m], spinObtList[n], spinObtList[m], spinObtList[n]]
-#                 Relem += self.antiSym2eInt.get2eInt(spinObtList[m], spinObtList[n], spinObtList[m], spinObtList[n])
         return Helem + Relem
 
 class MatrixElements_dense(MatrixElements):

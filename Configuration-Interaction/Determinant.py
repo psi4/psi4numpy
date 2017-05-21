@@ -1,8 +1,10 @@
-'''
-Created on Jan 10, 2015
+# A Determinant Class
+#
+# Created by: Tianyuan Zhang
+# Date: 1/10/15
+# License: GPL v3.0
+#
 
-@author: tianyuanzhang
-'''
 from itertools import combinations
 class Determinant:
     '''
@@ -14,13 +16,12 @@ class Determinant_bits(Determinant):
     class for determinant stored in bits
     '''
 
-    def __init__(self, nmo=0, alphaObtBits=0, betaObtBits=0, alphaObtList=None, betaObtList=None, str=None):
+    def __init__(self, alphaObtBits=0, betaObtBits=0, alphaObtList=None, betaObtList=None):
         """Constructor for Determinant_bits"""
         if alphaObtBits == 0 and alphaObtList != None:
             alphaObtBits = Determinant_bits.obtIndexList2ObtBits(alphaObtList)
         if betaObtBits == 0 and betaObtList != None:
             betaObtBits = Determinant_bits.obtIndexList2ObtBits(betaObtList)
-        self.nmo = nmo
         self.alphaObtBits = alphaObtBits
         self.betaObtBits = betaObtBits
     
@@ -47,10 +48,10 @@ class Determinant_bits(Determinant):
         return count
     
     @staticmethod
-    def countNumOrbitalsInBitsUpTo6(bits):
+    def countNumOrbitalsInBitsUpTo4(bits):
         """Return the number of orbitals in this bits"""
         count = 0
-        while bits!=0 and count<6:
+        while bits!=0 and count<4:
             if bits&1==1:
                 count += 1
             bits >>= 1
@@ -154,7 +155,7 @@ class Determinant_bits(Determinant):
     
     def diff2OrLessOrbitals(self, another):
         """Return true if two determinants differ 2 or less orbitals"""
-        diffAlpha, diffBeta = Determinant_bits.countNumOrbitalsInBitsUpTo6(self.alphaObtBits ^ another.alphaObtBits), Determinant_bits.countNumOrbitalsInBitsUpTo6(self.betaObtBits ^ another.betaObtBits)
+        diffAlpha, diffBeta = Determinant_bits.countNumOrbitalsInBitsUpTo4(self.alphaObtBits ^ another.alphaObtBits), Determinant_bits.countNumOrbitalsInBitsUpTo4(self.betaObtBits ^ another.betaObtBits)
         return (diffAlpha+diffBeta) <= 4
     
     @staticmethod
@@ -222,8 +223,8 @@ class Determinant_bits(Determinant):
     def createFromIntTuple(intTuple):
         return Determinant_bits(alphaObtBits=intTuple[0], betaObtBits=intTuple[1])
     
-    def generateSingleAndDoubleExcitationOfDet(self, numOfBasis):
-        """generate all the single and double excitations of determinant in a list"""
+    def generateSingleExcitationOfDet(self, numOfBasis):
+        """generate all the single excitations of determinant in a list"""
         alphaO, betaO = self.getOrbitalIndexLists()
         alphaU, betaU = self.getUnoccupiedOrbitalsInLists(numOfBasis)
         dets = []
@@ -242,38 +243,10 @@ class Determinant_bits(Determinant):
                 det.addBetaOrbital(l)
                 dets.append(det)
                 
-        for i in alphaO:
-            for j in alphaU:
-                for k in betaO:
-                    for l in betaU:
-                        det = self.copy()
-                        det.removeAlphaOrbital(i)
-                        det.addAlphaOrbital(j)
-                        det.removeBetaOrbital(k)
-                        det.addBetaOrbital(l)
-                        dets.append(det)
-        
-        for i1,i2 in combinations(alphaO,2):
-            for j1,j2 in combinations(alphaU,2):
-                det = self.copy()
-                det.removeAlphaOrbital(i1)
-                det.addAlphaOrbital(j1)
-                det.removeAlphaOrbital(i2)
-                det.addAlphaOrbital(j2)
-                dets.append(det)
-        
-        for k1,k2 in combinations(betaO,2):
-            for l1,l2 in combinations(betaU,2):
-                det = self.copy()
-                det.removeBetaOrbital(k1)
-                det.addBetaOrbital(l1)
-                det.removeBetaOrbital(k2)
-                det.addBetaOrbital(l2)
-                dets.append(det)
         return dets
     
     def generateDoubleExcitationOfDet(self, numOfBasis):
-        """generate all the single and double excitations of determinant in a list"""
+        """generate all the double excitations of determinant in a list"""
         alphaO, betaO = self.getOrbitalIndexLists()
         alphaU, betaU = self.getUnoccupiedOrbitalsInLists(numOfBasis)
         dets = []
@@ -308,6 +281,10 @@ class Determinant_bits(Determinant):
                 dets.append(det)
         return dets
     
+    def generateSingleAndDoubleExcitationOfDet(self, numOfBasis):
+        """generate all the single and double excitations of determinant in a list"""
+        return self.generateSingleExcitationOfDet(numOfBasis) + self.generateDoubleExcitationOfDet(numOfBasis)
+    
     def copy(self):
         """Return a deep copy of self"""
         return Determinant_bits(alphaObtBits=self.alphaObtBits, betaObtBits=self.betaObtBits)
@@ -315,38 +292,3 @@ class Determinant_bits(Determinant):
     def __str__(self):
         a,b = self.getOrbitalIndexLists()
         return "|"+str(a)+str(b)+">"
-
-def _test():
-    det = Determinant_bits(alphaObtBits=11, betaObtBits=11)
-    print det.getNumOrbitals()
-    det.addAlphaOrbital(100)
-    print det.getNumOrbitals()
-    det.removeAlphaOrbital(100)
-    print det.alphaObtBits, det.betaObtBits
-    det2 = Determinant_bits(alphaObtList=[1, 4, 7],betaObtList=[2, 1, 3])
-    print det.numberOfCommonOrbitals(det2)
-    print det.numberOfDiffOrbitals(det2)
-    print det.getOrbitalIndexLists()
-    print det2.getOrbitalIndexLists()
-    print det.getUniqueOrbitalsInLists(det2)
-    print det.diff2OrLessOrbitals(det2)
-    print det.getOrbitalPositionLists([0,3], [1])
-    uniqueOrbitals = det.getUniqueOrbitalsInLists(det2)
-    print det.getOrbitalPositionLists(uniqueOrbitals[0][0], uniqueOrbitals[0][1]), det2.getOrbitalPositionLists(uniqueOrbitals[1][0], uniqueOrbitals[1][1])
-    print det.getSignToMoveOrbitalsToTheFront([1,3], [])
-    print det.getUniqueOrbitalsInListsPlusSign(det2)
-    print det.getOrbitalMixedIndexList()
-    print det.getCommonOrbitalsInMixedSpinIndexList(det2)
-    print det.getUniqueOrbitalsInMixIndexListsPlusSign(det2)
-    print det, det2
-    det1 = Determinant_bits(alphaObtList=[0,1],betaObtList=[0,1])
-    det2 = Determinant_bits(alphaObtList=[0,1],betaObtList=[0,2])
-    print "Test signs", det1, det2
-    print det1.getUniqueOrbitalsInListsPlusSign(det2)
-    print det2.getUniqueOrbitalsInListsPlusSign(det1)
-    print det2.getUnoccupiedOrbitalsInLists(5)
-    for det in det1.generateSingleAndDoubleExcitationOfDet(4):
-        print det
-
-if __name__ == '__main__':
-    _test()

@@ -8,7 +8,6 @@
 # License: GPL v3.0
 #
 
-
 import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
@@ -43,7 +42,6 @@ check_energy = False
 print('\nStarting SCF and integral build...')
 t = time.time()
 
-
 # First compute SCF energy using Psi4
 scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 # print scf_e
@@ -52,7 +50,6 @@ scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 C = wfn.Ca()
 ndocc = wfn.doccpi()[0]
 nmo = wfn.nmo()
-SCF_E = wfn.energy()
 
 # Compute size of SO-ERI tensor in GB
 ERI_Size = (nmo ** 4) * 128e-9
@@ -89,8 +86,6 @@ H *= (spin_ind.reshape(-1, 1) == spin_ind)
 print('..finished transformation in %.3f seconds.\n' % (time.time() - t))
 
 from Determinant import Determinant_bits
-from itertools import combinations
-    
 from MatrixElements import MatrixElements_dense
 
 print('Generating Hamiltonian Matrix...')
@@ -109,6 +104,8 @@ fci_mol_e = e_fci[0] + mol.nuclear_repulsion_energy()
 
 print('..finished diagonalization in %.3f seconds.\n' % (time.time() - t))
 
+print('SCF energy:         % 16.10f' % (scf_e))
+print('FCI correlation:    % 16.10f' % (fci_mol_e - scf_e))
 print('Total FCI energy:   % 16.10f' % (fci_mol_e))
 
 if compare_psi4:
