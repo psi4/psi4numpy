@@ -14,7 +14,7 @@ np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
 # Memory for Psi4 in GB
-psi4.core.set_memory(int(2e9), False)
+# psi4.core.set_memory(int(2e9), False)
 psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
@@ -40,3 +40,67 @@ check_energy = False
 print('\nStarting SCF and integral build...')
 t = time.time()
 
+
+# First compute SCF energy using Psi4
+scf_e, wfn = psi4.energy('SCF', return_wfn=True)
+print scf_e
+
+# Grab data from wavfunction class 
+C = wfn.Ca()
+ndocc = wfn.doccpi()[0]
+nmo = wfn.nmo()
+SCF_E = wfn.energy()
+
+# Compute size of SO-ERI tensor in GB
+ERI_Size = (nmo ** 4) * 128e-9
+print('\nSize of the SO ERI tensor will be %4.2f GB.' % ERI_Size)
+memory_footprint = ERI_Size * 5.2
+if memory_footprint > numpy_memory:
+    clean()
+    raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory \
+                    limit of %4.2f GB." % (memory_footprint, numpy_memory))
+
+# Integral generation from Psi4's MintsHelper
+t = time.time()
+mints = psi4.core.MintsHelper(wfn.basisset())
+H = np.asarray(mints.ao_kinetic()) + np.asarray(mints.ao_potential())
+
+print('\nTotal time taken for ERI integrals: %.3f seconds.\n' % (time.time() - t))
+
+#Make spin-orbital MO
+print('Starting AO -> spin-orbital MO transformation...')
+t = time.time()
+MO = np.asarray(mints.mo_spin_eri(C, C))
+
+# Update nocc and nvirt
+nso = nmo * 2
+nocc = ndocc * 2
+nvirt = nso - nocc
+
+print('..finished transformation in %.3f seconds.\n' % (time.time() - t))
+
+
+### Build so Fock matirx
+
+# Update H, transform to MO basis and tile for alpha/beta spin
+H = np.einsum('uj,vi,uv', C, C, H)
+H = np.repeat(H, 2, axis=0)
+H = np.repeat(H, 2, axis=1)
+
+# Make H block diagonal
+spin_ind = np.arange(H.shape[0], dtype=np.int) % 2
+H *= (spin_ind.reshape(-1, 1) == spin_ind)
+
+
+from Determinant import Determinant_bits
+from itertools import combinations
+
+print nmo, ndocc
+
+detList = []
+for alpha in combinations(xrange(nmo), ndocc):
+    for beta in combinations(xrange(nmo), ndocc):
+        detList.append(Determinant_bits(alphaObtList=alpha, betaObtList=beta))
+for det in detList:
+    print det
+    
