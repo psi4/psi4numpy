@@ -8,7 +8,6 @@
 # License: GPL v3.0
 #
 
-
 import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
