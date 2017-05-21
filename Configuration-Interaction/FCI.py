@@ -8,10 +8,13 @@
 # License: GPL v3.0
 #
 
+
 import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
+
+compare_psi4 = True
 
 # Memory for Psi4 in GB
 # psi4.core.set_memory(int(2e9), False)
@@ -43,7 +46,7 @@ t = time.time()
 
 # First compute SCF energy using Psi4
 scf_e, wfn = psi4.energy('SCF', return_wfn=True)
-print scf_e
+# print scf_e
 
 # Grab data from wavfunction class 
 C = wfn.Ca()
@@ -72,14 +75,6 @@ print('Starting AO -> spin-orbital MO transformation...')
 t = time.time()
 MO = np.asarray(mints.mo_spin_eri(C, C))
 
-# Update nocc and nvirt
-nso = nmo * 2
-nocc = ndocc * 2
-nvirt = nso - nocc
-
-print('..finished transformation in %.3f seconds.\n' % (time.time() - t))
-
-
 ### Build so Fock matirx
 
 # Update H, transform to MO basis and tile for alpha/beta spin
@@ -91,16 +86,30 @@ H = np.repeat(H, 2, axis=1)
 spin_ind = np.arange(H.shape[0], dtype=np.int) % 2
 H *= (spin_ind.reshape(-1, 1) == spin_ind)
 
+print('..finished transformation in %.3f seconds.\n' % (time.time() - t))
 
 from Determinant import Determinant_bits
 from itertools import combinations
-
-print nmo, ndocc
-
-detList = []
-for alpha in combinations(xrange(nmo), ndocc):
-    for beta in combinations(xrange(nmo), ndocc):
-        detList.append(Determinant_bits(alphaObtList=alpha, betaObtList=beta))
-for det in detList:
-    print det
     
+from MatrixElements import MatrixElements_dense
+
+print('Generating Hamiltonian Matrix...')
+
+t = time.time()
+matrix_element = MatrixElements_dense(nmo, ndocc, H, MO)
+Hamiltonian = matrix_element.generateMatrix()
+
+print('..finished Hamiltonian Matrix in %.3f seconds.\n' % (time.time() - t))
+
+print('Diagonalizing Hamiltonian Matrix...')
+
+t = time.time()
+e_fci, wavefunctions = np.linalg.eigh(Hamiltonian)
+fci_mol_e = e_fci[0] + mol.nuclear_repulsion_energy()
+
+print('..finished diagonalization in %.3f seconds.\n' % (time.time() - t))
+
+print('Total FCI energy:   % 16.10f' % (fci_mol_e))
+
+if compare_psi4:
+    psi4.driver.p4util.compare_values(psi4.energy('FCI'), fci_mol_e, 6, 'FCI Energy')
