@@ -1,4 +1,5 @@
-# A Determinant Class
+# Helper Classes for Configuration Interaction methods
+# Numpy python modules is required
 #
 # Created by: Tianyuan Zhang
 # Date: 1/10/15
@@ -6,36 +7,32 @@
 #
 
 from itertools import combinations
-class Determinant:
-    '''
-    class for determinant
-    '''
 
-class Determinant_bits(Determinant):
+class Determinant:
     '''
     class for determinant stored in bits
     '''
 
     def __init__(self, alphaObtBits=0, betaObtBits=0, alphaObtList=None, betaObtList=None):
-        """Constructor for Determinant_bits"""
+        """Constructor for Determinant"""
         if alphaObtBits == 0 and alphaObtList != None:
-            alphaObtBits = Determinant_bits.obtIndexList2ObtBits(alphaObtList)
+            alphaObtBits = Determinant.obtIndexList2ObtBits(alphaObtList)
         if betaObtBits == 0 and betaObtList != None:
-            betaObtBits = Determinant_bits.obtIndexList2ObtBits(betaObtList)
+            betaObtBits = Determinant.obtIndexList2ObtBits(betaObtList)
         self.alphaObtBits = alphaObtBits
         self.betaObtBits = betaObtBits
     
     def getNumOrbitals(self):
         """Return the number of orbitals (alpha, beta) in this determinant"""
-        return Determinant_bits.countNumOrbitalsInBits(self.alphaObtBits), Determinant_bits.countNumOrbitalsInBits(self.betaObtBits)
+        return Determinant.countNumOrbitalsInBits(self.alphaObtBits), Determinant.countNumOrbitalsInBits(self.betaObtBits)
     
     def getOrbitalIndexLists(self):
         """Return lists of orbital index"""
-        return Determinant_bits.obtBits2ObtIndexList(self.alphaObtBits), Determinant_bits.obtBits2ObtIndexList(self.betaObtBits)
+        return Determinant.obtBits2ObtIndexList(self.alphaObtBits), Determinant.obtBits2ObtIndexList(self.betaObtBits)
     
     def getOrbitalMixedIndexList(self):
-        """Return lists of orbital in mixed spin index"""
-        return Determinant_bits.obtBits2ObtMixSpinIndexList(self.alphaObtBits, self.betaObtBits)
+        """Return lists of orbital in mixed spin index alternating alpha and beta"""
+        return Determinant.obtBits2ObtMixSpinIndexList(self.alphaObtBits, self.betaObtBits)
     
     @staticmethod
     def countNumOrbitalsInBits(bits):
@@ -59,7 +56,7 @@ class Determinant_bits(Determinant):
     
     @staticmethod
     def obtBits2ObtIndexList(bits):
-        """Return the corresponding list of orbital numbers of orbital bits"""
+        """Return the corresponding list of orbital numbers from orbital bits"""
         i = 0
         obts = []
         while bits!=0:
@@ -77,12 +74,12 @@ class Determinant_bits(Determinant):
     @staticmethod
     def obtBits2ObtMixSpinIndexList(alphaBits, betaBits):
         """Return the corresponding list of orbital numbers of orbital bits"""
-        alphaList, betaList = Determinant_bits.obtBits2ObtIndexList(alphaBits), Determinant_bits.obtBits2ObtIndexList(betaBits)
-        return Determinant_bits.mixIndexList(alphaList, betaList)
+        alphaList, betaList = Determinant.obtBits2ObtIndexList(alphaBits), Determinant.obtBits2ObtIndexList(betaBits)
+        return Determinant.mixIndexList(alphaList, betaList)
     
     @staticmethod
     def obtIndexList2ObtBits(obtList):
-        """Return the corresponding orbital bits of list of orbital numbers"""
+        """Return the corresponding orbital bits of list from orbital numbers"""
         if len(obtList)==0:
             return 0
         obtList = sorted(obtList, reverse = True)
@@ -113,7 +110,7 @@ class Determinant_bits(Determinant):
     
     def getOrbitalPositionLists(self, alphaIndexList, betaIndexList):
         """Return the positions of indexes in lists"""
-        return Determinant_bits.getOrbitalPositions(self.alphaObtBits, alphaIndexList), Determinant_bits.getOrbitalPositions(self.betaObtBits, betaIndexList)
+        return Determinant.getOrbitalPositions(self.alphaObtBits, alphaIndexList), Determinant.getOrbitalPositions(self.betaObtBits, betaIndexList)
     
     def addAlphaOrbital(self, orbitalIndex):
         """Add an alpha orbital to the determinant"""
@@ -133,19 +130,19 @@ class Determinant_bits(Determinant):
         
     def numberOfCommonOrbitals(self, another):
         """Return the number of common orbitals between this determinant and another determinant"""
-        return Determinant_bits.countNumOrbitalsInBits(self.alphaObtBits & another.alphaObtBits), Determinant_bits.countNumOrbitalsInBits(self.betaObtBits & another.betaObtBits)
+        return Determinant.countNumOrbitalsInBits(self.alphaObtBits & another.alphaObtBits), Determinant.countNumOrbitalsInBits(self.betaObtBits & another.betaObtBits)
     
     def getCommonOrbitalsInLists(self, another):
         """Return common orbitals between this determinant and another determinant in lists"""
-        return Determinant_bits.obtBits2ObtIndexList(self.alphaObtBits & another.alphaObtBits), Determinant_bits.obtBits2ObtIndexList(self.betaObtBits & another.betaObtBits)
+        return Determinant.obtBits2ObtIndexList(self.alphaObtBits & another.alphaObtBits), Determinant.obtBits2ObtIndexList(self.betaObtBits & another.betaObtBits)
     
     def getCommonOrbitalsInMixedSpinIndexList(self, another):
         alphaList, betaList = self.getCommonOrbitalsInLists(another)
-        return Determinant_bits.mixIndexList(alphaList, betaList)
+        return Determinant.mixIndexList(alphaList, betaList)
     
     def numberOfDiffOrbitals(self, another):
         """Return the number of different alpha and beta orbitals between this determinant and another determinant"""
-        diffAlpha, diffBeta = Determinant_bits.countNumOrbitalsInBits(self.alphaObtBits ^ another.alphaObtBits), Determinant_bits.countNumOrbitalsInBits(self.betaObtBits ^ another.betaObtBits)
+        diffAlpha, diffBeta = Determinant.countNumOrbitalsInBits(self.alphaObtBits ^ another.alphaObtBits), Determinant.countNumOrbitalsInBits(self.betaObtBits ^ another.betaObtBits)
         return diffAlpha/2, diffBeta/2
     
     def numberOfTotalDiffOrbitals(self, another):
@@ -155,7 +152,7 @@ class Determinant_bits(Determinant):
     
     def diff2OrLessOrbitals(self, another):
         """Return true if two determinants differ 2 or less orbitals"""
-        diffAlpha, diffBeta = Determinant_bits.countNumOrbitalsInBitsUpTo4(self.alphaObtBits ^ another.alphaObtBits), Determinant_bits.countNumOrbitalsInBitsUpTo4(self.betaObtBits ^ another.betaObtBits)
+        diffAlpha, diffBeta = Determinant.countNumOrbitalsInBitsUpTo4(self.alphaObtBits ^ another.alphaObtBits), Determinant.countNumOrbitalsInBitsUpTo4(self.betaObtBits ^ another.betaObtBits)
         return (diffAlpha+diffBeta) <= 4
     
     @staticmethod
@@ -167,22 +164,22 @@ class Determinant_bits(Determinant):
     @staticmethod
     def uniqueOrbitalsInLists(bits1, bits2):
         """Return the unique bits in two different bits"""
-        bits1, bits2 = Determinant_bits.uniqueOrbitalsInBits(bits1, bits2)
-        return Determinant_bits.obtBits2ObtIndexList(bits1), Determinant_bits.obtBits2ObtIndexList(bits2)
+        bits1, bits2 = Determinant.uniqueOrbitalsInBits(bits1, bits2)
+        return Determinant.obtBits2ObtIndexList(bits1), Determinant.obtBits2ObtIndexList(bits2)
     
     def getUniqueOrbitalsInLists(self, another):
         """Return the unique orbital lists in two different determinants"""
-        alphaList1, alphaList2 = Determinant_bits.uniqueOrbitalsInLists(self.alphaObtBits, another.alphaObtBits)
-        betaList1, betaList2 = Determinant_bits.uniqueOrbitalsInLists(self.betaObtBits, another.betaObtBits)
+        alphaList1, alphaList2 = Determinant.uniqueOrbitalsInLists(self.alphaObtBits, another.alphaObtBits)
+        betaList1, betaList2 = Determinant.uniqueOrbitalsInLists(self.betaObtBits, another.betaObtBits)
         return (alphaList1, betaList1),(alphaList2, betaList2)
     
-    def getUnoccupiedOrbitalsInLists(self, numOfBasis):
+    def getUnoccupiedOrbitalsInLists(self, nmo):
         """Return the unoccupied orbitals in the determinants"""
         alphaBits = ~self.alphaObtBits
         betaBits = ~self.betaObtBits
         alphaObts = []
         betaObts = []
-        for i in xrange(numOfBasis):
+        for i in xrange(nmo):
             if alphaBits&1==1:
                 alphaObts.append(i)
             alphaBits >>= 1
@@ -205,15 +202,15 @@ class Determinant_bits(Determinant):
     
     def getUniqueOrbitalsInListsPlusSign(self, another):
         """Return the unique orbital lists in two different determinants and the sign of the maximum coincidence determinants"""
-        alphaList1, alphaList2 = Determinant_bits.uniqueOrbitalsInLists(self.alphaObtBits, another.alphaObtBits)
-        betaList1, betaList2 = Determinant_bits.uniqueOrbitalsInLists(self.betaObtBits, another.betaObtBits)
+        alphaList1, alphaList2 = Determinant.uniqueOrbitalsInLists(self.alphaObtBits, another.alphaObtBits)
+        betaList1, betaList2 = Determinant.uniqueOrbitalsInLists(self.betaObtBits, another.betaObtBits)
         sign1, sign2 = self.getSignToMoveOrbitalsToTheFront(alphaList1, betaList1), another.getSignToMoveOrbitalsToTheFront(alphaList2, betaList2)
         return (alphaList1, betaList1),(alphaList2, betaList2),sign1*sign2
     
     def getUniqueOrbitalsInMixIndexListsPlusSign(self, another):
         """Return the unique orbital lists in two different determinants and the sign of the maximum coincidence determinants"""
         (alphaList1, betaList1),(alphaList2, betaList2),sign = self.getUniqueOrbitalsInListsPlusSign(another)
-        return Determinant_bits.mixIndexList(alphaList1, betaList1), Determinant_bits.mixIndexList(alphaList2, betaList2), sign
+        return Determinant.mixIndexList(alphaList1, betaList1), Determinant.mixIndexList(alphaList2, betaList2), sign
     
     def toIntTuple(self):
         """Return a int tuple"""
@@ -221,12 +218,12 @@ class Determinant_bits(Determinant):
     
     @staticmethod
     def createFromIntTuple(intTuple):
-        return Determinant_bits(alphaObtBits=intTuple[0], betaObtBits=intTuple[1])
+        return Determinant(alphaObtBits=intTuple[0], betaObtBits=intTuple[1])
     
-    def generateSingleExcitationOfDet(self, numOfBasis):
+    def generateSingleExcitationsOfDet(self, nmo):
         """generate all the single excitations of determinant in a list"""
         alphaO, betaO = self.getOrbitalIndexLists()
-        alphaU, betaU = self.getUnoccupiedOrbitalsInLists(numOfBasis)
+        alphaU, betaU = self.getUnoccupiedOrbitalsInLists(nmo)
         dets = []
         
         for i in alphaO:
@@ -245,10 +242,10 @@ class Determinant_bits(Determinant):
                 
         return dets
     
-    def generateDoubleExcitationOfDet(self, numOfBasis):
+    def generateDoubleExcitationsOfDet(self, nmo):
         """generate all the double excitations of determinant in a list"""
         alphaO, betaO = self.getOrbitalIndexLists()
-        alphaU, betaU = self.getUnoccupiedOrbitalsInLists(numOfBasis)
+        alphaU, betaU = self.getUnoccupiedOrbitalsInLists(nmo)
         dets = []
                 
         for i in alphaO:
@@ -281,14 +278,80 @@ class Determinant_bits(Determinant):
                 dets.append(det)
         return dets
     
-    def generateSingleAndDoubleExcitationOfDet(self, numOfBasis):
+    def generateSingleAndDoubleExcitationsOfDet(self, nmo):
         """generate all the single and double excitations of determinant in a list"""
-        return self.generateSingleExcitationOfDet(numOfBasis) + self.generateDoubleExcitationOfDet(numOfBasis)
+        return self.generateSingleExcitationsOfDet(nmo) + self.generateDoubleExcitationsOfDet(nmo)
     
     def copy(self):
         """Return a deep copy of self"""
-        return Determinant_bits(alphaObtBits=self.alphaObtBits, betaObtBits=self.betaObtBits)
+        return Determinant(alphaObtBits=self.alphaObtBits, betaObtBits=self.betaObtBits)
     
     def __str__(self):
         a,b = self.getOrbitalIndexLists()
         return "|"+str(a)+str(b)+">"
+
+
+import numpy as np
+
+class HamiltonianGenerator:
+    '''
+    class for Full CI matrix elements
+    '''
+    def __init__(self, H_spin, mo_spin_eri):
+        """Constructor for MatrixElements"""
+        self.Hspin = H_spin
+        self.antiSym2eInt = mo_spin_eri
+    
+    def generateMatrix(self, detList):
+        """Generate CI Matrix"""
+        numDet = len(detList)
+        matrix = np.zeros((numDet,numDet))
+        for i in xrange(numDet):
+            for j in xrange(i+1):
+                matrix[i,j] = self.calcMatrixElement(detList[i], detList[j])
+                matrix[j,i] = matrix[i,j]
+        return matrix
+    
+    def calcMatrixElement(self, det1, det2):
+        """Calculate a matrix element by two determinants"""
+        numUniqueOrbitals = None
+        if det1.diff2OrLessOrbitals(det2):
+            numUniqueOrbitals = det1.numberOfTotalDiffOrbitals(det2)
+            if numUniqueOrbitals == 2:
+                return self.calcMatrixElementDiffIn2(det1, det2)
+            elif numUniqueOrbitals == 1:
+                return self.calcMatrixElementDiffIn1(det1, det2)
+            else:
+                return self.calcMatrixElementIdentialDet(det1)
+        else:
+            return 0.0
+    
+    def calcMatrixElementDiffIn2(self, det1, det2):
+        """Calculate a matrix element by two determinants where the determinants differ by 2 spin orbitals"""
+        unique1, unique2, sign = det1.getUniqueOrbitalsInMixIndexListsPlusSign(det2)
+        return sign * self.antiSym2eInt[unique1[0], unique1[1], unique2[0], unique2[1]]
+    
+    def calcMatrixElementDiffIn1(self, det1, det2):
+        """Calculate a matrix element by two determinants where the determinants differ by 1 spin orbitals"""
+        unique1, unique2, sign = det1.getUniqueOrbitalsInMixIndexListsPlusSign(det2)
+        m = unique1[0]
+        p = unique2[0]
+        Helem = self.Hspin[m,p]
+        common = det1.getCommonOrbitalsInMixedSpinIndexList(det2)
+        Relem = 0.0
+        for n in common:
+            Relem += self.antiSym2eInt[m,n,p,n]
+        return sign * (Helem + Relem)
+    
+    def calcMatrixElementIdentialDet(self, det):
+        """Calculate a matrix element by two determinants where they are identical"""
+        spinObtList = det.getOrbitalMixedIndexList()
+        Helem = 0.0
+        for m in spinObtList:
+            Helem += self.Hspin[m,m]
+        length = len(spinObtList)
+        Relem = 0.0
+        for m in xrange(length-1):
+            for n in xrange(m+1, length):
+                Relem += self.antiSym2eInt[spinObtList[m], spinObtList[n], spinObtList[m], spinObtList[n]]
+        return Helem + Relem
