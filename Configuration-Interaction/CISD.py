@@ -1,10 +1,10 @@
-# A simple Psi 4 input script to compute Full Configuration Interaction from a SCF reference
+# A simple Psi 4 input script to compute CISD energy from a SCF reference
 # Requirements scipy 0.13.0+ and numpy 1.7.2+
 #
 # Thank Daniel G. A. Smith for coding other projects as reference.
 #
 # Created by: Tianyuan Zhang
-# Date: 5/19/17
+# Date: 5/21/17
 # License: GPL v3.0
 #
 
@@ -46,10 +46,13 @@ scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 C = wfn.Ca()
 ndocc = wfn.doccpi()[0]
 nmo = wfn.nmo()
+nvirt = nmo - ndocc
 
 # Compute size of Hamiltonian in GB
 from scipy.special import comb
-nDet = comb(nmo, ndocc)**2
+nDet_S = ndocc * nvirt * 2
+nDet_D = 2 * comb(ndocc, 2) * comb(nvirt, 2) + ndocc **2 * nvirt **2
+nDet = 1 + nDet_S + nDet_D
 H_Size = nDet**2 * 8e-9
 print('\nSize of the Hamiltonian Matrix will be %4.2f GB.' % H_Size)
 if H_Size > numpy_memory:
@@ -83,12 +86,14 @@ print('..finished transformation in %.3f seconds.\n' % (time.time() - t))
 from helper_CI import Determinant, HamiltonianGenerator
 from itertools import combinations
 
-print('Generating %d Full CI Determinants...' % (nDet))
+print('Generating %d CISD Determinants...' % (nDet))
 t = time.time()
-detList = []
-for alpha in combinations(xrange(nmo), ndocc):
-    for beta in combinations(xrange(nmo), ndocc):
-        detList.append(Determinant(alphaObtList=alpha, betaObtList=beta))
+
+occList = [i for i in xrange(ndocc)]
+det_ref = Determinant(alphaObtList=occList, betaObtList=occList)
+print det_ref
+detList = det_ref.generateSingleAndDoubleExcitationsOfDet(nmo)
+detList.append(det_ref)
 
 print('..finished generating determinants in %.3f seconds.\n' % (time.time() - t))
 
@@ -104,17 +109,17 @@ print('Diagonalizing Hamiltonian Matrix...')
 
 t = time.time()
 
-e_fci, wavefunctions = np.linalg.eigh(Hamiltonian_matrix)
+e_cisd, wavefunctions = np.linalg.eigh(Hamiltonian_matrix)
 print('..finished diagonalization in %.3f seconds.\n' % (time.time() - t))
 
-fci_mol_e = e_fci[0] + mol.nuclear_repulsion_energy()
+cisd_mol_e = e_cisd[0] + mol.nuclear_repulsion_energy()
 
 print('# Determinants:     % 16d' % (len(detList)))
 
 print('SCF energy:         % 16.10f' % (scf_e))
-print('FCI correlation:    % 16.10f' % (fci_mol_e - scf_e))
-print('Total FCI energy:   % 16.10f' % (fci_mol_e))
+print('CISD correlation:    % 16.10f' % (cisd_mol_e - scf_e))
+print('Total CISD energy:   % 16.10f' % (cisd_mol_e))
 
 if compare_psi4:
-    psi4.driver.p4util.compare_values(psi4.energy('FCI'), fci_mol_e, 6, 'FCI Energy')
+    psi4.driver.p4util.compare_values(psi4.energy('DETCI'), cisd_mol_e, 6, 'CISD Energy')
     
