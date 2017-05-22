@@ -1,6 +1,8 @@
-# A simple Psi 4 input script to compute CISD energy from a SCF reference
+# A simple Psi 4 input script to compute CIS excitation energies from a SCF reference
 # Requirements scipy 0.13.0+ and numpy 1.7.2+
 #
+# Algorithms were taken directly from Daniel Crawford's programming website:
+# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
 # Thank Daniel G. A. Smith for coding other projects as reference.
 #
 # Created by: Tianyuan Zhang
@@ -12,9 +14,6 @@ import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
-
-# Check energy against psi4?
-compare_psi4 = True
 
 # Memory for Psi4 in GB
 # psi4.core.set_memory(int(2e9), False)
@@ -47,18 +46,16 @@ C = wfn.Ca()
 ndocc = wfn.doccpi()[0]
 nmo = wfn.nmo()
 nvirt = nmo - ndocc
-
-# Compute size of Hamiltonian in GB
-from scipy.special import comb
 nDet_S = ndocc * nvirt * 2
-nDet_D = 2 * comb(ndocc, 2) * comb(nvirt, 2) + ndocc **2 * nvirt **2
-nDet = 1 + nDet_S + nDet_D
-H_Size = nDet**2 * 8e-9
-print('\nSize of the Hamiltonian Matrix will be %4.2f GB.' % H_Size)
-if H_Size > numpy_memory:
+
+# Compute size of SO-ERI tensor in GB
+ERI_Size = (nmo ** 4) * 128e-9
+print('\nSize of the SO ERI tensor will be %4.2f GB.' % ERI_Size)
+memory_footprint = ERI_Size * 5.2
+if memory_footprint > numpy_memory:
     clean()
     raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory \
-                    limit of %4.2f GB." % (H_Size, numpy_memory))
+                    limit of %4.2f GB." % (memory_footprint, numpy_memory))
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
@@ -86,12 +83,12 @@ print('..finished transformation in %.3f seconds.\n' % (time.time() - t))
 from helper_CI import Determinant, HamiltonianGenerator
 from itertools import combinations
 
-print('Generating %d CISD Determinants...' % (nDet))
+print('Generating %d CIS singlet Determinants...' % (nDet_S + 1))
 t = time.time()
 
 occList = [i for i in xrange(ndocc)]
 det_ref = Determinant(alphaObtList=occList, betaObtList=occList)
-detList = det_ref.generateSingleAndDoubleExcitationsOfDet(nmo)
+detList = det_ref.generateSingleExcitationsOfDet(nmo)
 detList.append(det_ref)
 
 print('..finished generating determinants in %.3f seconds.\n' % (time.time() - t))
@@ -108,17 +105,18 @@ print('Diagonalizing Hamiltonian Matrix...')
 
 t = time.time()
 
-e_cisd, wavefunctions = np.linalg.eigh(Hamiltonian_matrix)
+e_cis, wavefunctions = np.linalg.eigh(Hamiltonian_matrix)
 print('..finished diagonalization in %.3f seconds.\n' % (time.time() - t))
-
-cisd_mol_e = e_cisd[0] + mol.nuclear_repulsion_energy()
 
 print('# Determinants:     % 16d' % (len(detList)))
 
 print('SCF energy:         % 16.10f' % (scf_e))
-print('CISD correlation:    % 16.10f' % (cisd_mol_e - scf_e))
-print('Total CISD energy:   % 16.10f' % (cisd_mol_e))
 
-if compare_psi4:
-    psi4.driver.p4util.compare_values(psi4.energy('DETCI'), cisd_mol_e, 6, 'CISD Energy')
-    
+hartree2eV = 27.211
+
+print('\nCIS Excitation Energies (Singlets only):')
+print(' #        Hartree                  eV')
+print('--  --------------------  --------------------')
+for i in xrange(1, len(e_cis)):
+    excit_e = e_cis[i] + mol.nuclear_repulsion_energy() - scf_e
+    print('%2d %20.10f %20.10f' % (i, excit_e, excit_e * hartree2eV))
