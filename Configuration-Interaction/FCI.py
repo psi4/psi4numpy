@@ -1,4 +1,4 @@
-# A simple Psi 4 input script to compute Full CI from a SCF reference
+# A simple Psi 4 input script to compute Full Configuration Interaction from a SCF reference
 # Requirements scipy 0.13.0+ and numpy 1.7.2+
 #
 # Thank Daniel G. A. Smith for coding other projects as reference.
@@ -13,6 +13,7 @@ import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
+# Check energy against psi4?
 compare_psi4 = True
 
 # Memory for Psi4 in GB
@@ -21,7 +22,6 @@ psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
 numpy_memory = 2
-
 
 mol = psi4.geometry("""
 O
@@ -36,29 +36,26 @@ psi4.set_options({'basis': 'sto-3g',
                   'e_convergence': 1e-8,
                   'd_convergence': 1e-8})
 
-# Check energy against psi4?
-check_energy = False
-
 print('\nStarting SCF and integral build...')
 t = time.time()
 
 # First compute SCF energy using Psi4
 scf_e, wfn = psi4.energy('SCF', return_wfn=True)
-# print scf_e
 
 # Grab data from wavfunction class 
 C = wfn.Ca()
 ndocc = wfn.doccpi()[0]
 nmo = wfn.nmo()
 
-# Compute size of SO-ERI tensor in GB
-ERI_Size = (nmo ** 4) * 128e-9
-print('\nSize of the SO ERI tensor will be %4.2f GB.' % ERI_Size)
-memory_footprint = ERI_Size * 5.2
-if memory_footprint > numpy_memory:
+# Compute size of Hamiltonian in GB
+from scipy.special import comb
+nDet = comb(nmo, ndocc)**2
+H_Size = nDet**2 * 8e-9
+print('\nSize of the Hamiltonian Matrix will be %4.2f GB.' % H_Size)
+if H_Size > numpy_memory:
     clean()
     raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory \
-                    limit of %4.2f GB." % (memory_footprint, numpy_memory))
+                    limit of %4.2f GB." % (H_Size, numpy_memory))
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
@@ -72,8 +69,6 @@ print('Starting AO -> spin-orbital MO transformation...')
 t = time.time()
 MO = np.asarray(mints.mo_spin_eri(C, C))
 
-### Build so Fock matirx
-
 # Update H, transform to MO basis and tile for alpha/beta spin
 H = np.einsum('uj,vi,uv', C, C, H)
 H = np.repeat(H, 2, axis=0)
@@ -85,24 +80,42 @@ H *= (spin_ind.reshape(-1, 1) == spin_ind)
 
 print('..finished transformation in %.3f seconds.\n' % (time.time() - t))
 
-from Determinant import Determinant_bits
-from MatrixElements import MatrixElements_dense
+from helper_CI import Determinant, HamiltonianGenerator
+from itertools import combinations
+
+print('Generating %d Full CI Determinants...' % (nDet))
+t = time.time()
+detList = []
+for alpha in combinations(xrange(nmo), ndocc):
+    for beta in combinations(xrange(nmo), ndocc):
+        detList.append(Determinant(alphaObtList=alpha, betaObtList=beta))
+        
+# occList = [i for i in xrange(ndocc)]
+# det_ref = Determinant(alphaObtList=occList, betaObtList=occList)
+# print det_ref
+# detList = det_ref.generateSingleAndDoubleExcitationsOfDet(nmo)
+# detList.append(det_ref)
+
+print('..finished generating determinants in %.3f seconds.\n' % (time.time() - t))
 
 print('Generating Hamiltonian Matrix...')
 
 t = time.time()
-matrix_element = MatrixElements_dense(nmo, ndocc, H, MO)
-Hamiltonian = matrix_element.generateMatrix()
+Hamiltonian_generator = HamiltonianGenerator(H, MO)
+Hamiltonian_matrix = Hamiltonian_generator.generateMatrix(detList)
 
-print('..finished Hamiltonian Matrix in %.3f seconds.\n' % (time.time() - t))
+print('..finished generating Matrix in %.3f seconds.\n' % (time.time() - t))
 
 print('Diagonalizing Hamiltonian Matrix...')
 
 t = time.time()
-e_fci, wavefunctions = np.linalg.eigh(Hamiltonian)
+
+e_fci, wavefunctions = np.linalg.eigh(Hamiltonian_matrix)
+print('..finished diagonalization in %.3f seconds.\n' % (time.time() - t))
+
 fci_mol_e = e_fci[0] + mol.nuclear_repulsion_energy()
 
-print('..finished diagonalization in %.3f seconds.\n' % (time.time() - t))
+print('# Determinants:     % 16d' % (len(detList)))
 
 print('SCF energy:         % 16.10f' % (scf_e))
 print('FCI correlation:    % 16.10f' % (fci_mol_e - scf_e))
@@ -110,3 +123,4 @@ print('Total FCI energy:   % 16.10f' % (fci_mol_e))
 
 if compare_psi4:
     psi4.driver.p4util.compare_values(psi4.energy('FCI'), fci_mol_e, 6, 'FCI Energy')
+    
