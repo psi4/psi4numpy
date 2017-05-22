@@ -69,8 +69,6 @@ print('Starting AO -> spin-orbital MO transformation...')
 t = time.time()
 MO = np.asarray(mints.mo_spin_eri(C, C))
 
-### Build so Fock matirx
-
 # Update H, transform to MO basis and tile for alpha/beta spin
 H = np.einsum('uj,vi,uv', C, C, H)
 H = np.repeat(H, 2, axis=0)
@@ -84,8 +82,6 @@ print('..finished transformation in %.3f seconds.\n' % (time.time() - t))
 
 from helper_CI import Determinant, HamiltonianGenerator
 from itertools import combinations
-    
-from MatrixElements import MatrixElements_dense
 
 print('Generating %d Full CI Determinants...' % (nDet))
 t = time.time()
