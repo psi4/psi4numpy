@@ -23,7 +23,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda create -q -n p4env python=3.5 psi4 -c psi4
+  - conda create -q -n p4env python=3.5 psi4 scipy runipy -c psi4
   - source activate p4env
   - eval "$(~/Gits/psixc/objdir/stage/usr/local/psi4/bin/psi4 --psiapi-path)"
   - conda list
