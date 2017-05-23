@@ -12,7 +12,7 @@ this project moves forward and how well we serve yours as well as the needs of
 the community. 
 
 The following are a set of suggestions for the best way to contribute to the
-Psi4NumPy project. Just Code of the Pirate Brethren set forth by Morgan and
+Psi4NumPy project. Just like the Code of the Pirate Brethren set forth by Morgan and
 Bartholomew, they're more what you'd call "guidelines" than actual rules.
 Hopefully, however, this document (and the guidelines inside) will make
 contributing to Psi4NumPy both easier and more effective for everyone.  
@@ -321,7 +321,7 @@ clear, readable implementations, even at the expense of program speed.
 
 Interactive tutorials provide a hybrid theory-and-implementation educational
 framework within a Jupyter notebook for the reader to learn general information
-regarding a method's formulation and detailed information regarding the
+about a method's formulation and detailed information with respect to the
 method's implementation.  A good tutorial is not just about clear, correct code
 (like the reference implementations) but also requires that each detail be
 motivated logically and explained fully. Each tutorial contains 
@@ -353,6 +353,15 @@ cells alongside reading about the implementation.  Again, specific equations
 within publications should be referenced with [LNFA:yy:pp] keys, which should
 match those references within the `Tutorial References` section (see
 [below](#citation-styleguide)).
+
+Note: Every tutorial should be accompanied by a corresponding reference
+implementation.  This is because the interactive tutorials are like a
+classroom, while the reference implementation is like a textbook.  While a more
+adventurous student may skip class to rely on reading the book, every class
+needs an accompanying textbook for supporting material.  The accompanying
+reference implementation can be as simple as reproducing the code cells in a
+single script, or potentially more complex if supplemented by helper
+functions/classes/modules.
 
 ### Value Comparison
 
