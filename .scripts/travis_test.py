@@ -21,7 +21,12 @@ except:
 ncolumns = shutil.get_terminal_size((80, 20)).columns
 
 # List of scripts to skip testing
-exceptions = ["Coupled-Cluster/TD-CCSD.py"]
+exceptions = ["Coupled-Cluster/TD-CCSD.py",
+
+              # iPython magic command test issues
+              "Tutorials/01_Psi4NumPy-Basics/1b_molecule.ipynb",
+              "Tutorials/01_Psi4NumPy-Basics/1f_tensor-manipulation.ipynb",
+              "Tutorials/01_Psi4NumPy-Basics/1g_basis-sets.ipynb"]
 
 # List of folders to run the python scripts in
 reference_folders = [
@@ -30,6 +35,8 @@ reference_folders = [
 "Moller-Plesset",
 "Symmetry-Adapted-Perturbation-Theory",
 "Electron-Propagator"]
+
+#reference_folders = []
 
 # List of folders to run the jupyter scripts in
 tutorial_folders = [
@@ -41,7 +48,7 @@ tutorial_folders = [
 "Tutorials/06_Molecular_Properties"]
 
 # Not quite ready to test tutorials
-tutorial_folders = []
+#tutorial_folders = []
 
 ### Helper functions
 
@@ -135,8 +142,7 @@ for folder in tutorial_folders:
         if not success:
             failing_list.append((script, output))
             nfailed += 1
-        break
-    break
+
     print("")
 
 total_time = time.time() - full_timer
@@ -152,13 +158,13 @@ else:
     for script, output in failing_list:
         print(script)
 
-    #print("\n")
-    #print_banner("Failing outputs")
-    #for script, output in failing_list:
-    #    print("\nFailing output for %s" % script)
-    #    print(output)
-    #    print("-" * ncolumns)
-    #print("")
+    print("\n")
+    print_banner("Failing outputs")
+    for script, output in failing_list:
+        print("\nFailing output for %s" % script)
+        print(output)
+        print("-" * ncolumns)
+    print("")
 
 # Throw a failed flag if we having failing cases so travis can pick this up
 if nfailed:
