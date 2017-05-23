@@ -1,7 +1,7 @@
 """A script that runs each of the Psi4NumPy reference implementations and checks that they exit successfully."""
 
 __author__ = "Daniel G. A. Smith"
-__license__ = "BSC-3Clause"
+__license__ = "BSC-3-Clause"
 __copyright__ = "(c) 2017, The Psi4NumPy Developers"
 
 import glob
@@ -39,6 +39,9 @@ tutorial_folders = [
 # "Tutorials/04_Density_Functional_Theory",
 "Tutorials/05_Moller-Plesset",
 "Tutorials/06_Molecular_Properties"]
+
+# Not quite ready to test tutorials
+tutorial_folders = []
 
 ### Helper functions
 
@@ -115,12 +118,25 @@ for folder in tutorial_folders:
 
         ntest += 1
         print(script + ":", end="", flush=True)
-        success, output = run_script("runipy " + script)
-        print_flag(success)
+
+        success, output = run_script("jupyter nbconvert --to script " + script)
+        if not success:
+            print("Conversion Failed!")
+        else:
+            success, output = run_script("python " + script.replace(".ipynb", ".py"))
+            print_flag(success)
+
+        for end in [".nbconvert.py", ".nbconvert.ipynb", ".py"]:
+            try:
+                os.unlink(script.replace(".ipynb", end))
+            except:
+                pass
 
         if not success:
             failing_list.append((script, output))
             nfailed += 1
+        break
+    break
     print("")
 
 total_time = time.time() - full_timer
