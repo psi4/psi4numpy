@@ -24,12 +24,21 @@ ncolumns = shutil.get_terminal_size((80, 20)).columns
 exceptions = ["Coupled-Cluster/TD-CCSD.py"]
 
 # List of folders to run the python scripts in
-folders = [
+reference_folders = [
 "Self-Consistent-Field",
 "Coupled-Cluster",
 "Moller-Plesset",
 "Symmetry-Adapted-Perturbation-Theory",
 "Electron-Propagator"]
+
+# List of folders to run the jupyter scripts in
+tutorial_folders = [
+"Tutorials/01_Psi4NumPy-Basics",
+"Tutorials/03_Hartree-Fock",
+"Tutorials/02_Linear_Algebra",
+# "Tutorials/04_Density_Functional_Theory",
+"Tutorials/05_Moller-Plesset",
+"Tutorials/06_Molecular_Properties"]
 
 ### Helper functions
 
@@ -47,8 +56,8 @@ def print_banner(title):
 
     nequals = ncolumns - len(title)
     nleft = nequals // 2
-   
-    print(("=" * (nleft + nequals %2)) + title + ("=" * nleft)) 
+
+    print(("=" * (nleft + nequals %2)) + title + ("=" * nleft))
 
 def print_flag(success):
     if success:
@@ -70,7 +79,12 @@ full_timer = time.time()
 ntest = 0
 nfailed = 0
 
-for folder in folders:
+print("")
+print_banner("Testing Reference Implementations")
+print("")
+
+# Run reference implementations
+for folder in reference_folders:
     print_banner("Now testing: " + folder)
     files = glob.glob(folder + '/*.py')
     for script in files:
@@ -87,6 +101,27 @@ for folder in folders:
             nfailed += 1
     print("")
 
+print("")
+print_banner("Testing Tutorials")
+print("")
+
+# Run iPython impolementations
+for folder in tutorial_folders:
+    print_banner("Now testing: " + folder)
+    files = glob.glob(folder + '/*.ipynb')
+    for script in files:
+        if script in exceptions:
+            continue
+
+        ntest += 1
+        print(script + ":", end="", flush=True)
+        success, output = run_script("runipy " + script)
+        print_flag(success)
+
+        if not success:
+            failing_list.append((script, output))
+            nfailed += 1
+    print("")
 
 total_time = time.time() - full_timer
 
@@ -101,14 +136,16 @@ else:
     for script, output in failing_list:
         print(script)
 
-    print("\n")
-    print_banner("Failing outputs")
-    for script, output in failing_list:
-        print("\nFailing output for %s" % script)
-        print(output)
-        print("-" * ncolumns)
-    print("")
+    #print("\n")
+    #print_banner("Failing outputs")
+    #for script, output in failing_list:
+    #    print("\nFailing output for %s" % script)
+    #    print(output)
+    #    print("-" * ncolumns)
+    #print("")
 
-
+# Throw a failed flag if we having failing cases so travis can pick this up
+if nfailed:
+    exit(1)
 
 
