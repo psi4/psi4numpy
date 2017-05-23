@@ -52,7 +52,7 @@ eps = np.array([eps.get(x) for x in range(C.shape[0])])
 
 # Compute size of ERI tensor in GB
 ERI_Size = (nmo**4)*8.0 / 1E9
-print "Size of the ERI tensor will be %4.2f GB." % ERI_Size
+print("Size of the ERI tensor will be %4.2f GB." % ERI_Size)
 memory_footprint = ERI_Size*2.5
 if memory_footprint > numpy_memory:
     clean()
@@ -98,7 +98,7 @@ print('MP2 correlation energy: %16.8f' % MP2corr_E)
 print('MP2 total energy:       %16.8f' % MP2total_E)
 psi4.driver.p4util.compare_values(psi4.energy('MP2'), MP2total_E, 6, 'MP2 Energy')
 
-print '\n Starting MP3 energy...'
+print('\n Starting MP3 energy...')
 t = time.time()
 
 # Equation 1

@@ -15,9 +15,6 @@ import psi4
 psi4.set_memory('2 GB')
 psi4.core.set_output_file('output.dat', False)
 
-# Grab a DIIS object, will be moved up later
-from psi4.driver.procedures.mcscf.diis_helper import DIIS_helper
-
 # Benzene
 mol = psi4.geometry("""
 C  0.000  1.396  0.000
@@ -70,7 +67,7 @@ A = mints.ao_overlap()
 A.power(-0.5, 1.e-16)
 
 # Build diis
-diis = DIIS_helper(max_vec=6)
+diis = psi4.p4util.solvers.DIIS(max_vec=6)
 
 # Diagonalize routine
 def build_orbitals(diag):

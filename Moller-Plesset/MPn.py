@@ -57,7 +57,7 @@ if memory_footprint > numpy_memory:
 
 #Make spin-orbital MO
 t=time.time()
-print 'Starting ERI build and AO -> MO transformation...'
+print('Starting ERI build and AO -> MO transformation...')
 mints = psi4.core.MintsHelper(wfn.basisset())
 MO = np.asarray(mints.mo_eri(C, C, C, C))
 

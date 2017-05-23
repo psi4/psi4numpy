@@ -20,8 +20,8 @@ except:
 # How wide is the terminal
 ncolumns = shutil.get_terminal_size((80, 20)).columns
 
-# List of scripts to skip the
-exceptions = []
+# List of scripts to skip testing
+exceptions = ["Coupled-Cluster/TD-CCSD.py"]
 
 # List of folders to run the python scripts in
 folders = [
@@ -74,6 +74,8 @@ for folder in folders:
     print_banner("Now testing: " + folder)
     files = glob.glob(folder + '/*.py')
     for script in files:
+        if script in exceptions:
+            continue
 
         ntest += 1
         print(script, end="", flush=True)
@@ -83,7 +85,6 @@ for folder in folders:
         if not success:
             failing_list.append((script, output))
             nfailed += 1
-    break
     print("")
 
 

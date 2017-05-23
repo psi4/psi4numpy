@@ -30,7 +30,8 @@ symmetry c1
 psi4.set_options({'basis': 'cc-pvdz',
                   'scf_type': 'pk',
                   'mp2_type': 'conv',
-                  'freeze_core': 'true',
+                  'mp2_type': 'conv',
+                  'freeze_core': 'false',
                   'e_convergence': 1e-8,
                   'd_convergence': 1e-8})
 
@@ -56,7 +57,7 @@ if memory_footprint > numpy_memory:
 
 #Make spin-orbital MO
 t=time.time()
-print 'Starting ERI build and spin AO -> spin-orbital MO transformation...'
+print('Starting ERI build and spin AO -> spin-orbital MO transformation...')
 mints = psi4.core.MintsHelper(wfn.basisset())
 MO = np.asarray(mints.mo_spin_eri(C, C))
 eps = np.repeat(eps, 2)
@@ -81,6 +82,9 @@ MP2corr_E = 0.25 * np.einsum('abrs,rsab,abrs', MO[o, o, v, v], MO[v, v, o, o], e
 MP2total_E = SCF_E + MP2corr_E
 print('MP2 correlation energy:      %16.10f' % MP2corr_E)
 print('MP2 total energy:            %16.10f' % MP2total_E)
+
+# Compare to Psi4
+psi4.driver.p4util.compare_values(psi4.energy('MP2'), MP2total_E, 6, 'MP2 Energy')
 
 eqn1 = 0.125 * np.einsum('abrs,cdab,rscd,abrs,cdrs->', MO[o, o, v, v], MO[o, o, o, o], MO[v, v, o, o], epsilon, epsilon)
 eqn2 = 0.125 * np.einsum('abrs,rstu,tuab,abrs,abtu', MO[o, o, v, v], MO[v, v, v, v], MO[v, v, o, o], epsilon, epsilon)
