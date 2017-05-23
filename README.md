@@ -29,29 +29,62 @@ application, each tutorial is constructed as hybrid theory and programming in an
 interactive environment, removing the gap between theory and implementation.
 
 If you have comments, questions, or would like to contribute to the project
-please feel free to email [me](mailto:dgasmith@gatech.edu).
+please see our [contributor guidelines]().
 
 ### Getting Started
 
-New users can either follow the
+1. Obtain required software:
+- [Psi4](http://psicode.org/psi4manual/1.1/build_obtaining.html)
+- [Python](https://python.org) 2.7+
+- [NumPy](http://www.numpy.org) 1.7.2+
+- [Scipy](https://scipy.org) 0.13.0+
+ 
+2. Update Psi4 to the development version with Conda:
+```
+conda update psi4 -c psi4/label/dev
+```
+
+3. Link PsiAPI
+    1. Find appropriate paths
+```
+~$ bash
+~$ psi4 --psiapi-path
+export PATH=$HOME/psi4conda/bin:$PATH
+export PYTHONPATH=$HOME/psi4conda/lib/python-x.x/site-packages:$PYTHONPATH
+```
+    2. Export relevant paths
+```
+~$ export PATH=$HOME/psi4conda/bin:$PATH
+~$ export PYTHONPATH=$HOME/psi4conda/lib/python-x.x/site-packages:$PYTHONPATH
+```
+4. Run scripts as conventional Python scripts, ```python -c "import psi4"```.
+
+New users can follow the
 [Getting Started](https://github.com/psi4/psi4numpy/blob/master/Tutorials/01_Psi4NumPy-Basics/1a_Getting-Started.ipynb)
-notebook or follow the less verbose directions below.
-
-To begin using Psi4NumPy:
-- Obtain recent versions of Psi4, NumPy, and SciPy (see Requirements for version details)
-- Locate the `Psi4_install/lib` directory and execute the following: ```export PYTHONPATH=Psi4_install/lib```
-
-All scripts should then be run as conventional Python scripts, ```python -c "import psi4"```.
+notebook or the [PsiAPI documentation](http://psicode.org/psi4manual/master/psiapi.html) for an introduction to running Psi4 within the PsiAPI.
 
 A tutorial that covers the basics of NumPy can be found
 [here](http://wiki.scipy.org/Tentative_NumPy_Tutorial).
 
-### Requirements:
+### Repository Organization
 
-- [Psi4](https://github.com/Psi4/Psi4) 1.1+
-- [Python](https://python.org) 2.7+
- - [NumPy](http://www.numpy.org) 1.7.2+
- - [Scipy](https://scipy.org) 0.13.0+
+This repository contains
+
+* reference implementations, which provide working
+programs implementing various quantum chemical methods as Python scripts, and
+* interactive tutorials, which provide a hybrid theory-and-implementation
+educational framework for learning to program quantum chemistry methods as Jupyter
+notebooks.
+
+Reference implementations are organized into top-level directories
+corresponding to the over-arching theory upon which each method is based, i.e.,
+both EOM-CCSD and TD-CCSD are contained in the
+[Coupled-Cluster](https://github.com/psi4/psi4numpy/tree/master/Coupled-Cluster)
+directory.  All interactive tutorials are contained in the top-level directory
+[Tutorials](https://github.com/psi4/psi4numpy/tree/master/Tutorials).  These
+tutorials are organized in logical order of progression, which is enumerated in
+detail
+[here](https://github.com/psi4/psi4numpy/tree/master/Tutorials#interactive-tutorials).
 
 ### Psi4 v1.1
 This repostitory has recently been updated to be compatible with Psi4 version 1.1.
