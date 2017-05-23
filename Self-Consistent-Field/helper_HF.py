@@ -168,6 +168,8 @@ class DIIS_helper(object):
         self.max_vec = max_vec
 
     def add(self, matrix, error):
+        error = np.array(error)
+        matrix = np.array(matrix)
         if len(self.error) > 1:
             if self.error[-1].shape[0] != error.size:
                 raise Exception("Error vector size does not match previous vector.")

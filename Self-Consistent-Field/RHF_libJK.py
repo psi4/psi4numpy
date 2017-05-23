@@ -10,6 +10,7 @@ import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
+import helper_HF
 
 # Memory & Output File
 psi4.set_memory('2 GB')
@@ -67,7 +68,7 @@ A = mints.ao_overlap()
 A.power(-0.5, 1.e-16)
 
 # Build diis
-diis = psi4.p4util.solvers.DIIS(max_vec=6)
+diis = helper_HF.DIIS_helper(max_vec=6)
 
 # Diagonalize routine
 def build_orbitals(diag):
@@ -142,7 +143,7 @@ for SCF_ITER in range(1, maxiter + 1):
     Eold = SCF_E
     Dold = D
 
-    F = diis.extrapolate()
+    F = psi4.core.Matrix.from_array(diis.extrapolate())
 
     # Diagonalize Fock matrix
     C, Cocc, D = build_orbitals(F)
