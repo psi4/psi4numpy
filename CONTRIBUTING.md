@@ -23,25 +23,23 @@ Good luck & happy coding!
 
 #### Table of Contents
 
-[What do I need to know before starting to contribute to Psi4NumPy?](#what-do-i-need-to-know-before-starting-to-contribute-to-psi4numpy)
-    * [Project Goals](#project-goals)
-    * [Repository Organization](#repository-organization)
-    
-[How can I contribute to Psi4NumPy?](#how-can-i-contribute-to-psi4numpy)
-    * [Reporting Issues](#reporting-issues)
-    * [Feature Requests](#feature-requests)
-    * [Contributing Content](#contributing-content)
+1. [What do I need to know before starting to contribute to Psi4NumPy?](#what-do-i-need-to-know-before-starting-to-contribute-to-psi4numpy)
+    1. [Project Goals](#project-goals)
+    2. [Repository Organization](#repository-organization)
+2. [How can I contribute to Psi4NumPy?](#how-can-i-contribute-to-psi4numpy)
+    1. [Reporting Issues](#reporting-issues)
+    2. [Feature Requests](#feature-requests)
+    3. [Contributing Content](#contributing-content)
         * [Suggested Workflow](#suggested-workflow)
         * [Reference Implementations](#reference-implementations)
         * [Interactive Tutorials](#interactive-tutorials)
-        * [Value Comparison](#value-comparison)
-        
-[Styleguides](#styleguides)
-    * [Git Commit Messages](#git-commit-messages)
-    * [Python Styleguide](#python-styleguide)
-    * [Citation Styleguide](#citation-styleguide)
-    * [Header Styleguide](#header-styleguide)
-    * [Documentation Sytleguide](#documentation-styleguide)
+        * [Value Comparison](#value-comparison) 
+3. [Styleguides](#styleguides)
+    1. [Git Commit Messages](#git-commit-messages)
+    2. [Python Styleguide](#python-styleguide)
+    3. [Citation Styleguide](#citation-styleguide)
+    4. [Header Styleguide](#header-styleguide)
+    5. [Documentation Sytleguide](#documentation-styleguide)
 
 # What do I need to know before starting to contribute to Psi4NumPy?
 ## Project Goals
