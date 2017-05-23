@@ -30,7 +30,6 @@ install:
 
 before_script:
   - python -V
-  - pip install -e .
 
 script:
   - python .scripts/travis_test.py
