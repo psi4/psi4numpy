@@ -8,7 +8,12 @@
 
 import time
 import numpy as np
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
+
+# Memory & Output File
+psi4.set_memory('2 GB')
+psi4.core.set_output_file('output.dat', False)
 
 # Grab a DIIS object, will be moved up later
 from psi4.driver.procedures.mcscf.diis_helper import DIIS_helper

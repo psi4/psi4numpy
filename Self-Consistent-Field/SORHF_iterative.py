@@ -13,7 +13,7 @@ from helper_HF import *
 import psi4
 
 # Memory for Psi4 in GB
-psi4.core.set_memory(int(2e9), False)
+psi4.set_memory('2 GB')
 psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
