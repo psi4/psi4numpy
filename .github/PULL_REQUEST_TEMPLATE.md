@@ -1,15 +1,16 @@
 ## Description
-Provide a brief description of the PR's purpose here.
+Please provide a brief description of the PR's purpose here.
 
-## Todos
-Notable points that this PR has either accomplished or will accomplish.
-* **Developer Interest**
+## What are your new additions? Please provide a brief list.
+* **New Features**
   - [ ] Feature1
-* **User-Facing for Release Notes**
   - [ ] Feature2
 
-## Questions
+* **Changes**
+  - [ ] Change1  
+
+## Any questions for the community?
 - [ ] Question1
 
 ## Status
-- [ ] Ready to go
+- [ ] Click when ready for review-and-merge

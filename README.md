@@ -33,31 +33,44 @@ please see our [contributor guidelines]().
 
 ### Getting Started
 
-1. Obtain required software:
-- [Psi4](http://psicode.org/psi4manual/1.1/build_obtaining.html)
-- [Python](https://python.org) 2.7+
-- [NumPy](http://www.numpy.org) 1.7.2+
-- [Scipy](https://scipy.org) 0.13.0+
- 
-2. Update Psi4 to the development version with Conda:
+1. Obtain required software
+    1. [Psi4](http://psicode.org/psi4manual/1.1/build_obtaining.html)
+        * Option 1 (easiest): [Download the installer](http://vergil.chemistry.gatech.edu/psicode-download/1.1.html) via the web.  Install according to the instructions [here](http://psicode.org/psi4manual/1.1/conda.html#how-to-install-a-psi4-binary-with-the-psi4conda-installer-download-site).
+        * Option 2 (easy): [Download and install via Conda](http://psicode.org/psi4manual/1.1/conda.html#how-to-install-a-psi4-binary-with-the-psi4conda-installer-command-line)
+        * Option 3 (medium): [Clone & compile from source](https://github.com/psi4/psi4) accoring to the instructions [here](http://psicode.org/psi4manual/1.1/build_planning.html) 
+    2. [Python](https://python.org) 2.7+
+    3. [NumPy](http://www.numpy.org) 1.7.2+
+    4. [Scipy](https://scipy.org) 0.13.0+
+2. Enable Psi4 & PsiAPI
+    * If Psi4 was installed via binary (`conda` or binary installer):
+        1. Activate conda environment
 ```
-conda update psi4 -c psi4/label/dev
+~$ source activate p4env
 ```
+        2. Update Psi4 to latest development version
+```
+(p4env) ~$ conda update psi4 -c psi4/label/dev
+```
+    * If Psi4 was compiled from source, you're already up-to-date!
 
-3. Link PsiAPI
     1. Find appropriate paths
 ```
-~$ bash
-~$ psi4 --psiapi-path
+(p4env) ~$ bash
+(p4env) ~$ install_prefix/psi4/bin/psi4 --psiapi-path
 export PATH=$HOME/psi4conda/bin:$PATH
 export PYTHONPATH=$HOME/psi4conda/lib/python-x.x/site-packages:$PYTHONPATH
 ```
     2. Export relevant paths
 ```
-~$ export PATH=$HOME/psi4conda/bin:$PATH
-~$ export PYTHONPATH=$HOME/psi4conda/lib/python-x.x/site-packages:$PYTHONPATH
+(p4env) ~$ export PATH=$HOME/psi4conda/bin:$PATH
+(p4env) ~$ export PYTHONPATH=$HOME/psi4conda/lib/python-x.x/site-packages:$PYTHONPATH
 ```
-4. Run scripts as conventional Python scripts, ```python -c "import psi4"```.
+3. Run scripts as conventional Python scripts
+    * Example: Run `DF-MP2.py`
+```
+(p4env) ~$ cd psi4numpy/Moller-Plesset/
+(p4env) ~/psi4numpy$ python DF-MP2.py
+```
 
 New users can follow the
 [Getting Started](https://github.com/psi4/psi4numpy/blob/master/Tutorials/01_Psi4NumPy-Basics/1a_Getting-Started.ipynb)
@@ -70,11 +83,11 @@ A tutorial that covers the basics of NumPy can be found
 
 This repository contains
 
-* reference implementations, which provide working
-programs implementing various quantum chemical methods as Python scripts, and
-* interactive tutorials, which provide a hybrid theory-and-implementation
-educational framework for learning to program quantum chemistry methods as Jupyter
-notebooks.
+* reference implementations, which provide working Python scripts implementing
+various quantum chemical methods, and
+* interactive tutorials, which provide Jupyter notebooks presenting a hybrid
+theory-and-implementation educational framework for learning to program quantum
+chemistry methods.
 
 Reference implementations are organized into top-level directories
 corresponding to the over-arching theory upon which each method is based, i.e.,
