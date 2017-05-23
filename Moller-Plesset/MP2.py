@@ -101,8 +101,8 @@ print('SCS-MP2 total energy:              %16.10f' % SCS_MP2_E)
 
 if check_energy:
     psi4.energy('MP2')
-    psi4.driver.p4util.compare_values(psi4.core.get_variable('MP2 TOTAL ENERGY'), MP2_E, 6, 'MP2 Energy')
-    psi4.driver.p4util.compare_values(psi4.core.get_variable('SCS-MP2 TOTAL ENERGY'), SCS_MP2_E, 6, 'SCS-MP2 Energy')
+    psi4.compare_values(psi4.core.get_variable('MP2 TOTAL ENERGY'), MP2_E, 6, 'MP2 Energy')
+    psi4.compare_values(psi4.core.get_variable('SCS-MP2 TOTAL ENERGY'), SCS_MP2_E, 6, 'SCS-MP2 Energy')
 
 
 # Natural orbitals as a bonus

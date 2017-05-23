@@ -104,5 +104,5 @@ CCSD_T_E = CCSD_E + Pert_T
 print('\nPertubative (T) correlation energy:     % 16.10f' % Pert_T)
 print('Total CCSD(T) energy:                   % 16.10f' % CCSD_T_E)
 if compare_psi4:
-    psi4.driver.p4util.compare_values(psi4.energy('CCSD(T)'), CCSD_T_E, 6, 'CCSD(T) Energy')
+    psi4.compare_values(psi4.energy('CCSD(T)'), CCSD_T_E, 6, 'CCSD(T) Energy')
 

@@ -228,7 +228,7 @@ MP2_E = SCF_E + MP2corr_E
 
 print('MO based MP2 correlation energy: %.8f' % MP2corr_E)
 print('MP2 total energy:       %.8f' % MP2_E)
-psi4.driver.p4util.compare_values(psi4.energy('mp2'), MP2_E, 6, 'MP2 Energy')
+psi4.compare_values(psi4.energy('mp2'), MP2_E, 6, 'MP2 Energy')
 
 ### Start CCSD iterations
 print('\nStarting CCSD iterations')
@@ -316,7 +316,7 @@ CCSD_E = SCF_E + CCSDcorr_E
 print('\nFinal CCSD correlation energy:     % 16.10f' % CCSDcorr_E)
 print('Total CCSD energy:                 % 16.10f' % CCSD_E)
 if compare_psi4:
-    psi4.driver.p4util.compare_values(psi4.energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
+    psi4.compare_values(psi4.energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
 
 if print_amps:
     # [::4] take every 4th, [-5:] take last 5, [::-1] reverse order

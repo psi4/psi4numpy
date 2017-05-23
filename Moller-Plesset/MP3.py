@@ -96,7 +96,7 @@ MP2corr_E -= np.einsum('abrs,rsba,abrs', MO[o, o, v, v], MO[v, v, o, o], epsilon
 MP2total_E = SCF_E + MP2corr_E
 print('MP2 correlation energy: %16.8f' % MP2corr_E)
 print('MP2 total energy:       %16.8f' % MP2total_E)
-psi4.driver.p4util.compare_values(psi4.energy('MP2'), MP2total_E, 6, 'MP2 Energy')
+psi4.compare_values(psi4.energy('MP2'), MP2total_E, 6, 'MP2 Energy')
 
 print('\n Starting MP3 energy...')
 t = time.time()
@@ -133,6 +133,6 @@ MP3corr_E += MP2corr_E
 MP3total_E = SCF_E + MP3corr_E
 print('MP3 correlation energy: %16.8f' % MP3corr_E)
 print('MP3 total energy:       %16.8f' % MP3total_E)
-psi4.driver.p4util.compare_values(psi4.energy('MP3'), MP3total_E, 6, 'MP3 Energy')
+psi4.compare_values(psi4.energy('MP3'), MP3total_E, 6, 'MP3 Energy')
 
 

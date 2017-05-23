@@ -1,3 +1,36 @@
+
+    -----------------------------------------------------------------------
+          Psi4: An Open-Source Ab Initio Electronic Structure Package
+                               Psi4 (inplace)
+
+                         Git: Rev (inplace)
+
+
+    J. M. Turney, A. C. Simmonett, R. M. Parrish, E. G. Hohenstein,
+    F. A. Evangelista, J. T. Fermann, B. J. Mintz, L. A. Burns, J. J. Wilke,
+    M. L. Abrams, N. J. Russ, M. L. Leininger, C. L. Janssen, E. T. Seidl,
+    W. D. Allen, H. F. Schaefer, R. A. King, E. F. Valeev, C. D. Sherrill,
+    and T. D. Crawford, WIREs Comput. Mol. Sci. 2, 556-565 (2012)
+    (doi: 10.1002/wcms.93)
+
+
+                         Additional Contributions by
+    A. E. DePrince, U. Bozkaya, A. Yu. Sokolov, D. G. A. Smith, R. Di Remigio,
+    R. M. Richard, J. F. Gonthier, H. R. McAlexander, M. Saitow, and
+    B. P. Pritchard
+    -----------------------------------------------------------------------
+
+
+    Psi4 started on: Friday, 13 January 2017 10:09PM
+
+    Process ID:  60684
+    PSIDATADIR: /Users/daniel/Gits/psixc/psi4/share/psi4
+    Memory:     500.0 MiB
+    Threads:    1
+    
+  ==> Input File <==
+
+--------------------------------------------------------------------------
 # A simple Psi 4 input script to compute a SCF reference using Psi4's libJK
 # Requires numpy 1.7.2+
 #
@@ -8,12 +41,11 @@
 
 import time
 import numpy as np
-import helper_HF as scf_helper
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
 # Memory for Psi4 in GB
-psi4.set_memory('2 GB')
+psi4.core.set_memory(int(2e9), False)
 psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
@@ -21,14 +53,13 @@ numpy_memory = 2
 
 # Triplet O2
 mol = psi4.geometry("""
-    0 3
-    O
-    O 1 1.2
+    0 2
+    Li
 symmetry c1
 """)
 
 psi4.set_options({'guess': 'gwh',
-                  'basis': 'aug-cc-pvdz',
+                  'basis': 'cc-pvdz',
                   'scf_type': 'df',
                   'e_convergence': 1e-8,
                   'reference': 'rohf'})
@@ -69,7 +100,7 @@ H = T + V
 
 # Orthogonalizer A = S^(-1/2)
 A = mints.ao_overlap()
-A.power(-0.5, 1.e-16)
+A.power(-0.5, 1.e-1)
 A = np.asarray(A)
 
 if True:
@@ -86,6 +117,20 @@ Cnocc = C[:, :nocc]
 Docc = np.dot(Cnocc, Cnocc.T)
 Cndocc = C[:, :ndocc]
 Ddocc = np.dot(Cndocc, Cndocc.T)
+
+Ap = mints.ao_overlap()
+Ap.power(0.5, 1.e-14)
+Ap = np.asarray(Ap)
+
+print(Ct)
+print(np.dot(A, S).dot(C))
+print(np.dot(Ap, C))
+print(np.allclose(Ct, np.dot(A, S).dot(C)))
+print(np.allclose(Ct, np.dot(Ap, C)))
+#print(np.dot(A, A).dot(A).dot(S))
+#print(A)
+
+raise Exception("")
 
 t = time.time()
 E = 0.0
@@ -107,7 +152,7 @@ t = time.time()
 for SCF_ITER in range(1, maxiter + 1):
 
     # Build a and b fock matrices
-    J, K = scf_helper.compute_jk(jk, [C[:, :nocc], C[:, :ndocc]])
+    J, K = scf_helper.compute_jk(psi4, jk, [C[:, :nocc], C[:, :ndocc]])
     J = J[0] + J[1]
     Fa = H + J - K[0]
     Fb = H + J - K[1]
@@ -180,4 +225,7 @@ print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 print('Final SCF energy: %.8f hartree' % SCF_E)
 # Compare with Psi4
 SCF_E_psi = psi4.energy('SCF')
-psi4.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
+psi4.driver.p4util.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
+--------------------------------------------------------------------------
+
+  Memory set to   2.000 GiB by Python script.

@@ -154,4 +154,4 @@ for SCF_ITER in range(1, maxiter + 1):
 print('Total time for SCF iterations: %.3f seconds \n\n' % (time.time() - t))
 
 print('Final SCF energy: %.8f hartree\n' % SCF_E)
-psi4.driver.p4util.compare_values(-230.7277181465556453, SCF_E, 6, 'SCF Energy')
+psi4.compare_values(-230.7277181465556453, SCF_E, 6, 'SCF Energy')

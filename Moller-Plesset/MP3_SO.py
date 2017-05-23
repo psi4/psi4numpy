@@ -84,7 +84,7 @@ print('MP2 correlation energy:      %16.10f' % MP2corr_E)
 print('MP2 total energy:            %16.10f' % MP2total_E)
 
 # Compare to Psi4
-psi4.driver.p4util.compare_values(psi4.energy('MP2'), MP2total_E, 6, 'MP2 Energy')
+psi4.compare_values(psi4.energy('MP2'), MP2total_E, 6, 'MP2 Energy')
 
 eqn1 = 0.125 * np.einsum('abrs,cdab,rscd,abrs,cdrs->', MO[o, o, v, v], MO[o, o, o, o], MO[v, v, o, o], epsilon, epsilon)
 eqn2 = 0.125 * np.einsum('abrs,rstu,tuab,abrs,abtu', MO[o, o, v, v], MO[v, v, v, v], MO[v, v, o, o], epsilon, epsilon)
@@ -96,7 +96,7 @@ print('\nMP3 correlation energy:      %16.10f' % MP3corr_E)
 print('MP3 total energy:            %16.10f' % MP3total_E)
 
 # Compare to Psi4
-psi4.driver.p4util.compare_values(psi4.energy('MP3'), MP3total_E, 6, 'MP3 Energy')
+psi4.compare_values(psi4.energy('MP3'), MP3total_E, 6, 'MP3 Energy')
 
 
 
