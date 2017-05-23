@@ -44,33 +44,33 @@ please see our [contributor guidelines]().
 2. Enable Psi4 & PsiAPI
     * If Psi4 was installed via binary (`conda` or binary installer):
         1. Activate conda environment
-```
-~$ source activate p4env
-```
+            ```
+            ~$ source activate p4env
+            ```
         2. Update Psi4 to latest development version
-```
-(p4env) ~$ conda update psi4 -c psi4/label/dev
-```
+            ```
+            (p4env) ~$ conda update psi4 -c psi4/label/dev
+            ```
     * If Psi4 was compiled from source, you're already up-to-date!
 
     1. Find appropriate paths
-```
-(p4env) ~$ bash
-(p4env) ~$ install_prefix/psi4/bin/psi4 --psiapi-path
-export PATH=$HOME/psi4conda/bin:$PATH
-export PYTHONPATH=$HOME/psi4conda/lib/python-x.x/site-packages:$PYTHONPATH
-```
+        ```
+        (p4env) ~$ bash
+        (p4env) ~$ install_prefix/psi4/bin/psi4 --psiapi-path
+        export PATH=$HOME/psi4conda/bin:$PATH
+        export PYTHONPATH=$HOME/psi4conda/lib/python-x.x/site-packages:$PYTHONPATH
+        ```
     2. Export relevant paths
-```
-(p4env) ~$ export PATH=$HOME/psi4conda/bin:$PATH
-(p4env) ~$ export PYTHONPATH=$HOME/psi4conda/lib/python-x.x/site-packages:$PYTHONPATH
-```
+        ```
+        (p4env) ~$ export PATH=$HOME/psi4conda/bin:$PATH
+        (p4env) ~$ export PYTHONPATH=$HOME/psi4conda/lib/python-x.x/site-packages:$PYTHONPATH
+        ```
 3. Run scripts as conventional Python scripts
     * Example: Run `DF-MP2.py`
-```
-(p4env) ~$ cd psi4numpy/Moller-Plesset/
-(p4env) ~/psi4numpy$ python DF-MP2.py
-```
+        ```
+        (p4env) ~$ cd psi4numpy/Moller-Plesset/
+        (p4env) ~/psi4numpy$ python DF-MP2.py
+        ```
 
 New users can follow the
 [Getting Started](https://github.com/psi4/psi4numpy/blob/master/Tutorials/01_Psi4NumPy-Basics/1a_Getting-Started.ipynb)
