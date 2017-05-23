@@ -78,7 +78,7 @@ for folder in folders:
             continue
 
         ntest += 1
-        print(script, end="", flush=True)
+        print(script + ":", end="", flush=True)
         success, output = run_script("python " + script)
         print_flag(success)
 
