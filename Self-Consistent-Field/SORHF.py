@@ -13,7 +13,7 @@ from helper_HF import *
 import psi4
 
 # Memory for Psi4 in GB
-psi4.core.set_memory(int(2e9), False)
+psi4.set_memory('500 MB')
 psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
@@ -128,5 +128,5 @@ print('Final SCF energy:     %.8f hartree' % hf.scf_e)
 
 # Compare to Psi4
 SCF_E_psi = psi4.energy('SCF')
-psi4.driver.p4util.compare_values(SCF_E_psi, hf.scf_e, 6, 'SCF Energy')
+psi4.compare_values(SCF_E_psi, hf.scf_e, 6, 'SCF Energy')
 

@@ -14,7 +14,7 @@ np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
 # Memory for Psi4 in GB
-psi4.core.set_memory(int(2e9), False)
+psi4.set_memory('2 GB')
 psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
@@ -52,7 +52,7 @@ eps = np.array([eps.get(x) for x in range(C.shape[0])])
 
 # Compute size of ERI tensor in GB
 ERI_Size = (nmo**4)*8.0 / 1E9
-print "Size of the ERI tensor will be %4.2f GB." % ERI_Size
+print("Size of the ERI tensor will be %4.2f GB." % ERI_Size)
 memory_footprint = ERI_Size*2.5
 if memory_footprint > numpy_memory:
     clean()
@@ -96,9 +96,9 @@ MP2corr_E -= np.einsum('abrs,rsba,abrs', MO[o, o, v, v], MO[v, v, o, o], epsilon
 MP2total_E = SCF_E + MP2corr_E
 print('MP2 correlation energy: %16.8f' % MP2corr_E)
 print('MP2 total energy:       %16.8f' % MP2total_E)
-psi4.driver.p4util.compare_values(psi4.energy('MP2'), MP2total_E, 6, 'MP2 Energy')
+psi4.compare_values(psi4.energy('MP2'), MP2total_E, 6, 'MP2 Energy')
 
-print '\n Starting MP3 energy...'
+print('\n Starting MP3 energy...')
 t = time.time()
 
 # Equation 1
@@ -133,6 +133,6 @@ MP3corr_E += MP2corr_E
 MP3total_E = SCF_E + MP3corr_E
 print('MP3 correlation energy: %16.8f' % MP3corr_E)
 print('MP3 total energy:       %16.8f' % MP3total_E)
-psi4.driver.p4util.compare_values(psi4.energy('MP3'), MP3total_E, 6, 'MP3 Energy')
+psi4.compare_values(psi4.energy('MP3'), MP3total_E, 6, 'MP3 Energy')
 
 

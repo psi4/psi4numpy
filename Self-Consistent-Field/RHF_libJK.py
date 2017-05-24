@@ -8,10 +8,13 @@
 
 import time
 import numpy as np
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
+import helper_HF
 
-# Grab a DIIS object, will be moved up later
-from psi4.driver.procedures.mcscf.diis_helper import DIIS_helper
+# Memory & Output File
+psi4.set_memory('2 GB')
+psi4.core.set_output_file('output.dat', False)
 
 # Benzene
 mol = psi4.geometry("""
@@ -65,7 +68,7 @@ A = mints.ao_overlap()
 A.power(-0.5, 1.e-16)
 
 # Build diis
-diis = DIIS_helper(max_vec=6)
+diis = helper_HF.DIIS_helper(max_vec=6)
 
 # Diagonalize routine
 def build_orbitals(diag):
@@ -140,7 +143,7 @@ for SCF_ITER in range(1, maxiter + 1):
     Eold = SCF_E
     Dold = D
 
-    F = diis.extrapolate()
+    F = psi4.core.Matrix.from_array(diis.extrapolate())
 
     # Diagonalize Fock matrix
     C, Cocc, D = build_orbitals(F)
@@ -152,4 +155,4 @@ for SCF_ITER in range(1, maxiter + 1):
 print('Total time for SCF iterations: %.3f seconds \n\n' % (time.time() - t))
 
 print('Final SCF energy: %.8f hartree\n' % SCF_E)
-psi4.driver.p4util.compare_values(-230.7277181465556453, SCF_E, 6, 'SCF Energy')
+psi4.compare_values(-230.7277181465556453, SCF_E, 6, 'SCF Energy')
