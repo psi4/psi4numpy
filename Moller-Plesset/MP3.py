@@ -1,12 +1,19 @@
-# A simple Psi 4 input script to compute MP3
-# Requirements scipy 0.13.0+ and numpy 1.7.2+
-#
-# From Szabo and Ostlund page 390
-#
-# Created by: Daniel G. A. Smith
-# Date: 7/29/14
-# License: GPL v3.0
-#
+"""
+Reference implementation for the correlation energy of MP3 with an RHF reference.
+
+Requirements: 
+SciPy 0.13.0+, NumPy 1.7.2+
+
+References:
+Equations from [Szabo:1996]
+"""
+
+__authors__    = "Daniel G. A. Smith"
+__credits__   = ["Daniel G. A. Smith", "Dominic A. Sirianni"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "05/23/2017"
 
 import time
 import numpy as np
@@ -101,29 +108,35 @@ psi4.compare_values(psi4.energy('MP2'), MP2total_E, 6, 'MP2 Energy')
 print('\n Starting MP3 energy...')
 t = time.time()
 
-# Equation 1
+# MP3 Correlation energy
+
+# Prefactors taken from terms in unnumbered expression for spatial-orbital MP3
+# energy on [Szabo:1996] pp. (bottom) 367 - (top) 368. Individual equations taken
+# from [Szabo:1996] Tbl. 6.2 pp. 364-365
+
+# Equation 1: 3rd order diagram 1
 MP3corr_E =   2.0 * np.einsum('abru,ruts,tsab,abru,abts', MO[o, o, v, v], MO[v, v, v, v], MO[v, v, o, o], epsilon, epsilon) 
-# Equation 2
+# Equation 2: 3rd order diagram 2 
 MP3corr_E +=  2.0 * np.einsum('adrs,cbad,rscb,adrs,cbrs', MO[o, o, v, v], MO[o, o, o, o], MO[v, v, o, o], epsilon, epsilon)
-# Equation 3
+# Equation 3: 3rd order diagram 3
 MP3corr_E += -4.0 * np.einsum('acrt,rbsc,stab,acrt,abst', MO[o, o, v, v], MO[v, o, v, o], MO[v, v, o, o], epsilon, epsilon)
-# Equation 4
+# Equation 4: 3rd order diagram 4
 MP3corr_E += -4.0 * np.einsum('bcrt,rasb,stac,bcrt,acst', MO[o, o, v, v], MO[v, o, v, o], MO[v, v, o, o], epsilon, epsilon)
-# Equation 5
+# Equation 5: 3rd order diagram 5
 MP3corr_E +=  8.0 * np.einsum('acrt,btsc,rsab,acrt,abrs', MO[o, o, v, v], MO[o, v, v, o], MO[v, v, o, o], epsilon, epsilon)
-# Equation 6
+# Equation 6: 3rd order diagram 6
 MP3corr_E +=  2.0 * np.einsum('cbrt,atsc,rsab,cbrt,abrs', MO[o, o, v, v], MO[o, v, v, o], MO[v, v, o, o], epsilon, epsilon)
-# Equation 7
+# Equation 7: 3rd order diagram 7
 MP3corr_E += -1.0 * np.einsum('acrs,dbac,srdb,acrs,dbrs', MO[o, o, v, v], MO[o, o, o, o], MO[v, v, o, o], epsilon, epsilon)
-# Equation 8
+# Equation 8: 3rd order diagram 8
 MP3corr_E += -1.0 * np.einsum('abrt,trus,usab,abtr,abus', MO[o, o, v, v], MO[v, v, v, v], MO[v, v, o, o], epsilon, epsilon)
-# Equation 9
+# Equation 9: 3rd order diagram 9
 MP3corr_E +=  2.0 * np.einsum('bcrt,arbs,tsac,cbrt,acst', MO[o, o, v, v], MO[o, v, o, v], MO[v, v, o, o], epsilon, epsilon)
-# Equation 10
+# Equation 10: 3rd order diagram 10
 MP3corr_E +=  2.0 * np.einsum('cbrt,rasb,stac,cbrt,acst', MO[o, o, v, v], MO[v, o, v, o], MO[v, v, o, o], epsilon, epsilon)
-# Equation 11
+# Equation 11: 3rd order diagram 11
 MP3corr_E += -4.0 * np.einsum('abrs,scat,rtbc,abrs,cbrt', MO[o, o, v, v], MO[v, o, o, v], MO[v, v, o, o], epsilon, epsilon)
-# Equation 12
+# Equation 12: 3rd order diagram 12
 MP3corr_E += -4.0 * np.einsum('bcrt,atsc,rsab,bctr,abrs', MO[o, o, v, v], MO[o, v, v, o], MO[v, v, o, o], epsilon, epsilon)
 
 print('...took %.3f seconds to compute MP3 correlation energy.\n' % (time.time()-t))

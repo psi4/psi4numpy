@@ -1,14 +1,17 @@
-#A simple Psi 4 input script to compute MP2 from a RHF reference
-# Requirements numpy 1.7.2+
-#
-# Algorithm modified from Rob Parrish's most excellent Psi4 plugin example
-# Bottom of the page: http://www.psicode.org/developers.php
-#
-# Created by: Daniel G. A. Smith
-# Date: 2/25/15
-# License: GPL v3.0
-#
+"""
+A reference implementation of density-fitted MP2 from a RHF reference.
 
+References: 
+Algorithm modified from Rob Parrish's most excellent Psi4 plugin example
+Bottom of the page: http://www.psicode.org/developers.php
+"""
+
+__authors__   = "Daniel G. A. Smith"
+__credits__   = ["Daniel G. A. Smith", "Dominic A. Sirianni"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "05/23/2017"
 
 import time
 import numpy as np

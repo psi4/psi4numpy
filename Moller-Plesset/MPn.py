@@ -1,13 +1,19 @@
-# A simple Psi 4 input script to compute MP3
-# Focus on auto generating einsum expressions
-# Requirements scipy 0.13.0+ and numpy 1.7.2+
-#
-# From Szabo and Ostlund page 390
-#
-# Created by: Daniel G. A. Smith
-# Date: 7/29/14
-# License: GPL v3.0
-#
+"""
+Reference implementation of MP3 with focus on auto-generating einsum expressions
+
+Requirements:
+SciPy 0.13.0+ & NumPy 1.7.2+
+
+References:
+Equations & Goldstone diagram rules from [Szabo:1996]
+"""
+
+__authors__   = "Daniel G. A. Smith"
+__credits__   = ["Daniel G. A. Smith", "Dominic A. Sirianni"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "05/23/2017"
 
 import time
 import numpy as np
@@ -73,15 +79,23 @@ evirt = eps[ndocc:]
 epsilon = 1/(eocc.reshape(-1, 1, 1, 1) + eocc.reshape(-1, 1, 1) - evirt.reshape(-1, 1) - evirt)
 
 def MP_term(n, h, l, factor, string):
-    """
+    """Computes the contribution of a given Goldstone diagram to the nth-order
+    Moller--Plesset correlation energy, according to the rules on pp. 363 of [Szabo:1996].
+
+    Arguments:
     n = MPn order of theory
     h = number of holes
     l = number of loops
     factor = symmetry considerations
-    string = summation string MO tensor than energy denominators
+    string = summation string MO tensor, then energy denominators
     """   
     def get_slice(char):
-        """Returns either occupied or virtual slice"""
+        """Returns either occupied or virtual slice according to index
+        convention in [Szabo:1996].
+
+        Occupied indices: abcdefgh
+        Virtual indicies: rstuv
+        """
         if char in 'abcdefgh':
             return slice(0, ndocc)
         else:
@@ -124,32 +138,33 @@ print('MP2 correlation energy: %.8f' % MP2corr_E)
 print('MP2 total energy:       %.8f' % MP2total_E)
 psi4.compare_values(psi4.energy('MP2'), MP2total_E, 6, 'MP2 Energy')
 
-### MP3
+### MP3 Correlation Energy
+### Terms taken from [Szabo:1996] Tbl. 6.2, pp. 364-365
 
 print('\nStarting MP3 correlation energy...')
-# MP3 Eqn 1
+# MP3 Eqn 1: 3rd order diagram 1
 MP3corr_E =  MP_term(3, 2, 2, 0.5, 'abru,ruts,tsab,abru,abts') 
-# MP3 Eqn 2
+# MP3 Eqn 2: 3rd order diagram 2
 MP3corr_E += MP_term(3, 4, 2, 0.5, 'adrs,cbad,rscb,adrs,cbrs')
-# MP3 Eqn 3
+# MP3 Eqn 3: 3rd order diagram 3
 MP3corr_E += MP_term(3, 3, 2, 1.0, 'acrt,rbsc,stab,acrt,abst')
-# MP3 Eqn 4
+# MP3 Eqn 4: 3rd order diagram 4 
 MP3corr_E += MP_term(3, 3, 2, 1.0, 'bcrt,rasb,stac,bcrt,acst')
-# MP3 Eqn 5
+# MP3 Eqn 5: 3rd order diagram 5 
 MP3corr_E += MP_term(3, 3, 3, 1.0, 'acrt,btsc,rsab,acrt,abrs')
-# MP3 Eqn 6
+# MP3 Eqn 6: 3rd order diagram 6 
 MP3corr_E += MP_term(3, 3, 1, 1.0, 'cbrt,atsc,rsab,cbrt,abrs')
-# MP3 Eqn 7
+# MP3 Eqn 7: 3rd order diagram 7 
 MP3corr_E += MP_term(3, 4, 1, 0.5, 'acrs,dbac,srdb,acrs,dbrs')
-# MP3 Eqn 8
+# MP3 Eqn 8: 3rd order diagram 8 
 MP3corr_E += MP_term(3, 2, 1, 0.5, 'abrt,trus,usab,abtr,abus')
-# MP3 Eqn 9
+# MP3 Eqn 9: 3rd order diagram 9
 MP3corr_E += MP_term(3, 3, 1, 1.0, 'bcrt,arbs,tsac,cbrt,acst')
-# MP3 Eqn 10
+# MP3 Eqn 10: 3rd order diagram 10
 MP3corr_E += MP_term(3, 3, 1, 1.0, 'cbrt,rasb,stac,cbrt,acst')
-# MP3 Eqn 11
+# MP3 Eqn 11: 3rd order diagram 11
 MP3corr_E += MP_term(3, 3, 2, 1.0, 'abrs,scat,rtbc,abrs,cbrt')
-# MP3 Eqn 12
+# MP3 Eqn 12: 3rd order diagram 12
 MP3corr_E += MP_term(3, 3, 2, 1.0, 'bcrt,atsc,rsab,bctr,abrs')
 
 print('...took %.3f seconds to compute MP3 correlation energy.\n' % (time.time() - t))

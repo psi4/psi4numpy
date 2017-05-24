@@ -1,13 +1,21 @@
-# A simple Psi 4 input script to compute MP3 utilizing antisymmetrized
-# spin-orbitals
-# Requirements scipy 0.13.0+ and numpy 1.7.2+
-#
-# From Szabo and Ostlund page 390
-#
-# Created by: Daniel G. A. Smith
-# Date: 7/29/14
-# License: GPL v3.0
-#
+"""
+Reference implementation of the MP3 correlation energy utilizing antisymmetrized
+spin-orbitals from an RHF reference.
+
+Requirements:
+SciPy 0.13.0+, NumPy 1.7.2+
+
+References:
+Equations from [Szabo:1996]
+"""
+
+__authors__    = "Daniel G. A. Smith"
+__credits__   = ["Daniel G. A. Smith", "Dominic A. Sirianni"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "05/23/2017"
+
 import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
@@ -78,6 +86,7 @@ epsilon = 1/(eocc.reshape(-1, 1, 1, 1) + eocc.reshape(-1, 1, 1) - evir.reshape(-
 o = slice(0, nocc)
 v = slice(nocc, MO.shape[0])
 
+# MP2 Correlation: [Szabo:1996] pp. 352, Eqn 6.72
 MP2corr_E = 0.25 * np.einsum('abrs,rsab,abrs', MO[o, o, v, v], MO[v, v, o, o], epsilon)
 MP2total_E = SCF_E + MP2corr_E
 print('MP2 correlation energy:      %16.10f' % MP2corr_E)
@@ -86,6 +95,7 @@ print('MP2 total energy:            %16.10f' % MP2total_E)
 # Compare to Psi4
 psi4.compare_values(psi4.energy('MP2'), MP2total_E, 6, 'MP2 Energy')
 
+# MP3 Correlation: [Szabo:1996] pp. 353, Eqn. 6.75
 eqn1 = 0.125 * np.einsum('abrs,cdab,rscd,abrs,cdrs->', MO[o, o, v, v], MO[o, o, o, o], MO[v, v, o, o], epsilon, epsilon)
 eqn2 = 0.125 * np.einsum('abrs,rstu,tuab,abrs,abtu', MO[o, o, v, v], MO[v, v, v, v], MO[v, v, o, o], epsilon, epsilon)
 eqn3 = np.einsum('abrs,cstb,rtac,absr,acrt', MO[o, o, v, v], MO[o, v, v, o], MO[v, v, o, o], epsilon, epsilon)
