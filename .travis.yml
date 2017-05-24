@@ -1,0 +1,45 @@
+# After changing this file, check it on:
+#   http://lint.travis-ci.org/
+
+language: python
+
+# Run jobs on container-based infrastructure, can be overridden per job
+sudo: false
+
+matrix:
+    - python: 3.5
+
+before_install:
+  - uname -a
+  - free -m
+  - df -h
+  - ulimit -a
+
+install:
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+  - conda create -q -n p4env python=3.5 psi4 scipy jupyter -c psi4
+  - source activate p4env
+  - conda list
+
+before_script:
+  - python -V
+
+script:
+  - python .scripts/travis_test.py
+
+cache:
+  directories:
+    - $HOME/cache
+before_cache:
+  # Remove all untarred directories.
+  - find $CONDA_INSTALL_LOCN/pkgs/ -mindepth 1 -maxdepth 1 -type d -exec rm -r {} \;
+
+notifications:
+  email: false
+

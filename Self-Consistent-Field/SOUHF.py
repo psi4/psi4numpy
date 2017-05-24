@@ -216,4 +216,4 @@ psi4.set_options({'e_convergence': 1e-8,
                   'maxiter': 100})
 
 SCF_E_psi = psi4.energy('SCF')
-psi4.driver.p4util.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
+psi4.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')

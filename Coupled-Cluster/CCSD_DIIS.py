@@ -128,5 +128,5 @@ print('\nFinal CCSD correlation energy:     % 16.10f' % CCSDcorr_E)
 print('Total CCSD energy:                 % 16.10f' % CCSD_E)
 
 if compare_psi4:
-    psi4.driver.p4util.compare_values(psi4.energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
+    psi4.compare_values(psi4.energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
 

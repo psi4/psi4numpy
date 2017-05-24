@@ -57,7 +57,7 @@ if memory_footprint > numpy_memory:
 
 #Make spin-orbital MO
 t=time.time()
-print 'Starting ERI build and AO -> MO transformation...'
+print('Starting ERI build and AO -> MO transformation...')
 mints = psi4.core.MintsHelper(wfn.basisset())
 MO = np.asarray(mints.mo_eri(C, C, C, C))
 
@@ -122,7 +122,7 @@ MP2corr_E += MP_term(2, 2, 1, 0.5, 'abrs,rsba,abrs')
 MP2total_E = SCF_E + MP2corr_E
 print('MP2 correlation energy: %.8f' % MP2corr_E)
 print('MP2 total energy:       %.8f' % MP2total_E)
-psi4.driver.p4util.compare_values(psi4.energy('MP2'), MP2total_E, 6, 'MP2 Energy')
+psi4.compare_values(psi4.energy('MP2'), MP2total_E, 6, 'MP2 Energy')
 
 ### MP3
 
@@ -161,6 +161,6 @@ print('MP3 correlation energy: %.8f' % MP3corr_E)
 print('MP3 total energy:       %.8f' % MP3total_E)
 
 # Compare to Psi4
-psi4.driver.p4util.compare_values(psi4.energy('MP3'), MP3total_E, 6, 'MP3 Energy')
+psi4.compare_values(psi4.energy('MP3'), MP3total_E, 6, 'MP3 Energy')
 
 

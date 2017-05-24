@@ -1,0 +1,149 @@
+# A simple Psi 4 input script to compute a SCF reference
+# Requires umpy 1.7.2+
+#
+# Algorithms were taken directly from Daniel Crawford's programming website:
+# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+# Special thanks to Rob Parrish for initial assistance with libmints
+#
+# Created by: Daniel G. A. Smith
+# Date: 7/29/14
+# License: GPL v3.0
+#
+
+import time
+import numpy as np
+import external
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
+
+# Memory for Psi4 in GB
+memory 2 GB
+
+# Memory for numpy in GB
+numpy_memory = 2
+
+molecule mol {
+#O
+#H 1 1.1
+#H 1 1.1 2 90
+
+#H
+#H 1 0.74
+
+#He 
+#He 1 2.0
+
+#H
+#F 1 1.1
+
+C  -0.7713511096  -0.0001546299  -0.0000054393
+C   0.7710806955  -0.0001048861   0.0000400510
+H   1.1560846512   0.8695663320  -0.5203105003
+H   1.1560491322   0.0161891484   1.0133671125
+H   1.1560865179  -0.8856013435  -0.4928324985
+H  -1.1561315704   0.8855266211   0.4927506464
+H  -1.1560645399  -0.0160685116  -1.0134290757
+H  -1.1560647411  -0.8697976282   0.5205503870
+
+#C  0.000  1.396  0.000
+#C  1.209  0.698  0.000
+#C  1.209 -0.698  0.000
+#C  0.000 -1.396  0.000
+#C -1.209 -0.698  0.000
+#C -1.209  0.698  0.000
+#H  0.000  2.479  0.000
+#H  2.147  1.240  0.000
+#H  2.147 -1.240  0.000
+#H  0.000 -2.479  0.000
+#H -2.147 -1.240  0.000
+#H -2.147  1.240  0.000
+
+symmetry c1
+}
+
+set {
+#basis 3-21G
+basis sto-3g
+scf_type df
+e_convergence 1e-8
+sad_print 2
+}
+
+# Set defaults
+maxiter = 40
+E_conv = 1.0E-1
+D_conv = 1.0E-1
+
+
+def compute_pop(Z, charge, nalpha, nbeta):
+    ntotal = nalpha + nbeta
+    #ns, np, nd, nf = 0, 0, 0, 0
+    if Z <= 2: # 1s
+        nfrz = 0
+        nact = 1
+    elif Z <= 4: # 1s / 2s
+        nfrz = 1
+        nact = 1
+    elif Z <= 10: # 1s 2s / 2p
+        nfrz = 1
+        nact = 4
+    elif Z <= 12: # 1s 2s 2p / 3s
+        nfrz = 5
+        nact = 1
+    elif Z <= 18: # 1s 2s 2p 3s / 3p
+        nfrz = 6
+        nact = 3
+    elif Z <= 30: # 1s 2s 2p 3s 3p / 4s 3d
+        nfrz = 9
+        nact = 6
+    elif Z <= 36: # 1s 2s 2p 3s 3p 4s 3d / 4p
+        nfrz = 15
+        nact = 3
+    else:
+        raise Exception("Z exceeded!")
+
+    frz = np.ones((nfrz)) * 1.0
+    act = np.ones((nact)) * (ntotal - nfrz * 2 + charge) / float(nact * 2)
+    return np.hstack((frz, act))
+
+
+
+
+primary_basis = 'cc-pVDZ'
+sad_basis = 'cc-pVDZ'
+mol.update_geometry()
+psi4_primary_basis = psi4.new_wavefunction(mol, primary_basis).basisset()
+psi4_sad_basis = psi4.new_wavefunction(mol, sad_basis).basisset()
+
+D_list = []
+for atom in range(mol.natom()):
+    sad_atom = geometry(mol.symbol(atom), "sad_atom")
+    psi4.IO.set_default_namespace("sad_atom")
+
+    ret = external.sad(psi4, sad_atom, sad_basis, E_conv=1.e-5, D_conv=1.e-5)
+    D = 0.5 * (ret["Da"] + ret["Db"])
+    #C = sad_compute_C(sad_atom, '3-21G', primary_basis)
+    D_list.append(D)
+
+
+size = sum([x.shape[0] for x in D_list])
+tD = np.zeros((size, size))
+start = 0
+for D in D_list:
+    sl = slice(start, start + D.shape[0])
+    tD[sl, sl] = D
+    start += D.shape[0]
+
+matD = psi4.Matrix.from_array(tD)
+C = matD.partial_cholesky_factorize(1.e-12, False).to_array()
+
+#C = basis_projection(C, psi4_sad_basis, psi4_primary_basis)
+
+
+external.uhf(psi4, mol, primary_basis, guess_a=C)
+#external.uhf(psi4, mol, primary_basis)
+#print energy('SCF', molecule=mol)
+
+
+set guess sad
+set basis cc-pVDZ
+print energy('SCF', molecule=mol)

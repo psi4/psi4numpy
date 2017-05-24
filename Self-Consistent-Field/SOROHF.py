@@ -272,4 +272,4 @@ print('Final SCF energy: %.8f hartree' % SCF_E)
 
 # Compare to Psi4
 SCF_E_psi = psi4.energy('SCF')
-psi4.driver.p4util.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
+psi4.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
