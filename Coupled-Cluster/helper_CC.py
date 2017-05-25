@@ -196,7 +196,6 @@ class helper_CCSD(object):
 
         # Integral generation from Psi4's MintsHelper
         self.MO = np.asarray(mints.mo_spin_eri(self.C, self.C))
-        
         print("Size of the ERI tensor is %4.2f GB, %d basis functions." % (ERI_Size, self.nmo))
 
         # Update nocc and nvirt
