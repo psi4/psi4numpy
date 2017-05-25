@@ -2,6 +2,7 @@
 <br>
 <img src="media/psi4banner_numpy_interactive.png" alt="Psi4NumPy banner logo" height=200> <br>
 <a href="https://zenodo.org/badge/latestdoi/22622192"> <img src="https://zenodo.org/badge/22622192.svg" /></a>
+<a href="https://travis-ci.org/psi4/psi4numpy"><img src="https://travis-ci.org/psi4/psi4numpy.svg?branch=master"></a>
 <br>
 </p>
 
