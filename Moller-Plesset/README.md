@@ -10,7 +10,7 @@ ontop of this result.
  - `MP2.py`: Second-order Moller-Plesset perturbation theory
  - `DF-MP2.py`: MP2 utilizing density-fitting to reduce its overall cost.
  - `MP3.py`: Third-order Moller-Plesset perturbation theory
- - `MP3_SO.py`: MP3 in spin-orbital formalism that simplifies the equations and provides contrast to the spin-summed version above.
+ - `MP3-SO.py`: MP3 in spin-orbital formalism that simplifies the equations and provides contrast to the spin-summed version above.
  - `MPn.py`: An example on how to automate the contraction of higher order MP theory.
 
 ### References
