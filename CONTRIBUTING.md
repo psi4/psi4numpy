@@ -24,26 +24,21 @@ Good luck & happy coding!
 #### Table of Contents
 
 1. [What do I need to know before starting to contribute to Psi4NumPy?](#what-do-i-need-to-know-before-starting-to-contribute-to-psi4numpy)
-    1. [Project Goals](#project-goals)
-    2. [Repository Organization](#repository-organization)
 2. [How can I contribute to Psi4NumPy?](#how-can-i-contribute-to-psi4numpy)
     * [Reference Implementations](#reference-implementations)
     * [Interactive Tutorials](#interactive-tutorials)
     * [Value Comparison](#value-comparison) 
 3. [Styleguides](#styleguides)
     1. [Python Styleguide](#python-styleguide)
-    2. [Git Commit Messages](#git-commit-messages)
-    3. [Citation Styleguide](#citation-styleguide)
-    4. [Header Styleguide](#header-styleguide)
-    5. [Documentation Sytleguide](#documentation-styleguide)
+    2. [Citation Styleguide](#citation-styleguide)
+    3. [Header Styleguide](#header-styleguide)
+    4. [Documentation Sytleguide](#documentation-styleguide)
 4. [Possible development workflow](#possible-development-workflow)
 
 # What do I need to know before starting to contribute to Psi4NumPy?
 
-## Project Goals
-
 The strategic goals of the Psi4NumPy project are to provide the quantum chemistry community with
-* a programming environment for rapid prototyping and mehod development,
+* a programming environment for rapid prototyping and method development,
 * a repository for reference implementations of existing and novel quantum chemical methods, and
 * an interactive educational framework which combines theory and implementation to effectively teach the
 programming of quantum chemical methods.
@@ -51,11 +46,7 @@ programming of quantum chemical methods.
 For more information on these goals, refer to the [reference
 implementation](#reference-implementations) and [interactive
 tutorial](#interactive-tutorials) sections below, as well as the project
-overview [here](https://github.com/psi4/psi4numpy#overview).
-
-## Repository Organization
-
-This repository contains
+overview [here](https://github.com/psi4/psi4numpy#overview).  This repository contains
 
 * reference implementations, which provide working Python scripts
 implementing various quantum chemical methods, and
@@ -135,7 +126,7 @@ motivated logically and explained fully. Each tutorial contains
 * an appropriate [header](#header-styleguide), 
 * a [theory overview](#theory-overview), 
 * an [implementation](#implementation), 
-* a testable [value comparison](#value comparison), and 
+* a testable [value comparison](#value-comparison), and 
 * a list of relevant [citations](#citation-styleguide).  
 
 #### Theory Overview
@@ -144,7 +135,15 @@ As the purpose of these tutorials is not to completely derive a method, it is
 better to provide a broad-strokes overview of the formulation of the method, as
 well as explicitly providing (or referencing) all equations to be implemented.
 Fortunately, markdown cells within Jupyter notebooks support LaTeX math formatting,
-and GitHub is capable of rendering these equations when viewing the notebook.
+and GitHub is capable of rendering these equations when viewing the notebook.  This
+allows for provided equations to be typeset correctly and labeled accordingly,
+using both `equation` and `align` environments.  For example, the time-independent
+Schrödinger equation as given in [Szabo:1996](https://books.google.com/books?id=KQ3DAgAAQBAJ&printsec=frontcover&dq=szabo+%26+ostlund&hl=en&sa=X&ved=0ahUKEwiYhv6A8YjUAhXLSCYKHdH5AJ4Q6AEIJjAA#v=onepage&q=szabo%20%26%20ostlund&f=false) can be typeset & labeled with
+```
+\begin{equation}
+\widehat{H}\vert\Phi\rangle = E\vert\Phi\rangle \tag{[Szabo:1996], pp. 31, Eqn. 1.141}
+\end{equation}
+```
 
 #### Implementation
 
@@ -200,28 +199,12 @@ conventions.  This code should be compliant with Python versions 2.7/3.5/3.6,
 meaning that `print` must be called as a function, i.e., `print('Compliant with
 Python 3')` and not `print 'This will break Python 3!'`.
 
-### Git Commit Messages
-
-In addition to the conventions for writing good git commit messages
-[here](https://chris.beams.io/posts/git-commit/), commits to Psi4NumPy should
-add the following codes to the beginning of the subject line to categorize the
-nature of the commit:
-
-| Code | Category Description |
--------|-----------------------
-| RIMP | New reference implementation |
-| TUT | New interactive tutorial |
-| DEV | New developer tool or utility |
-| ENH | Enhancement of any existing implementations or tutorials |
-| UPD | Update to new Psi4/NumPy/SciPy compatibility |
-| MAINT | Maintenance commit (typos, repo reorganization, etc.) |
-| STY | Style convention changes (PEP8, headers, etc.) |
-| TST | Related to tests of the codebase |
-| REF | Adding to/modifying any references/citations in tutorials, scripts, or READMEs |
-| DOC | Documentation (README additions, etc. other than REF) |
-| REL | Related to the release of Psi4NumPy |
-
 ### Citation Styleguide
+
+> TL;DR: Citations, including equation numbers, should be provided in close
+> proximity (docstrings or comments) to the code. It can also be handy to collect
+> all citations into the nearest README.md (for reference implementations) or
+> final cell (for tutorials).
 
 For both reference implementations and interactive tutorials, a complete list
 of citations from which the content was drawn must be provided.  Such citation
@@ -263,27 +246,27 @@ references section within the method's README.  Additionally, specific
 equations should be referenced within tutorials using the citation key for the
 appropriate publication.
 
-TL;DR: Citations, including equation numbers, should be provided in close
-proximity (docstrings or comments) to the code. It can also be handy to collect
-all citations into the nearest README.md (for reference implementations) or
-final cell (for tutorials).
-
 ### Header Styleguide
 
 Each reference implementation script and tutorial notebook should begin with a
 statement about the purpose of the script, author and contributor information,
-and copyright, license, and date information:
+and copyright, license, and date information (in [YYYY-MM-DD format](https://en.wikipedia.org/wiki/ISO_8601)):
 
 ```python
-"""A simple explanation of script contents."""
+"""
+A simple explanation of script contents.
+
+References:
+Algorithms taken from: https://some-source-url.com
+Equations taken from: [LNFA:yy:pp] and [LNFA:yy:pp]
+"""
 
 __authors__   =  "John and Jane Doe"
 __credits__   =  ["John Doe", "Jane Doe", "John Q. Sample"]
-__email__     =  "jdoe@example.com"
 
 __copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
 __license__   = "BSD-3-Clause"
-__date__      = "5/22/2017"
+__date__      = "2017-05-23"
 ```
 
 The difference between `__authors__` and `__credits__` is largely semantic;
@@ -316,187 +299,13 @@ tutorial contents is given.  See the Hartree--Fock module README
 [here](https://github.com/psi4/psi4numpy/blob/master/Tutorials/03_Hartree-Fock/README.md)
 for an example.
 
-## Possible Development Workflow
+## Development Workflow
 
-This section outlines a possible workflow for contributing to Psi4NumPy,
-comprised of the following stages:
-
-1. [Creating your own fork of the Psi4NumPy repository](#creating-your-own-fork-of-the-psi4numpy-repository),
-2. [Creating a new feature branch](#creating-a-new-feature-branch) for your content,
-3. [Creating and committing your content](#creating-and-committing-your-content),
-4. [Opening a pull request](#opening-a-pull-request) to merge your content into the parent repository,
-5. [Testing and continuing integration](#testing-and-continuous-integration) of your content,
-6. [Code review](#code-review) with the Psi4NumPy developer community, and
-7. [Merging your content](#merging-your-content) into the main Psi4NumPy repository.
-
-For more information, the suggested workflow for contributing to the Psi4
-repository
-[here](http://psicode.org/psi4manual/1.1/build_obtaining.html#what-is-the-suggested-github-workflow)
-and the GitHub guide [here](https://guides.github.com/introduction/flow/)
-provide graphical representation which visualizes this process.
-
-Note: For clarity when demonstrating Git commands, we will indicate the
-(current-branch) and relative filepath to the `top-level-psi4numpy-dir` within
-the shell prompt.
-
-#### Creating your own fork of the Psi4NumPy repository
-
-To create a fork of the Psi4NumPy repository within your GitHub account, follow
-along with the steps below.  This guide was adapted for our repo from the
-GitHub user documentation
-[here](https://help.github.com/articles/fork-a-repo/).
-
-1. On the main [Psi4NumPy GitHub](https://github.com/psi4/psi4numpy) page, hit the [Fork](https://help.github.com/articles/fork-a-repo/) button to create a fork of the repository on your GitHub account.
-2. From a terminal on your local computer (replacing `johndoe` with your GitHub username):
-```
-# Clone fork `johndoe/psi4numpy` to local
-~$ git clone https://github.com/johndoe/psi4numpy.git
-
-# Navigate into your top-level-psi4numpy-dir
-~$ cd psi4numpy
-
-# Add a connection between your forked repository and the parent repository
-~psi4numpy (master)$ git remote add upstream https://github.com/psi4/psi4numpy.git
-
-# Verify origin & upstream
-~psi4numpy (master)$ git remote -v
-origin    https://github.com/johndoe/psi4numpy.git (fetch)
-origin    https://github.com/johndoe/psi4numpy.git (push)
-upstream    https://github.com/psi4/psi4numpy.git (fetch)
-upstream    https://github.com/psi4/psi4numpy.git (push)
-```
-
-If you have already cloned locally from the `psi4/psi4numpy` master branch:
-1. Create a new fork on your GitHub account according to (1) above
-2. Verify location of `origin`:
-```
-~psi4numpy (master)$ git remote -v
-origin    https://github.com/psi4/psi4numpy.git (fetch)
-origin    https://github.com/psi4/psi4numpy.git (push)
-```
-3. If the two lines printed by `git remote -v` match the above:
-```
-# Reset origin to johndoe/psi4numpy:origin
-~psi4numpy (master)$ git remote set-url origin https://github.com/johndoe/psi4numpy.git
-
-# Verify origin reset
-~psi4numpy (master)$ git remote -v
-origin    https://github.com/johndoe/psi4numpy.git (fetch)
-origin    https://github.com/johndoe/psi4numpy.git (push)
-
-# Connect your fork with parent repository
-~psi4numpy (master)$ git remote add upstream https://github.com/psi4/psi4numpy.git
-
-# Verify origin & upstream
-~psi4numpy (master)$ git remote -v
-origin    https://github.com/johndoe/psi4numpy.git (fetch)
-origin    https://github.com/johndoe/psi4numpy.git (push)
-upstream    https://github.com/psi4/psi4numpy.git (fetch)
-upstream    https://github.com/psi4/psi4numpy.git (push)
-```
-
-#### Creating a New Feature Branch
-
-Branches are the defining feature of the Git verisioning software.  While
-branches can become complicated,
-[documentation](psi4nump://git-scm.com/book/en/v1/Git-Branching) and
-[tutorials](http://learngitbranching.js.org/) exist elsewhere.  The most
-critical idea is that the `master` branch (the repository's default branch) is
-always deployable.  Great lengths must therefore be taken to protect the
-integrity of the `master` branch, the first of which is to conduct content
-development on a different branch than `master`.  To create a new branch on which
-to develop the content "new-feature",
-```
-# Create branch new-feature and change to it
-~psi4numpy (master)$ git checkout -b new-feature
-~psi4numpy (new-feature)$
-```
-
-#### Creating and committing your content
-
-Guidelines for creating [reference implementations](#reference-implementations)
-and [interactive tutorials](#interactive-tutorials), as well as styleguides for
-writing [documentation](#documentation-styleguide) and [citation
-lists](#citation-styleguide), are given below.  After your content has been
-created, it must be added and committed to your branch and pushed to your fork.
-To add new and/or modified files to the stage:
-```
-# Add modified and new files to stage
-~psi4numpy (new-feature)$ git add file1 file2
-```
-Next, to commit your changes, use `git commit`.  This will open the default text editor,
-in which you will write a brief [commit message](#git-commit-messages) describing your content:
-```
-# Commit changes, write commit message in text editor
-~psi4numpy (new-feature)$ git commit
-[new-feature 4ade581] DEV: Added a new feature
- 2 files changed, 30 insertions(+), 674 deletions(-)
-```
-Finally, push your content to your fork
-```
-# Push to your fork, creating remote branch origin:new-feature
-~ (new-feature)$ git push origin new-feature
-```
-
-#### Opening a Pull Request
-
-Follow the instructions
-[here](https://help.github.com/articles/creating-a-pull-request/) and
-[here](https://help.github.com/articles/creating-a-pull-request-from-a-fork/)
-for creating a GitHub pull request from the `new-feature` branch of your fork
-`johndoe/psi4numpy` to the `master` branch of the `psi4/psi4numpy` repository
-(`upstream` above).  A template pull request message will be provided for you,
-where you can describe the new feature you are requesting be added to Psi4NumPy.
-
-#### Testing and Continuous Integration
-
-All pull request content will be tested with continuous integration to ensure that
-
-* submitted code runs successfully, and
-* provided value comparison tests pass successfully.
-
-This process will begin automatically when a new pull request is opened, and merging will
-be blocked if continuous integration testing fails.
-
-#### Code Review
-
-In addition to the testing by continuous integration, all contributed content
-to the Psi4NumPy repository is subject to code review by the developer
-community.  This allows for a collaborative discussion between developers and
-the pull request author, which can improve the quality, clarity, and/or goals
-of a particular PR on an individual basis.  In this way, the repository is
-maintained by the entire developer community every step of the way.  During
-this process, one or several core developers (devs with write access to the
-repository) will review the pull request and either accept it or request
-changes which must be addressed by the author before merging is allowed.  
-
-#### Merging your Content
-
-Once a pull request passes continuous integration testing and a reviewer has
-approved the pull request, it will be merged into the Psi4NumPy branch
-`master`.  Upon merging, your branch `new-feature` will become obscolete; it
-can be deleted either with an available button on the GitHub website or by
-executing the following at the command line:
-
-```
-# Switch back to master branch
-~psi4numpy (new-feature)$ git checkout master
-
-# Delete new-feature branch on local
-~psi4numpy (master)$ git branch -d new-feature
-
-# Delete origin:new-feature branch on remote
-~psi4numpy (master)$ git push origin :new-feature
-```
-
-Finally, update your fork branch `master` to include your newly incorporated
-content:
-
-```
-# Pull from upstream master
-~psi4numpy (master)$ git pull upstream master
-
-# Push to your fork branch `master` (may need to add --force)
-~psi4numpy (master)$ git push origin master
-```
+The Psi4NumPy repository has adopted the forking workflow within Github: the
+[what](https://www.atlassian.com/git/tutorials/comparing-workflows#forking-workflow)
+and
+[how](http://psicode.org/psi4manual/1.1/build_obtaining.html#what-is-the-suggested-github-workflow)
+of this process has been discussed elsewhere.  Additionally, the [GitHub
+guide](https://guides.github.com/introduction/flow/) provides a graphical
+representation which visualizes this process.
 
