@@ -29,7 +29,7 @@ application, each tutorial is constructed as hybrid theory and programming in an
 interactive environment, removing the gap between theory and implementation.
 
 If you have comments, questions, or would like to contribute to the project
-please see our [contributor guidelines]().
+please see our [contributor guidelines](https://github.com/psi4/psi4numpy/blob/master/CONTRIBUTING.md).
 
 ### Getting Started
 
