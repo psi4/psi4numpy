@@ -1,14 +1,21 @@
-# A simple Psi 4 input script to compute CIS excitation energies from a SCF reference
-# Requirements scipy 0.13.0+ and numpy 1.7.2+
-#
-# Algorithms were taken directly from Daniel Crawford's programming website:
-# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
-# Thank Daniel G. A. Smith for coding other projects as reference.
-#
-# Created by: Tianyuan Zhang
-# Date: 5/21/17
-# License: GPL v3.0
-#
+"""
+A simple Psi 4 input script to compute CIS energy from a SCF reference
+
+Requirements:
+SciPy 0.13.0+, NumPy 1.7.2+
+
+References:
+Algorithms were taken directly from Daniel Crawford's programming website:
+http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+Equations from [Szabo:1996]
+"""
+
+__authors__    = "Tianyuan Zhang"
+__credits__   = ["Tianyuan Zhang", "Jeffrey B. Schriber", "Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2017-05-26"
 
 import time
 import numpy as np
