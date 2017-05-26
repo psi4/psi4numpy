@@ -35,41 +35,56 @@ please see our [contributor guidelines](https://github.com/psi4/psi4numpy/blob/m
 
 1. Obtain required software
     1. [Psi4](http://psicode.org/psi4manual/1.1/build_obtaining.html)
-        * Option 1 (easiest): [Download the installer](http://vergil.chemistry.gatech.edu/psicode-download/1.1.html) via the web.  Install according to the instructions [here](http://psicode.org/psi4manual/1.1/conda.html#how-to-install-a-psi4-binary-with-the-psi4conda-installer-download-site).
-        * Option 2 (easy): [Download and install via Conda](http://psicode.org/psi4manual/1.1/conda.html#how-to-install-a-psi4-binary-with-the-psi4conda-installer-command-line)
-        * Option 3 (medium): [Clone & compile from source](https://github.com/psi4/psi4) accoring to the instructions [here](http://psicode.org/psi4manual/1.1/build_planning.html) 
-    2. [Python](https://python.org) 2.7+
-    3. [NumPy](http://www.numpy.org) 1.7.2+
+        * Option 1 (easiest): [Download installer](http://vergil.chemistry.gatech.edu/psicode-download/1.1.html) and install according to [instructions](http://psicode.org/psi4manual/1.1/conda.html#how-to-install-a-psi4-binary-with-the-psi4conda-installer-command-line).
+          ```
+          # Have Psi4conda installer (http://psicode.org/downloads.html)
+          >>> bash psi4conda-{various}.sh
+          # Check `psi4` command in path; adjust path if needed
+          # **IF** using DFT tutorials,
+          >>> conda update psi4 -c psi4/label/dev
+          ```
+        * Option 2 (easy): Download Conda package according to [instructions](http://psicode.org/psi4manual/1.1/conda.html#how-to-install-a-psi4-binary-into-an-ana-miniconda-distribution)
+          ```
+          # Have Anaconda or Miniconda (https://conda.io/miniconda.html)
+          >>> conda create -n p4env psi4 -c psi4
+          >>> bash
+          >>> source activate p4env
+          # Check `psi4` command in path; adjust path if needed
+          # **IF** using DFT tutorials,
+          >>> conda update psi4 -c psi4/label/dev
+          ```
+        * Option 3 (medium): [Clone source](https://github.com/psi4/psi4) and [compile](https://github.com/psi4/psi4/blob/master/CMakeLists.txt#L16-L123) according to [instructions](http://psicode.org/psi4manual/master/build_faq.html#configuring-building-and-installing-psifour-via-source)
+          ```
+          # Get Psi4 source
+          >>> git clone https://github.com/psi4/psi4.git
+          >>> git checkout v1.1
+          >>> cmake -H. -Bobjdir -Doption=value ...
+          >>> cd objdir && make -j`getconf _NPROCESSORS_ONLN`
+          # Find `psi4` command at objdir/stage/<TAB>/<TAB>/.../bin/psi4; adjust path if needed
+          # **IF** using DFT tutorials,
+          >>> git checkout master
+          # `make` again
+          ```
+    2. [Python](https://python.org) 2.7+ (incl. w/ Options 1 & 2)
+    3. [NumPy](http://www.numpy.org) 1.7.2+ (incl. w/ Options 1 & 2)
     4. [Scipy](https://scipy.org) 0.13.0+
 2. Enable Psi4 & PsiAPI
-    * If Psi4 was installed via binary (`conda` or binary installer):
-        1. Activate conda environment
-            ```
-            ~$ source activate p4env
-            ```
-        2. Update Psi4 to latest development version
-            ```
-            (p4env) ~$ conda update psi4 -c psi4/label/dev
-            ```
-    * If Psi4 was compiled from source, you're already up-to-date!
-
-    1. Find appropriate paths
+   1. Find appropriate paths
         ```
-        (p4env) ~$ bash
-        (p4env) ~$ install_prefix/psi4/bin/psi4 --psiapi-path
-        export PATH=$HOME/psi4conda/bin:$PATH
-        export PYTHONPATH=$HOME/psi4conda/lib/python-x.x/site-packages:$PYTHONPATH
+        >>> psi4 --psiapi-path
+        export PATH=/path/to/dir/of/python/interpreter/against/which/psi4/compiled:$PATH
+        export PYTHONPATH=/path/to/dir/of/psi4/core-dot-so:$PYTHONPATH
         ```
     2. Export relevant paths
         ```
-        (p4env) ~$ export PATH=$HOME/psi4conda/bin:$PATH
-        (p4env) ~$ export PYTHONPATH=$HOME/psi4conda/lib/python-x.x/site-packages:$PYTHONPATH
+        >>> bash
+        >>> export PATH=/path/to/dir/of/python/interpreter/against/which/psi4/compiled:$PATH
+        >>> export PYTHONPATH=/path/to/dir/of/psi4/core-dot-so:$PYTHONPATH
         ```
 3. Run scripts as conventional Python scripts
     * Example: Run `DF-MP2.py`
         ```
-        (p4env) ~$ cd psi4numpy/Moller-Plesset/
-        (p4env) ~/psi4numpy$ python DF-MP2.py
+        >>> python psi4numpy/Moller-Plesset/DF-MP2.py
         ```
 
 New users can follow the
