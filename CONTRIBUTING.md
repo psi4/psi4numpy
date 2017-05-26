@@ -305,7 +305,7 @@ The Psi4NumPy repository has adopted the forking workflow within Github: the
 [what](https://www.atlassian.com/git/tutorials/comparing-workflows#forking-workflow)
 and
 [how](http://psicode.org/psi4manual/1.1/build_obtaining.html#what-is-the-suggested-github-workflow)
-of this process has been discussed elsewhere.  Additionally, the [GitHub
+(replace `psi4.git` with `psi4numpy.git`) of this process has been discussed elsewhere.  Additionally, the [GitHub
 guide](https://guides.github.com/introduction/flow/) provides a graphical
 representation which visualizes this process.
 
