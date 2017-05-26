@@ -1,0 +1,13 @@
+name: p4env
+
+channels:
+  - psi4/label/devel
+  - psi4
+
+dependencies:
+  - matplotlib
+  - pandas
+  - scipy
+  - psi4
+  - psi4-deps
+  - python=3.5
