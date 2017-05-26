@@ -34,7 +34,8 @@ please see our [contributor guidelines](https://github.com/psi4/psi4numpy/blob/m
 ### Getting Started
 
 1. Obtain required software
-    1. [Psi4](http://psicode.org/psi4manual/1.1/build_obtaining.html)
+    1. [Psi4NumPy](https://github.com/psi4/psi4numpy) (clone this repository; no install available)
+    2. [Psi4](http://psicode.org/psi4manual/1.1/build_obtaining.html)
         * Option 1 (easiest): [Download installer](http://vergil.chemistry.gatech.edu/psicode-download/1.1.html) and install according to [instructions](http://psicode.org/psi4manual/1.1/conda.html#how-to-install-a-psi4-binary-with-the-psi4conda-installer-command-line).
           ```
           # Have Psi4conda installer (http://psicode.org/downloads.html)
@@ -65,9 +66,9 @@ please see our [contributor guidelines](https://github.com/psi4/psi4numpy/blob/m
           >>> git checkout master
           # `make` again
           ```
-    2. [Python](https://python.org) 2.7+ (incl. w/ Options 1 & 2)
-    3. [NumPy](http://www.numpy.org) 1.7.2+ (incl. w/ Options 1 & 2)
-    4. [Scipy](https://scipy.org) 0.13.0+
+    3. [Python](https://python.org) 2.7+ (incl. w/ Psi4 Options 1 & 2)
+    4. [NumPy](http://www.numpy.org) 1.7.2+ (incl. w/ Psi4 Options 1 & 2)
+    5. [Scipy](https://scipy.org) 0.13.0+
 2. Enable Psi4 & PsiAPI
    1. Find appropriate paths
         ```
