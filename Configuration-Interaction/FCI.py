@@ -86,8 +86,8 @@ from itertools import combinations
 print('Generating %d Full CI Determinants...' % (nDet))
 t = time.time()
 detList = []
-for alpha in combinations(xrange(nmo), ndocc):
-    for beta in combinations(xrange(nmo), ndocc):
+for alpha in combinations(range(nmo), ndocc):
+    for beta in combinations(range(nmo), ndocc):
         detList.append(Determinant(alphaObtList=alpha, betaObtList=beta))
 
 print('..finished generating determinants in %.3f seconds.\n' % (time.time() - t))

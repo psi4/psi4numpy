@@ -179,7 +179,7 @@ class Determinant:
         betaBits = ~self.betaObtBits
         alphaObts = []
         betaObts = []
-        for i in xrange(nmo):
+        for i in range(nmo):
             if alphaBits&1==1:
                 alphaObts.append(i)
             alphaBits >>= 1
@@ -192,10 +192,10 @@ class Determinant:
         """Return the final sign if move listed orbitals to the front"""
         sign = 1
         alphaPositions, betaPositions = self.getOrbitalPositionLists(alphaIndexList, betaIndexList)
-        for i in xrange(len(alphaPositions)):
+        for i in range(len(alphaPositions)):
             if (alphaPositions[i]-i)%2==1:
                 sign = -sign
-        for i in xrange(len(betaPositions)):
+        for i in range(len(betaPositions)):
             if (betaPositions[i]-i)%2==1:
                 sign = -sign
         return sign
@@ -306,8 +306,8 @@ class HamiltonianGenerator:
         """Generate CI Matrix"""
         numDet = len(detList)
         matrix = np.zeros((numDet,numDet))
-        for i in xrange(numDet):
-            for j in xrange(i+1):
+        for i in range(numDet):
+            for j in range(i+1):
                 matrix[i,j] = self.calcMatrixElement(detList[i], detList[j])
                 matrix[j,i] = matrix[i,j]
         return matrix
@@ -351,7 +351,7 @@ class HamiltonianGenerator:
             Helem += self.Hspin[m,m]
         length = len(spinObtList)
         Relem = 0.0
-        for m in xrange(length-1):
-            for n in xrange(m+1, length):
+        for m in range(length-1):
+            for n in range(m+1, length):
                 Relem += self.antiSym2eInt[spinObtList[m], spinObtList[n], spinObtList[m], spinObtList[n]]
         return Helem + Relem

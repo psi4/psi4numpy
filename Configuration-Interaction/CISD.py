@@ -89,7 +89,7 @@ from itertools import combinations
 print('Generating %d CISD Determinants...' % (nDet))
 t = time.time()
 
-occList = [i for i in xrange(ndocc)]
+occList = [i for i in range(ndocc)]
 det_ref = Determinant(alphaObtList=occList, betaObtList=occList)
 detList = det_ref.generateSingleAndDoubleExcitationsOfDet(nmo)
 detList.append(det_ref)
