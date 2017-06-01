@@ -51,7 +51,7 @@ ndet = ciwfn.ndet()
 print("Number of determinants in FCI space:  %d" % ciwfn.ndet())
 
 # Number of guess vectors
-guess_size = 10
+guess_size = 2
 
 if guess_size > ndet:
     raise Exception( "Number of guesses (%d)  exceeds FCI dimension (%d)!" % (guess_size, ndet))
@@ -104,11 +104,6 @@ for x in range(guess_size):
     arr_cvecs[:] = gvecs[x]
     cvecs.write(x, 0)
 
-
-for x in range(guess_size):
-    cvecs.read(x,0)
-
-#CI_E = np.dot(gvecs[0], H).dot(gvecs[0])
 delta_c = 0.0
 
 Eold = scf_energy
@@ -117,20 +112,14 @@ G = np.zeros((max_guess, max_guess))
 for CI_ITER in range(max_guess - 1):
 
     # Subspace Matrix, Gij = < bi | H | bj >
-    #for i in range(num_vecs - num_eig, num_vecs):
     for i in range(0, num_vecs):
         # Build sigma for each b
         ciwfn.sigma(cvecs, svecs, i, i)
-        svecs.read(i,0)
-        print(svecs.np)
-
         for j in range(i, num_vecs):
             # G_ij = (b_i, sigma_j)
             G[j,i] = G[i, j] = svecs.vdot(cvecs, i, j)
 
-    print(G)
     evals, evecs = np.linalg.eigh(G[:num_vecs, :num_vecs])
-#    print(evals)
     CI_E = evals[0]
     print('CI Iteration %3d: Energy = %4.16f   dE = % 1.5E   dC = %1.5E'
           % (CI_ITER, CI_E, (CI_E - Eold), delta_c))
@@ -152,7 +141,6 @@ for CI_ITER in range(max_guess - 1):
         ciwfn.sigma(dvecs, svecs, dwork_vec, swork_vec)
         svecs.axpy(-1 * evals[n], dvecs, swork_vec, dwork_vec)
         norm = svecs.dcalc(evals[n], Hd, swork_vec)
-        print(norm)
         svecs.symnormalize(1 / norm, swork_vec)
         delta_c = norm
 
@@ -168,8 +156,6 @@ for CI_ITER in range(max_guess - 1):
             dvecs.axpy(-proj, cvecs, n, i)
  
         norm = dvecs.norm(n)
-
-        print(norm)
 
         dvecs.symnormalize(1 / norm, n)
  
