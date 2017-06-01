@@ -1,20 +1,28 @@
-# A simple Psi 4 input script to compute MP3 utilizing antisymmetrized
-# spin-orbitals
-# Requirements scipy 0.13.0+ and numpy 1.7.2+
-#
-# From Szabo and Ostlund page 390
-#
-# Created by: Daniel G. A. Smith
-# Date: 7/29/14
-# License: GPL v3.0
-#
+"""
+Reference implementation of the MP3 correlation energy utilizing antisymmetrized
+spin-orbitals from an RHF reference.
+
+Requirements:
+SciPy 0.13.0+, NumPy 1.7.2+
+
+References:
+Equations from [Szabo:1996]
+"""
+
+__authors__    = "Daniel G. A. Smith"
+__credits__   = ["Daniel G. A. Smith", "Dominic A. Sirianni"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2017-05-23"
+
 import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
 # Memory for Psi4 in GB
-psi4.core.set_memory(int(2e9), False)
+psi4.set_memory('2 GB')
 psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
@@ -30,7 +38,8 @@ symmetry c1
 psi4.set_options({'basis': 'cc-pvdz',
                   'scf_type': 'pk',
                   'mp2_type': 'conv',
-                  'freeze_core': 'true',
+                  'mp2_type': 'conv',
+                  'freeze_core': 'false',
                   'e_convergence': 1e-8,
                   'd_convergence': 1e-8})
 
@@ -56,7 +65,7 @@ if memory_footprint > numpy_memory:
 
 #Make spin-orbital MO
 t=time.time()
-print 'Starting ERI build and spin AO -> spin-orbital MO transformation...'
+print('Starting ERI build and spin AO -> spin-orbital MO transformation...')
 mints = psi4.core.MintsHelper(wfn.basisset())
 MO = np.asarray(mints.mo_spin_eri(C, C))
 eps = np.repeat(eps, 2)
@@ -77,11 +86,16 @@ epsilon = 1/(eocc.reshape(-1, 1, 1, 1) + eocc.reshape(-1, 1, 1) - evir.reshape(-
 o = slice(0, nocc)
 v = slice(nocc, MO.shape[0])
 
+# MP2 Correlation: [Szabo:1996] pp. 352, Eqn 6.72
 MP2corr_E = 0.25 * np.einsum('abrs,rsab,abrs', MO[o, o, v, v], MO[v, v, o, o], epsilon)
 MP2total_E = SCF_E + MP2corr_E
 print('MP2 correlation energy:      %16.10f' % MP2corr_E)
 print('MP2 total energy:            %16.10f' % MP2total_E)
 
+# Compare to Psi4
+psi4.compare_values(psi4.energy('MP2'), MP2total_E, 6, 'MP2 Energy')
+
+# MP3 Correlation: [Szabo:1996] pp. 353, Eqn. 6.75
 eqn1 = 0.125 * np.einsum('abrs,cdab,rscd,abrs,cdrs->', MO[o, o, v, v], MO[o, o, o, o], MO[v, v, o, o], epsilon, epsilon)
 eqn2 = 0.125 * np.einsum('abrs,rstu,tuab,abrs,abtu', MO[o, o, v, v], MO[v, v, v, v], MO[v, v, o, o], epsilon, epsilon)
 eqn3 = np.einsum('abrs,cstb,rtac,absr,acrt', MO[o, o, v, v], MO[o, v, v, o], MO[v, v, o, o], epsilon, epsilon)
@@ -92,7 +106,7 @@ print('\nMP3 correlation energy:      %16.10f' % MP3corr_E)
 print('MP3 total energy:            %16.10f' % MP3total_E)
 
 # Compare to Psi4
-psi4.driver.p4util.compare_values(psi4.energy('MP3'), MP3total_E, 6, 'MP3 Energy')
+psi4.compare_values(psi4.energy('MP3'), MP3total_E, 6, 'MP3 Energy')
 
 
 

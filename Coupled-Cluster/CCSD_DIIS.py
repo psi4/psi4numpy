@@ -16,7 +16,7 @@ from helper_CC import *
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
-psi4.core.set_memory(int(2e9), False)
+psi4.set_memory('2 GB')
 psi4.core.set_output_file('output.dat', False)
 
 mol = psi4.geometry("""
@@ -128,5 +128,5 @@ print('\nFinal CCSD correlation energy:     % 16.10f' % CCSDcorr_E)
 print('Total CCSD energy:                 % 16.10f' % CCSD_E)
 
 if compare_psi4:
-    psi4.driver.p4util.compare_values(psi4.energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
+    psi4.compare_values(psi4.energy('CCSD'), CCSD_E, 6, 'CCSD Energy')
 

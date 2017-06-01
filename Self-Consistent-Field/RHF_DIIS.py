@@ -12,7 +12,7 @@ np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
 # Memory for Psi4 in GB
-psi4.core.set_memory(int(2e9), False)
+psi4.set_memory('2 GB')
 psi4.core.set_output_file('output.dat',False)
 
 # Memory for numpy in GB
@@ -173,4 +173,4 @@ print('Final SCF energy: %.8f hartree' % SCF_E)
 
 # Compare to Psi4
 SCF_E_psi = psi4.energy('SCF')
-psi4.driver.p4util.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
+psi4.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')

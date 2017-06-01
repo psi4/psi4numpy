@@ -14,7 +14,7 @@ np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
 # Memory for Psi4 in GB
-psi4.core.set_memory(int(2e9), False)
+psi4.set_memory('2 GB')
 psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
@@ -55,7 +55,7 @@ eps = np.array([eps.get(x) for x in range(C.shape[0])])
 
 # Compute size of SO-ERI tensor in GB
 ERI_Size = (nmo**4)*(2**4)*8.0 / 1E9
-print "\nSize of the SO ERI tensor will be %4.2f GB." % ERI_Size
+print("\nSize of the SO ERI tensor will be %4.2f GB." % ERI_Size)
 memory_footprint = ERI_Size*2.2
 if memory_footprint > numpy_memory:
     clean()
@@ -67,12 +67,12 @@ mints = psi4.core.MintsHelper(wfn.basisset())
 I = np.array(mints.ao_eri())
 I = I.reshape(nmo, nmo, nmo, nmo)
 
-print '\nTotal time taken for ERI integrals: %.3f seconds.\n' % (time.time()-t)
+print('\nTotal time taken for ERI integrals: %.3f seconds.\n' % (time.time()-t))
 
 
 #Make spin-orbital MO
 t=time.time()
-print 'Starting AO -> spin-orbital MO transformation...'
+print('Starting AO -> spin-orbital MO transformation...')
 nso = nmo * 2
 
 MO = np.einsum('rJ,pqrs->pqJs', C, I)
@@ -291,7 +291,7 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
 
         # Break if below threshold
         if abs(Enew - Eold) < 1.e-4:
-            print 'EP3 HOMO - %d converged in %d iterations' % ((ndocc - orbital/2 - 1), ep_iter)
+            print('EP3 HOMO - %d converged in %d iterations' % ((ndocc - orbital/2 - 1), ep_iter))
             ep3_arr.append(Enew * 27.21138505)
             ep3_conv = True
             break
@@ -312,7 +312,7 @@ print("---------------------------------------------------------------------")
 KP_arr = eps[:nocc][::2] * 27.21138505
 
 for orbital in range(0, len(ep2_arr)):
-    print "% 4d     % 16.4f    % 16.4f    % 16.4f" % ((len(ep2_arr)-orbital-1), KP_arr[orbital], ep2_arr[orbital], ep3_arr[orbital])
+    print("% 4d     % 16.4f    % 16.4f    % 16.4f" % ((len(ep2_arr)-orbital-1), KP_arr[orbital], ep2_arr[orbital], ep3_arr[orbital]))
 
 
 # 13.46 11.27

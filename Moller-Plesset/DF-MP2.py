@@ -1,19 +1,26 @@
-#A simple Psi 4 input script to compute MP2 from a RHF reference
-# Requirements numpy 1.7.2+
-#
-# Algorithm modified from Rob Parrish's most excellent Psi4 plugin example
-# Bottom of the page: http://www.psicode.org/developers.php
-#
-# Created by: Daniel G. A. Smith
-# Date: 2/25/15
-# License: GPL v3.0
-#
+"""
+A reference implementation of density-fitted MP2 from a RHF reference.
 
+References: 
+Algorithm modified from Rob Parrish's most excellent Psi4 plugin example
+Bottom of the page: http://www.psicode.org/developers.php
+"""
+
+__authors__   = "Daniel G. A. Smith"
+__credits__   = ["Daniel G. A. Smith", "Dominic A. Sirianni"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2017-05-23"
 
 import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
+
+# Set memory & output
+psi4.set_memory('2 GB')
+psi4.core.set_output_file('output.dat', False)
 
 mol = psi4.geometry(""" 
 C    1.39410    0.00000   0.00000
@@ -125,6 +132,6 @@ print('SCS-MP2 total energy:              %16.10f' % SCS_MP2_E)
 
 if check_energy:
     psi4.energy('MP2')
-    psi4.driver.p4util.compare_values(psi4.core.get_variable('MP2 TOTAL ENERGY'), MP2_E, 6, 'MP2 Energy')
-    psi4.driver.p4util.compare_values(psi4.core.get_variable('SCS-MP2 TOTAL ENERGY'), SCS_MP2_E, 6, 'SCS-MP2 Energy')
+    psi4.compare_values(psi4.core.get_variable('MP2 TOTAL ENERGY'), MP2_E, 6, 'MP2 Energy')
+    psi4.compare_values(psi4.core.get_variable('SCS-MP2 TOTAL ENERGY'), SCS_MP2_E, 6, 'SCS-MP2 Energy')
 

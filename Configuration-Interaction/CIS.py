@@ -1,14 +1,21 @@
-# A simple Psi 4 input script to compute CIS excitation energies from a SCF reference
-# Requirements scipy 0.13.0+ and numpy 1.7.2+
-#
-# Algorithms were taken directly from Daniel Crawford's programming website:
-# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
-# Thank Daniel G. A. Smith for coding other projects as reference.
-#
-# Created by: Tianyuan Zhang
-# Date: 5/21/17
-# License: GPL v3.0
-#
+"""
+A simple Psi 4 input script to compute CIS energy from a SCF reference
+
+Requirements:
+SciPy 0.13.0+, NumPy 1.7.2+
+
+References:
+Algorithms were taken directly from Daniel Crawford's programming website:
+http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+Equations from [Szabo:1996]
+"""
+
+__authors__    = "Tianyuan Zhang"
+__credits__   = ["Tianyuan Zhang", "Jeffrey B. Schriber", "Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2017-05-26"
 
 import time
 import numpy as np
@@ -86,7 +93,7 @@ from itertools import combinations
 print('Generating %d CIS singlet Determinants...' % (nDet_S + 1))
 t = time.time()
 
-occList = [i for i in xrange(ndocc)]
+occList = [i for i in range(ndocc)]
 det_ref = Determinant(alphaObtList=occList, betaObtList=occList)
 detList = det_ref.generateSingleExcitationsOfDet(nmo)
 detList.append(det_ref)
@@ -117,6 +124,6 @@ hartree2eV = 27.211
 print('\nCIS Excitation Energies (Singlets only):')
 print(' #        Hartree                  eV')
 print('--  --------------------  --------------------')
-for i in xrange(1, len(e_cis)):
+for i in range(1, len(e_cis)):
     excit_e = e_cis[i] + mol.nuclear_repulsion_energy() - scf_e
     print('%2d %20.10f %20.10f' % (i, excit_e, excit_e * hartree2eV))
