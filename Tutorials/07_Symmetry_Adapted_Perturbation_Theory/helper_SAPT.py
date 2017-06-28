@@ -9,32 +9,15 @@ import numpy as np
 import time
 import psi4
 
-
-def integral_transformer(I, C1, C2, C3, C4):
-
-    nbf = np.asarray(C1).shape[0]
-    if np.asarray(C1).shape[1] < np.asarray(C4.shape[1]):
-        v = np.dot(np.asarray(C1).T, np.asarray(I).reshape(nbf, -1))
-        v = np.dot(v.reshape(-1, nbf), C4)
-    else:
-        v = np.dot(np.asarray(I).reshape(-1, nbf), C4)
-        v = np.dot(np.asarray(C1).T, v.reshape(nbf, -1))
-
-    v = v.reshape(C1.shape[1], nbf, nbf, C4.shape[1])
-    v = np.einsum('qA,pqrs->pArs', C2, v)
-    v = np.einsum('rA,pqrs->pqAs', C3, v)
-    return v
- 
-
-
 class helper_SAPT(object):
 
-    def __init__(self, dimer, memory=8, algorithm='MO'):
-        print("\nInitalizing SAPT object...\n")
+    def __init__(self, dimer, memory=8, algorithm='MO', reference='RHF'):
+        print("\nInitializing SAPT object...\n")
         tinit_start = time.time()
 
         # Set a few crucial attributes
         self.alg = algorithm.upper()
+        self.reference = reference.upper()
         dimer.reset_point_group('c1')
         dimer.fix_orientation(True)
         dimer.fix_com(True)
@@ -49,15 +32,18 @@ class helper_SAPT(object):
         monomerA.set_name('monomerA')
         monomerB = dimer.extract_subsets(2, 1)
         monomerB.set_name('monomerB')
+        self.mult_A = monomerA.multiplicity()
+        self.mult_B = monomerB.multiplicity()
 
         # Compute monomer properties
+
         tstart = time.time()
-        self.rhfA, self.wfnA = psi4.energy('SCF', molecule=monomerA, return_wfn=True)
+        self.rhfA, self.wfnA = psi4.energy('SCF', return_wfn=True, molecule=monomerA)
         self.V_A = np.asarray(psi4.core.MintsHelper(self.wfnA.basisset()).ao_potential())
         print("RHF for monomer A finished in %.2f seconds." % (time.time() - tstart))
 
         tstart = time.time()
-        self.rhfB, self.wfnB = psi4.energy('SCF', molecule=monomerB, return_wfn=True)
+        self.rhfB, self.wfnB = psi4.energy('SCF', return_wfn=True, molecule=monomerB)
         self.V_B = np.asarray(psi4.core.MintsHelper(self.wfnB.basisset()).ao_potential())
         print("RHF for monomer B finished in %.2f seconds." % (time.time() - tstart))
 
@@ -69,43 +55,89 @@ class helper_SAPT(object):
         self.nuc_rep_A = monomerA.nuclear_repulsion_energy()
         self.ndocc_A = self.wfnA.doccpi()[0]
         self.nvirt_A = self.nmo - self.ndocc_A
-        self.idx_A = ['a', 'r']
+        if reference == 'ROHF':
+          self.idx_A = ['i', 'a', 'r']
+          self.nsocc_A = self.wfnA.soccpi()[0]
+          occA = self.ndocc_A + self.nsocc_A
+        else:
+          self.idx_A = ['a', 'r']
+          self.nsocc_A = 0
+          occA = self.ndocc_A 
 
         self.C_A = np.asarray(self.wfnA.Ca())
         self.Co_A = self.C_A[:, :self.ndocc_A]
-        self.Cv_A = self.C_A[:, self.ndocc_A:]
+        self.Ca_A = self.C_A[:, self.ndocc_A:occA]
+        self.Cv_A = self.C_A[:, occA:]
         self.eps_A = np.asarray(self.wfnA.epsilon_a())
 
         # Monomer B
         self.nuc_rep_B = monomerB.nuclear_repulsion_energy()
         self.ndocc_B = self.wfnB.doccpi()[0]
         self.nvirt_B = self.nmo - self.ndocc_B
-        self.idx_B = ['b', 's']
+        if reference == 'ROHF':
+          self.idx_B = ['j', 'b', 's']
+          self.nsocc_B = self.wfnB.soccpi()[0]
+          occB = self.ndocc_B + self.nsocc_B
+        else:
+          self.idx_B = ['b', 's']
+          self.nsocc_B = 0
+          occB = self.ndocc_B 
 
         self.C_B = np.asarray(self.wfnB.Ca())
         self.Co_B = self.C_B[:, :self.ndocc_B]
-        self.Cv_B = self.C_B[:, self.ndocc_B:]
+        self.Ca_B = self.C_B[:, self.ndocc_B:occB]
+        self.Cv_B = self.C_B[:, occB:]
         self.eps_B = np.asarray(self.wfnB.epsilon_a())
 
         # Dimer
         self.nuc_rep = dimer.nuclear_repulsion_energy() - self.nuc_rep_A - self.nuc_rep_B
-        self.vt_nuc_rep = self.nuc_rep / (4 * self.ndocc_A * self.ndocc_B)
+        self.vt_nuc_rep = self.nuc_rep / ((2 * self.ndocc_A + self.nsocc_A)
+                                           * (2 * self.ndocc_B + self.nsocc_B))
 
         # Make slice, orbital, and size dictionaries
-        self.slices = {'a': slice(0, self.ndocc_A),
-                       'r': slice(self.ndocc_A, None),
+        if reference == 'ROHF':
+          self.slices = {
+                       'i': slice(0, self.ndocc_A),
+                       'a': slice(self.ndocc_A, occA),
+                       'r': slice(occA, None),
+                       'j': slice(0, self.ndocc_B),
+                       'b': slice(self.ndocc_B, occB),
+                       's': slice(occB, None)
+                      }
+
+          self.orbitals = {'i': self.Co_A,
+                           'a': self.Ca_A,
+                           'r': self.Cv_A,
+                           'j': self.Co_B,
+                           'b': self.Ca_B,
+                           's': self.Cv_B
+                        }
+
+          self.sizes = {'i': self.ndocc_A,
+                        'a': self.nsocc_A,
+                        'r': self.nvirt_A,
+                        'j': self.ndocc_B,
+                        'b': self.nsocc_B,
+                        's': self.nvirt_B}
+
+        else:
+          self.slices = {
+                       'a': slice(0, self.ndocc_A),
+                       'r': slice(occA, None),
                        'b': slice(0, self.ndocc_B),
-                       's': slice(self.ndocc_B, None)}
+                       's': slice(occB, None)
+                      }
 
-        self.orbitals = {'a': self.Co_A,
-                         'r': self.Cv_A,
-                         'b': self.Co_B,
-                         's': self.Cv_B}
+          self.orbitals = {'a': self.Co_A,
+                           'r': self.Cv_A,
+                           'b': self.Co_B,
+                           's': self.Cv_B
+                        }
 
-        self.sizes = {'a': self.ndocc_A,
-                      'r': self.nvirt_A,
-                      'b': self.ndocc_B,
-                      's': self.nvirt_B}
+          self.sizes = {'a': self.ndocc_A,
+                        'r': self.nvirt_A,
+                        'b': self.ndocc_B,
+                        's': self.nvirt_B}
 
         # Compute size of ERI tensor in GB
         self.dimer_wfn = psi4.core.Wavefunction.build(dimer, psi4.core.get_global_option('BASIS'))
@@ -122,10 +154,10 @@ class helper_SAPT(object):
         print('Building ERI tensor...')
         tstart = time.time()
         # Leave ERI as a Psi4 Matrix
-        self.I = mints.ao_eri()
+        self.I = np.asarray(self.mints.ao_eri()).swapaxes(1,2)
         print('...built ERI tensor in %.3f seconds.' % (time.time() - tstart))
         print("Size of the ERI tensor is %4.2f GB, %d basis functions." % (ERI_Size, self.nmo))
-        self.S = np.asarray(mints.ao_overlap())
+        self.S = np.asarray(self.mints.ao_overlap())
 
         # Save additional rank 2 tensors
         self.V_A_BB = np.einsum('ui,vj,uv->ij', self.C_B, self.C_B, self.V_A)
@@ -150,23 +182,17 @@ class helper_SAPT(object):
         print("\n...finished initializing SAPT object in %5.2f seconds." % (time.time() - tinit_start))
 
     # Compute MO ERI tensor (v) on the fly
-    def v(self, string, phys=True):
+    def v(self, string):
         if len(string) != 4:
             psi4.core.clean()
             raise Exception('v: string %s does not have 4 elements' % string)
 
         # ERI's from mints are of type (11|22) - need <12|12>
-        if phys:
-            orbitals = [self.orbitals[string[0]], self.orbitals[string[2]],
-                        self.orbitals[string[1]], self.orbitals[string[3]]]
-
-            v = integral_transformer(self.I, *orbitals)
-            return np.asarray(v).swapaxes(1, 2)
-        else:
-            orbitals = [self.orbitals[string[0]], self.orbitals[string[1]],
-                        self.orbitals[string[2]], self.orbitals[string[3]]]
-            v = integral_transformer(self.I, *orbitals)
-            return np.asarray(v)
+        V = np.einsum('pA,pqrs->Aqrs', self.orbitals[string[0]], self.I)
+        V = np.einsum('qB,Aqrs->ABrs', self.orbitals[string[1]], V)
+        V = np.einsum('rC,ABrs->ABCs', self.orbitals[string[2]], V)
+        V = np.einsum('sD,ABCs->ABCD', self.orbitals[string[3]], V)
+        return V
 
     # Grab MO overlap matrices
     def s(self, string):
@@ -174,27 +200,16 @@ class helper_SAPT(object):
             psi4.core.clean()
             raise Exception('S: string %s does not have 2 elements.' % string)
 
+        for alpha in 'ijab':
+            if (alpha in string) and (self.sizes[alpha] == 0):
+                return np.array([0]).reshape(1,1)
+
         s1 = string[0]
         s2 = string[1]
 
         # Compute on the fly
-        # return np.einsum('ui,vj,uv->ij', self.orbitals[string[0]], self.orbitals[string[1]], self.S)
-
-        # Same monomer and index- return diaganol
-        if (s1 == s2):
-            return np.diag(np.ones(self.sizes[s1]))
-
-        # Same monomer, but O-V or V-O means zeros array
-        elif (s1 in self.idx_A) and (s2 in self.idx_A):
-            return np.zeros((self.sizes[s1], self.sizes[s2]))
-        elif (s1 in self.idx_B) and (s2 in self.idx_B):
-            return np.zeros((self.sizes[s1], self.sizes[s2]))
-
-        # Return S_AB
-        elif (s1 in self.idx_B):
-            return self.S_AB[self.slices[s2], self.slices[s1]].T
-        else:
-            return self.S_AB[self.slices[s1], self.slices[s2]]
+        return (self.orbitals[string[0]].T).dot(self.S).dot(self.orbitals[string[1]])
+        #return np.einsum('ui,vj,uv->ij', self.orbitals[string[0]], self.orbitals[string[1]], self.S)
 
     # Grab epsilons, reshape if requested
     def eps(self, string, dim=1):
@@ -221,29 +236,13 @@ class helper_SAPT(object):
         # Two separate cases
         if side == 'A':
             # Compute on the fly
-            # return np.einsum('ui,vj,uv->ij', self.orbitals[s1], self.orbitals[s2], self.V_A) / (2 * self.ndocc_A)
-            if (s1 in self.idx_B) and (s2 in self.idx_B):
-                return self.V_A_BB[self.slices[s1], self.slices[s2]]
-            elif (s1 in self.idx_A) and (s2 in self.idx_B):
-                return self.V_A_AB[self.slices[s1], self.slices[s2]]
-            elif (s1 in self.idx_B) and (s2 in self.idx_A):
-                return self.V_A_AB[self.slices[s2], self.slices[s1]].T
-            else:
-                psi4.core.clean()
-                raise Exception('No match for %s indices in helper_SAPT.potential.' % string)
+            return (self.orbitals[string[0]].T).dot(self.V_A).dot(self.orbitals[string[1]])
+            #return np.einsum('ui,vj,uv->ij', self.orbitals[s1], self.orbitals[s2], self.V_A)
 
         elif side == 'B':
             # Compute on the fly
-            # return np.einsum('ui,vj,uv->ij', self.orbitals[s1], self.orbitals[s2], self.V_B) / (2 * self.ndocc_B)
-            if (s1 in self.idx_A) and (s2 in self.idx_A):
-                return self.V_B_AA[self.slices[s1], self.slices[s2]]
-            elif (s1 in self.idx_A) and (s2 in self.idx_B):
-                return self.V_B_AB[self.slices[s1], self.slices[s2]]
-            elif (s1 in self.idx_B) and (s2 in self.idx_A):
-                return self.V_B_AB[self.slices[s2], self.slices[s1]].T
-            else:
-                psi4.core.clean()
-                raise Exception('No match for %s indices in helper_SAPT.potential.' % string)
+            return (self.orbitals[string[0]].T).dot(self.V_B).dot(self.orbitals[string[1]])
+            #return np.einsum('ui,vj,uv->ij', self.orbitals[s1], self.orbitals[s2], self.V_B)
         else:
             psi4.core.clean()
             raise Exception('helper_SAPT.potential side must be either A or B, not %s.' % side)
@@ -254,21 +253,25 @@ class helper_SAPT(object):
             psi4.core.clean()
             raise Exception('Compute tilde{V}: string %s does not have 4 elements' % string)
 
+        for alpha in 'ijab':
+            if (alpha in string) and (self.sizes[alpha] == 0):
+                return np.array([0]).reshape(1,1,1,1)
+
         # Grab left and right strings
         s_left = string[0] + string[2]
         s_right = string[1] + string[3]
 
         # ERI term
         V = self.v(string)
-
         # Potential A
         S_A = self.s(s_left)
-        V_A = self.potential(s_right, 'A') / (2 * self.ndocc_A)
+        V_A = self.potential(s_right, 'A') / (2 * self.ndocc_A + self.nsocc_A)
         V += np.einsum('ik,jl->ijkl', S_A, V_A)
 
         # Potential B
         S_B = self.s(s_right)
-        V_B = self.potential(s_left, 'B') / (2 * self.ndocc_B)
+        V_B = self.potential(s_left, 'B') / (2 * self.ndocc_B + self.nsocc_B)
+        #print s_right, np.abs(V_B).sum()
         V += np.einsum('ik,jl->ijkl', V_B, S_B)
 
         # Nuclear
@@ -278,16 +281,17 @@ class helper_SAPT(object):
 
     # Compute CPHF orbitals
     def chf(self, monomer, ind=False):
-
-        # This is effectively the conventional CPHF equations written in a way to conform
-        # to the SAPT papers.
         if monomer not in ['A', 'B']:
             psi4.core.clean()
             raise Exception('%s is not a valid monomer for CHF.' % monomer)
 
+        if self.reference == 'ROHF':
+            psi4.core.clean()
+            raise Exception('CPHF for a ROHF reference not implemented yet.')
+
         if monomer == 'A':
             # Form electrostatic potential
-            w_n = 2 * np.einsum('basa->bs', self.v('basa'))
+            w_n = 2 * np.einsum('saba->bs', self.v('saba'))
             w_n += self.V_A_BB[self.slices['b'], self.slices['s']]
             eps_ov = (self.eps('b', dim=2) - self.eps('s'))
 
@@ -297,7 +301,7 @@ class helper_SAPT(object):
             no, nv = self.ndocc_B, self.nvirt_B
 
         if monomer == 'B':
-            w_n = 2 * np.einsum('abrb->ar', self.v('abrb'))
+            w_n = 2 * np.einsum('rbab->ar', self.v('rbab'))
             w_n += self.V_B_AA[self.slices['a'], self.slices['r']]
             eps_ov = (self.eps('a', dim=2) - self.eps('r'))
             v_term1 = 'raar'
@@ -311,7 +315,7 @@ class helper_SAPT(object):
         v_vVoO = 2 * v_ooaa - v_ooaa.swapaxes(2, 3)
         A_ovOV = np.einsum('vOoV->ovOV', v_vOoV + v_vVoO.swapaxes(1, 3))
 
-        # Mangled the indices so badly with strides we need to copy back to C contigous
+        # Mangled the indices so badly with strides we need to copy back to C contiguous
         nov = nv * no
         A_ovOV = A_ovOV.reshape(nov, nov).copy(order='C')
         A_ovOV[np.diag_indices_from(A_ovOV)] -= eps_ov.ravel()
@@ -333,6 +337,9 @@ class helper_SAPT(object):
 
         if self.alg != "AO":
             raise Exception("Attempted a call to JK builder in an MO algorithm")
+
+        if self.reference == "ROHF":
+            raise Exception("AO algorithm not yet implemented for ROHF reference.")
 
         return_single = False
         if not isinstance(Cleft, (list, tuple)):
@@ -420,3 +427,4 @@ class sapt_timer(object):
 def sapt_printer(line, value):
     spacer = ' ' * (20 - len(line))
     print(line + spacer + '% 16.8f mH  % 16.8f kcal/mol' % (value * 1000, value * 627.509))
+# End SAPT helper

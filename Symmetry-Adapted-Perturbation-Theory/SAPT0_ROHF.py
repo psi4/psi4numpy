@@ -8,7 +8,7 @@
 
 import time
 import numpy as np
-from helper_ROSAPT import *
+from helper_SAPT import *
 np.set_printoptions(precision=5, linewidth=200, threshold=2000, suppress=True)
 import psi4
 
@@ -38,7 +38,7 @@ psi4.set_options({'basis': 'jun-cc-pVDZ',
                   'scf_type': 'pk',
                   'reference': 'rohf'})
 
-sapt = helper_SAPT(dimer, memory=8)
+sapt = helper_SAPT(dimer, memory=8, reference='ROHF')
 
 ### Start E100 Electostatics
 elst_timer = sapt_timer('electrostatics')
