@@ -33,7 +33,7 @@ H 1 1.1 2 104
 symmetry c1
 """)
 
-psi4.set_options({'basis':'sto-3g',
+psi4.set_options({'basis':'6-31g',
                     'scf_type': 'pk',
                     'mp2_type' : 'conv',
                     'reference' : 'uhf',
@@ -61,7 +61,6 @@ if I_size > numpy_memory:
     psi4.core.clean()
     raise Exception("Estimated memory utilization (%4.2f GB) exceeds allotted \
                      memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
-
 
 # Create instance of MintsHelper class
 mints = psi4.core.MintsHelper(scf_wfn.basisset())
@@ -139,11 +138,11 @@ def ao_to_mo_tei(gao, C):
            np.einsum('pqrs, sS -> pqrS', gao, C),C),C),C)
 
 # Transform gao and hao into MO basis 
-hmo_old = ao_to_mo(hao, C)
-gmo_old = ao_to_mo_tei(gao, C)
+hmo = ao_to_mo(hao, C)
+gmo = ao_to_mo_tei(gao, C)
 
 # Intialize t amplitude and energy
-t_amp_old = np.zeros((nocc, nocc, nvirt, nvirt))
+t_amp = np.zeros((nocc, nocc, nvirt, nvirt))
 E_OMP2_old = 0.0
 
 # Make slices
@@ -164,7 +163,7 @@ X = np.zeros((nso, nso))
 for iteration in range(MAXITER):
 
     # Build the Fock matrix
-    f = hmo_old + np.einsum('piqi -> pq',gmo_old[:,o,:,o])
+    f = hmo + np.einsum('piqi -> pq',gmo[:,o,:,o])
 
     # Bild off-diagonal Fock Matrix and orbital energies
     fprime = f.copy()
@@ -172,9 +171,9 @@ for iteration in range(MAXITER):
     eps = f.diagonal()
 
     # Update t amplitudes
-    t1 = gmo_old[o,o,v,v] 
-    t2 = np.einsum('ac,ijcb -> ijab',fprime[v,v],t_amp_old)
-    t3 = np.einsum('ki,kjab -> ijab', fprime[o,o],t_amp_old)
+    t1 = gmo[o,o,v,v] 
+    t2 = np.einsum('ac,ijcb -> ijab',fprime[v,v],t_amp)
+    t3 = np.einsum('ki,kjab -> ijab', fprime[o,o],t_amp)
     t_amp = t1 + t2 - t2.transpose((0,1,3,2)) - t3 + t3.transpose((1,0,2,3))
     # Divide by a 4D tensor of orbital energies
     t_amp /= (eps[o,x,x,x] + eps[x,o,x,x] - eps[x,x,v,x] - eps[x,x,x,v])
@@ -194,7 +193,7 @@ for iteration in range(MAXITER):
           + tdm3 - tdm3.transpose((0,1,3,2))
 
     # Newton-Raphson step
-    F = np.einsum('rp,qr->pq', hmo_old, odm)+(1/2) * np.einsum('prst,qrst -> pq', gmo_old, tdm)
+    F = np.einsum('rp,qr->pq', hmo, odm)+(1/2) * np.einsum('prst,qrst -> pq', gmo, tdm)
     X[o,v] = ((F-F.T)[o,v])/(eps[o,x]-eps[x,v])
 
     # Build Newton-Raphson orbital rotation matrix
@@ -209,18 +208,16 @@ for iteration in range(MAXITER):
 
     # Compute the energy
     E_OMP2 = E_nuc + np.einsum('pq,pq ->', hmo, odm) + (1/4)*np.einsum('pqrs,pqrs ->', gmo, tdm)
-    print('OMP2 iteration %3d: Energy %20.10f dE %2.5E'%(iteration, E_OMP2, (E_OMP2-E_OMP2_old)))
+    print('OMP2 iteration: %3d Energy: %15.8f dE: %2.5E'%(iteration, E_OMP2, (E_OMP2-E_OMP2_old)))
 
     if (abs(E_OMP2-E_OMP2_old)) < 1.e-10:
         break
 
     #updating values
-    gmo_old = gmo
-    hmo_old = hmo
-    t_amp_old = t_amp
     E_OMP2_old = E_OMP2
 
-print('The final OMP2 energy is {:20.10f}'.format(E_OMP2))
-print(psi4.energy('omp2'))
-
+# Print final OMP2 energy
+print('Final OMP2 energy: %10.8f' % (E_OMP2))
+# Compare to Psi4
+print('Psi4 OMP2 energy:  %10.8f' % psi4.energy('omp2'))
 
