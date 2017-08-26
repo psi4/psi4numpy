@@ -42,6 +42,8 @@ symmetry c1
 psi4.set_options({"basis": "aug-cc-pVDZ",
                   "scf_type": "direct",
                   "df_scf_guess": False,
+                  "e_convergence": 1e-9,
+                  "d_convergence": 1e-9,
                   "cphf_tasks": ['polarizability']})
 
 # Set defaults
