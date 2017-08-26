@@ -1,11 +1,17 @@
-# A simple to compute the first dipole hyperpolarizability $\beta$
-# from a restricted HF reference using the $2n+1$ rule from
-# perturbation theory.
-#
-# Created by: Eric J. Berquist
-# Date: 2017-08-26
-# License: GPL v3.0
-#
+"""
+A simple to compute the first dipole hyperpolarizability $\beta$
+from a restricted HF reference using the $2n+1$ rule from perturbation
+theory.
+
+References:
+Equations taken from [Karna:1991:487], http://dx.doi.org/10.1002/jcc.540120409
+"""
+
+__authors__ = "Eric J. Berquist"
+__credits__ = ["Eric J. Berquist"]
+
+__license__ = "BSD-3-Clause"
+__date__    = "2017-08-26"
 
 # For the $2n+1$ rule, the quadratic response starting quantities must
 # come from linear response.
@@ -40,6 +46,7 @@ npR = np.asarray(R)
 for i in range(ncomp):
     V = integrals_mo[i, ...]
 
+    # eqn. (III-1b)
     # Note: this simplified handling of the response vector
     # transformation for the Fock build is insufficient for
     # frequency-dependent response. 1/2 is due to RHF
@@ -52,11 +59,11 @@ for i in range(ncomp):
     J = 0.5 * np.asarray(jk.J()[0])
     K = 0.5 * np.asarray(jk.K()[0])
 
-    F = (C.T).dot(4 * J - K - K.T).dot(C)
-
+    # eqn. (21b)
+    F = (C.T).dot(4 * J - K.T - K).dot(C)
     G[i, ...] = V + F
 
-# form epsilon matrices
+# form epsilon matrices, eqn. (34)
 E = G.copy()
 omega = 0
 for i in range(ncomp):
@@ -65,7 +72,7 @@ for i in range(ncomp):
     E[i, ...] += (eoU - Ue)
 
 # Assume some symmetry and calculate only part of the tensor.
-
+# eqn. (VII-4)
 hyperpolarizability = np.zeros(shape=(6, 3))
 off1 = [0, 1, 2, 0, 0, 1]
 off2 = [0, 1, 2, 1, 2, 2]
