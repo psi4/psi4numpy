@@ -1,4 +1,5 @@
-# A simple Psi 4 input script to compute MP2 from a SCF reference
+# A simple Psi 4 input script to compute the dipole polarizability
+# from an SCF reference
 #
 # Created by: Daniel G. A. Smith
 # Date: 3/31/15
@@ -39,12 +40,13 @@ symmetry c1
 
 # Set options for CPHF
 psi4.set_options({"basis": "aug-cc-pVDZ",
-                  "scf_type": "df",
+                  "scf_type": "direct",
+                  "df_scf_guess": False,
                   "cphf_tasks": ['polarizability']})
 
 # Set defaults
 # Can be direct or iterative
-method = 'iterative'
+method = 'direct'
 numpy_memory = 2
 use_diis = True
 
@@ -123,13 +125,18 @@ if method == 'direct':
     t = time.time()
     Hinv = np.linalg.inv(H.reshape(nocc * nvir, -1)).reshape(nocc, nvir, nocc, nvir)
     print('...inverted hessian in %.3f seconds.' % (time.time() - t))
-    
+
+    # Form perturbation response vector for each dipole component
+    x = []
+    for numx in range(3):
+        xcomp = np.einsum('iajb,ia->jb', Hinv, dipoles_xyz[numx])
+        x.append(xcomp)
+
     # Compute 3x3 polarizability tensor
     polar = np.empty((3, 3))
-    for numx in range(3):
-        x = np.einsum('iajb,ia->jb', Hinv, dipoles_xyz[numx])
+    for numx in range(3):        
         for numf in range(3):
-            polar[numx, numf] = -1 * np.einsum('ia,ia->', x, dipoles_xyz[numf])
+            polar[numx, numf] = np.einsum('ia,ia->', x[numx], dipoles_xyz[numf])
 
 elif method == 'iterative':
 
@@ -209,7 +216,7 @@ elif method == 'iterative':
     polar = np.empty((3, 3))
     for numx in range(3):
         for numf in range(3):
-            polar[numx, numf] = -1 * np.einsum('ia,ia->', x[numx], dipoles_xyz[numf])
+            polar[numx, numf] = np.einsum('ia,ia->', x[numx], dipoles_xyz[numf])
 
 
 else:
