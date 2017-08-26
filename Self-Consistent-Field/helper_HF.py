@@ -475,7 +475,7 @@ def rotate_orbitals(C, x, return_d=False):
     U += 0.5 * np.dot(U, U)
     U[np.diag_indices_from(U)] += 1
 
-    # Orthonormalize the resulting values
+    # Easy access to Schmidt orthogonalization
     U, r = np.linalg.qr(U.T)
 
     # Rotate and set orbitals
