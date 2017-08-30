@@ -20,6 +20,7 @@ Second-order SCF and Hessians:
 
 Helper programs:
 - `helper_HF.py`: A collection of helper classes and functions for Hartree-Fock.
+- `helper_CPHF.py`: A collection of helper classes and functions for Coupled-Perturbed Hartree-Fock (such as solvers).
 
 Helper HF initialization:
 ```python
