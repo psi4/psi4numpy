@@ -1,3 +1,17 @@
+"""
+A Psi4 input script to compute CI energy using an iterative Davidson-Lu solver.
+
+References:
+Equations from [Szabo:1996]
+"""
+
+__authors__ = "Tianyuan Zhang"
+__credits__ = ["Tianyuan Zhang", "Jeffrey B. Schriber", "Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-05-26"
+
 import numpy as np
 import psi4
 
@@ -60,17 +74,17 @@ print("Number of determinants in CI space:  %d" % ciwfn.ndet())
 # Number of guess vectors
 guess_size = 4
 
-# Convergence tolerance of the residual norm 
+# Convergence tolerance of the residual norm
 ctol = 1.e-5
 
 # Convergence tolerance of the energy
 etol = 1.e-9
 
-# Make sure the guess is smaller than the CI space 
+# Make sure the guess is smaller than the CI space
 if guess_size > ndet:
-    raise Exception( "Number of guesses (%d)  exceeds CI dimension (%d)!" % (guess_size, ndet))
+    raise Exception("Number of guesses (%d)  exceeds CI dimension (%d)!" % (guess_size, ndet))
 
-print('Using %d determinants in the guess' % guess_size)
+print('Using %d determinants in the guess\n' % guess_size)
 
 # Build the Hamiltonian in the space of guess determinants
 H = np.array(ciwfn.hamiltonian(guess_size))
@@ -83,7 +97,8 @@ for x in range(guess_size):
     guess = np.zeros((ciwfn.ndet()))
     guess[:guess_size] = gevecs[:, x]
     gvecs.append(guess)
-    print( 'Guess CI energy (Hsize %d)   %2.9f' % (guess_size, gevals[x]))
+    print('Guess CI energy (Hsize %d)   %2.9f' % (guess_size, gevals[x]))
+print("")
 
 # Maximum number of vectors
 max_guess = 200
@@ -120,7 +135,7 @@ arr_cvecs = np.asarray(cvecs)
 for x in range(guess_size):
     arr_cvecs[:] = gvecs[x]
     cvecs.write(x, 0)
-    cvecs.symnormalize( 1 / np.linalg.norm(gvecs[x]), x)
+    cvecs.symnormalize(1 / np.linalg.norm(gvecs[x]), x)
 
 delta_c = np.zeros(nroot)
 
@@ -133,31 +148,31 @@ for CI_ITER in range(max_guess - 1):
     # Subspace Matrix, Gij = < bi | H | bj >
     for i in range(0, num_vecs):
         # Build sigma for each b
-        cvecs.read(i,0)
-        svecs.read(i,0)
+        cvecs.read(i, 0)
+        svecs.read(i, 0)
         ciwfn.sigma(cvecs, svecs, i, i)
         for j in range(i, num_vecs):
             # G_ij = (b_i, sigma_j)
-            cvecs.read(i,0)
-            svecs.read(j,0)
-            G[j,i] = G[i, j] = svecs.vdot(cvecs, i, j)
+            cvecs.read(i, 0)
+            svecs.read(j, 0)
+            G[j, i] = G[i, j] = svecs.vdot(cvecs, i, j)
 
     evals, evecs = np.linalg.eigh(G[:num_vecs, :num_vecs])
     CI_E = evals
 
     # Use average over roots as convergence criteria
-    avg_energy = 0.0 
+    avg_energy = 0.0
     avg_dc = 0.0
     for n in range(nroot):
         avg_energy += evals[n]
         avg_dc += delta_c[n]
-    avg_energy /= nroot        
-    avg_dc /= nroot        
+    avg_energy /= nroot
+    avg_dc /= nroot
 
-    print('CI Iteration %3d: Energy = %4.16f   dE = % 1.5E   dC = %1.5E'
-          % (CI_ITER, avg_energy, (avg_energy - Eold), avg_dc))
-    if (abs(avg_energy  - Eold) < etol) and (avg_dc < ctol) and (CI_ITER > 3):
-        print('CI has converged!')
+    print('CI Iteration %3d: Energy = %4.16f   dE = % 1.5E   dC = %1.5E' % (CI_ITER, avg_energy, (avg_energy - Eold),
+                                                                            avg_dc))
+    if (abs(avg_energy - Eold) < etol) and (avg_dc < ctol) and (CI_ITER > 3):
+        print('CI has converged!\n')
         break
     Eold = avg_energy
 
@@ -167,7 +182,7 @@ for CI_ITER in range(max_guess - 1):
         # Build as linear combinations of previous vectors
         dvecs.zero()
         dvecs.write(dwork_vec, 0)
-        for c in range(len(evecs[:,n])):
+        for c in range(len(evecs[:, n])):
             dvecs.axpy(evecs[c, n], cvecs, dwork_vec, c)
 
         # Build new vector new_vec = ((H * cvec) - evals[n] * cvec) / (evals[n] - Hd)
@@ -175,7 +190,7 @@ for CI_ITER in range(max_guess - 1):
         svecs.axpy(-1 * evals[n], dvecs, swork_vec, dwork_vec)
         norm = svecs.dcalc(evals[n], Hd, swork_vec)
 
-        if( norm < 1e-9):
+        if (norm < 1e-9):
             continue
 
         svecs.symnormalize(1 / norm, swork_vec)
@@ -185,28 +200,30 @@ for CI_ITER in range(max_guess - 1):
         dvecs.copy(svecs, n, swork_vec)
         norm = dvecs.norm(n)
         dvecs.symnormalize(1 / norm, n)
- 
+
         total_proj = 0
         for i in range(num_vecs):
             proj = svecs.vdot(cvecs, swork_vec, i)
             total_proj += proj
             dvecs.axpy(-proj, cvecs, n, i)
- 
+
         norm = dvecs.norm(n)
         dvecs.symnormalize(1 / norm, n)
- 
+
         # This *should* screen out contributions that are projected out by above
         if True:
             cvecs.write(num_vecs, 0)
             cvecs.copy(dvecs, num_vecs, n)
             num_vecs += 1
-        
 
-print(    'SCF energy:           % 16.10f' % (scf_energy))
+print('SCF energy:           % 16.10f' % (scf_energy))
 for n in range(nroot):
-    print('State %d Total Energy: % 16.10f' % (n,CI_E[n] + mol.nuclear_repulsion_energy())) 
+    print('State %d Total Energy: % 16.10f' % (n, CI_E[n] + mol.nuclear_repulsion_energy()))
+print("")
 
 E = psi4.energy('detci')
-psi4.driver.p4util.compare_values(psi4.get_variable('CI ROOT 0 TOTAL ENERGY'), CI_E[0]+ mol.nuclear_repulsion_energy(), 6, 'CI Root 0 Total Energy')
-if(nroot > 1):
-    psi4.driver.p4util.compare_values(psi4.get_variable('CI ROOT 1 TOTAL ENERGY'), CI_E[1]+ mol.nuclear_repulsion_energy(), 6, 'CI Root 1 Total Energy')
+
+for n in range(nroot):
+    ci_ref = psi4.get_variable('CI ROOT %d TOTAL ENERGY' % n)
+    ci_compute = CI_E[n] + mol.nuclear_repulsion_energy()
+    psi4.driver.p4util.compare_values(ci_ref, ci_compute, 6, 'CI Root %d Total Energy' % n)

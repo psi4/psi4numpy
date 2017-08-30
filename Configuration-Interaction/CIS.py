@@ -1,8 +1,5 @@
 """
-A simple Psi 4 input script to compute CIS energy from a SCF reference
-
-Requirements:
-SciPy 0.13.0+, NumPy 1.7.2+
+A Psi4 input script to compute CIS energy from a SCF reference
 
 References:
 Algorithms were taken directly from Daniel Crawford's programming website:
@@ -10,12 +7,12 @@ http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
 Equations from [Szabo:1996]
 """
 
-__authors__    = "Tianyuan Zhang"
-__credits__   = ["Tianyuan Zhang", "Jeffrey B. Schriber", "Daniel G. A. Smith"]
+__authors__ = "Tianyuan Zhang"
+__credits__ = ["Tianyuan Zhang", "Jeffrey B. Schriber", "Daniel G. A. Smith"]
 
 __copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
-__license__   = "BSD-3-Clause"
-__date__      = "2017-05-26"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-05-26"
 
 import time
 import numpy as np
@@ -23,7 +20,6 @@ np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
 # Memory for Psi4 in GB
-# psi4.core.set_memory(int(2e9), False)
 psi4.core.set_output_file('output.dat', False)
 
 # Memory for numpy in GB
@@ -48,7 +44,7 @@ t = time.time()
 # First compute SCF energy using Psi4
 scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 
-# Grab data from wavfunction class 
+# Grab data from wavfunction class
 C = wfn.Ca()
 ndocc = wfn.doccpi()[0]
 nmo = wfn.nmo()
@@ -56,7 +52,7 @@ nvirt = nmo - ndocc
 nDet_S = ndocc * nvirt * 2
 
 # Compute size of SO-ERI tensor in GB
-ERI_Size = (nmo ** 4) * 128e-9
+ERI_Size = (nmo**4) * 128e-9
 print('\nSize of the SO ERI tensor will be %4.2f GB.' % ERI_Size)
 memory_footprint = ERI_Size * 5.2
 if memory_footprint > numpy_memory:

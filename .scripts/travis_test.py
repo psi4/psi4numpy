@@ -32,6 +32,7 @@ exceptions = ["Coupled-Cluster/TD-CCSD.py",
 reference_folders = [
 "Self-Consistent-Field",
 "Coupled-Cluster",
+"Configuration-Interaction",
 "Moller-Plesset",
 "Symmetry-Adapted-Perturbation-Theory",
 "Electron-Propagator"]

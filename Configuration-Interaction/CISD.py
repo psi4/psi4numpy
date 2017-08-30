@@ -1,19 +1,16 @@
 """
-A simple Psi 4 input script to compute CISD energy from a SCF reference
-
-Requirements:
-SciPy 0.13.0+, NumPy 1.7.2+
+A Psi4 input script to compute CISD energy from a SCF reference
 
 References:
 Equations from [Szabo:1996]
 """
 
-__authors__    = "Tianyuan Zhang"
-__credits__   = ["Tianyuan Zhang", "Jeffrey B. Schriber", "Daniel G. A. Smith"]
+__authors__ = "Tianyuan Zhang"
+__credits__ = ["Tianyuan Zhang", "Jeffrey B. Schriber", "Daniel G. A. Smith"]
 
 __copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
-__license__   = "BSD-3-Clause"
-__date__      = "2017-05-26"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-05-26"
 
 import time
 import numpy as np
@@ -37,11 +34,7 @@ H 1 1.1 2 104
 symmetry c1
 """)
 
-
-psi4.set_options({'basis': 'sto-3g',
-                  'scf_type': 'pk',
-                  'e_convergence': 1e-8,
-                  'd_convergence': 1e-8})
+psi4.set_options({'basis': 'sto-3g', 'scf_type': 'pk', 'e_convergence': 1e-8, 'd_convergence': 1e-8})
 
 print('\nStarting SCF and integral build...')
 t = time.time()
@@ -49,7 +42,7 @@ t = time.time()
 # First compute SCF energy using Psi4
 scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 
-# Grab data from wavfunction class 
+# Grab data from wavfunction class
 C = wfn.Ca()
 ndocc = wfn.doccpi()[0]
 nmo = wfn.nmo()
@@ -58,7 +51,7 @@ nvirt = nmo - ndocc
 # Compute size of Hamiltonian in GB
 from scipy.special import comb
 nDet_S = ndocc * nvirt * 2
-nDet_D = 2 * comb(ndocc, 2) * comb(nvirt, 2) + ndocc **2 * nvirt **2
+nDet_D = 2 * comb(ndocc, 2) * comb(nvirt, 2) + ndocc**2 * nvirt**2
 nDet = 1 + nDet_S + nDet_D
 H_Size = nDet**2 * 8e-9
 print('\nSize of the Hamiltonian Matrix will be %4.2f GB.' % H_Size)
@@ -120,12 +113,11 @@ print('..finished diagonalization in %.3f seconds.\n' % (time.time() - t))
 
 cisd_mol_e = e_cisd[0] + mol.nuclear_repulsion_energy()
 
-print('# Determinants:     % 16d' % (len(detList)))
+print('# Determinants:      % 16d' % (len(detList)))
 
-print('SCF energy:         % 16.10f' % (scf_e))
+print('SCF energy:          % 16.10f' % (scf_e))
 print('CISD correlation:    % 16.10f' % (cisd_mol_e - scf_e))
 print('Total CISD energy:   % 16.10f' % (cisd_mol_e))
 
 if compare_psi4:
     psi4.driver.p4util.compare_values(psi4.energy('DETCI'), cisd_mol_e, 6, 'CISD Energy')
-    

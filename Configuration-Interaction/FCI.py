@@ -1,5 +1,5 @@
 """
-A simple Psi 4 input script to compute Full Configuration Interaction from a SCF reference
+A Psi4 input script to compute Full Configuration Interaction from a SCF reference
 
 Requirements:
 SciPy 0.13.0+, NumPy 1.7.2+
@@ -8,12 +8,12 @@ References:
 Equations from [Szabo:1996]
 """
 
-__authors__    = "Tianyuan Zhang"
-__credits__   = ["Tianyuan Zhang", "Jeffrey B. Schriber", "Daniel G. A. Smith"]
+__authors__ = "Tianyuan Zhang"
+__credits__ = ["Tianyuan Zhang", "Jeffrey B. Schriber", "Daniel G. A. Smith"]
 
 __copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
-__license__   = "BSD-3-Clause"
-__date__      = "2017-05-26"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-05-26"
 
 import time
 import numpy as np
@@ -49,7 +49,7 @@ t = time.time()
 # First compute SCF energy using Psi4
 scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 
-# Grab data from wavfunction class 
+# Grab data from wavfunction class
 C = wfn.Ca()
 ndocc = wfn.doccpi()[0]
 nmo = wfn.nmo()
