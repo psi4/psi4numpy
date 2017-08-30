@@ -44,6 +44,7 @@ class helper_CPHF(object):
             self.dipoles_xyz.append(Fia)
 
         self.x = None
+        self.rhsvecs = None
 
     def solve(self):
         if self.method == 'direct':
@@ -71,8 +72,8 @@ class helper_CPHF(object):
             raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory \
                             limit of %4.2f GB." % (memory_footprint, self.numpy_memory))
 
-        # Compute electronic hessian
-        print('\nForming hessian...')
+        # Compute electronic Hessian
+        print('\nForming Hessian...')
         t = time.time()
         docc = np.diag(np.ones(self.nocc))
         dvir = np.diag(np.ones(self.nvir))
@@ -88,18 +89,83 @@ class helper_CPHF(object):
 
         H -= MO[:, :self.nocc, self.nocc:, self.nocc:].swapaxes(1, 2)
 
-        print('...formed hessian in %.3f seconds.' % (time.time() - t))
+        print('...formed Hessian in %.3f seconds.' % (time.time() - t))
 
-        # Invert hessian (o^3 v^3)
-        print('\nInverting hessian...')
+        # Invert Hessian (o^3 v^3)
+        print('\nInverting Hessian...')
         t = time.time()
         Hinv = np.linalg.inv(H.reshape(self.nocc * self.nvir, -1)).reshape(self.nocc, self.nvir, self.nocc, self.nvir)
-        print('...inverted hessian in %.3f seconds.' % (time.time() - t))
+        print('...inverted Hessian in %.3f seconds.' % (time.time() - t))
 
         # Form perturbation response vector for each dipole component
         self.x = []
         for numx in range(3):
             xcomp = np.einsum('iajb,ia->jb', Hinv, self.dipoles_xyz[numx])
+            self.x.append(xcomp.reshape(-1))
+
+        self.rhsvecs = []
+        for numx in range(3):
+            rhsvec = self.dipoles_xyz[numx].reshape(-1)
+            self.rhsvecs.append(rhsvec)
+
+    def solve_dynamic_direct(self, omega=0.0):
+        # Adapted completely from TDHF.py
+
+        eps_v = self.epsilon[self.nocc:]
+        eps_o = self.epsilon[:self.nocc]
+
+        t = time.time()
+        I = self.mints.ao_eri()
+        v_ijab = np.asarray(self.mints.mo_transform(I, self.Co, self.Co, self.Cv, self.Cv))
+        v_iajb = np.asarray(self.mints.mo_transform(I, self.Co, self.Cv, self.Co, self.Cv))
+        print('Integral transform took %.3f seconds\n' % (time.time() - t))
+
+        # Since we are time dependent we need to build the full Hessian:
+        # | A B |      | D  S | |  x |   |  b |
+        # | B A |  - w | S -D | | -x | = | -b |
+
+        # Build A and B blocks
+        t = time.time()
+        A11  = np.einsum('ab,ij->iajb', np.diag(eps_v), np.diag(np.ones(self.nocc)))
+        A11 -= np.einsum('ij,ab->iajb', np.diag(eps_o), np.diag(np.ones(self.nvir)))
+        A11 += 2 * v_iajb
+        A11 -= v_ijab.swapaxes(1, 2)
+        A11 *= 2
+
+        B11  = -2 * v_iajb
+        B11 += v_iajb.swapaxes(0, 2)
+        B11 *= 2
+
+        # Reshape and jam it together
+        nov = self.nocc * self.nvir
+        A11.shape = (nov, nov)
+        B11.shape = (nov, nov)
+
+        Hess1 = np.hstack((A11, B11))
+        Hess2 = np.hstack((B11, A11))
+        Hess = np.vstack((Hess1, Hess2))
+
+        S11 = np.zeros_like(A11)
+        D11 = np.zeros_like(B11)
+        S11[np.diag_indices_from(S11)] = 2
+
+        S1 = np.hstack((S11, D11))
+        S2 = np.hstack((D11, -S11))
+        S = np.vstack((S1, S2))
+        S *= omega
+        print('Hessian formation took %.3f seconds\n' % (time.time() - t))
+
+        t = time.time()
+        Hinv = np.linalg.inv(Hess - S)
+        print('Hessian inversion took %.3f seconds\n' % (time.time() - t))
+
+        self.x = []
+        self.rhsvecs = []
+        for numx in range(3):
+            rhsvec = self.dipoles_xyz[numx].reshape(-1)
+            rhsvec = np.concatenate((rhsvec, -rhsvec))
+            xcomp = Hinv.dot(rhsvec)
+            self.rhsvecs.append(rhsvec)
             self.x.append(xcomp)
 
     def solve_static_iterative(self, maxiter=20, conv=1.e-9, use_diis=True):
@@ -169,6 +235,11 @@ class helper_CPHF(object):
 
             if max_RMS < conv:
                 print('CPHF converged in %d iterations and %.2f seconds.' % (CPHF_ITER, time.time() - t))
+                self.rhsvecs = []
+                for numx in range(3):
+                    rhsvec = self.dipoles_xyz[numx].reshape(-1)
+                    self.rhsvecs.append(rhsvec)
+                    self.x[numx] = self.x[numx].reshape(-1)
                 break
 
             print('CPHF Iteration %3d: Average RMS = %3.8f  Maximum RMS = %3.8f' %
@@ -178,4 +249,4 @@ class helper_CPHF(object):
         self.polar = np.empty((3, 3))
         for numx in range(3):
             for numf in range(3):
-                self.polar[numx, numf] = np.einsum('ia,ia->', self.x[numx], self.dipoles_xyz[numf])
+                self.polar[numx, numf] = self.x[numx].dot(self.rhsvecs[numf])
