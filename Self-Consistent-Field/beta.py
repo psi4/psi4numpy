@@ -10,20 +10,49 @@ Equations taken from [Karna:1991:487], http://dx.doi.org/10.1002/jcc.540120409
 __authors__ = "Eric J. Berquist"
 __credits__ = ["Eric J. Berquist"]
 
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
 __date__    = "2017-08-26"
 
+import numpy as np
+np.set_printoptions(precision=5, linewidth=200, suppress=True)
+import psi4
+from helper_CPHF import helper_CPHF
+
+# Memory for Psi4 in GB
+psi4.set_memory('2 GB')
+psi4.core.set_output_file("output.dat", False)
+
+mol = psi4.geometry("""
+O
+H 1 1.1
+H 1 1.1 2 104
+symmetry c1
+""")
+
+# Set options for CPHF
+psi4.set_options({"basis": "aug-cc-pVDZ",
+                  "scf_type": "direct",
+                  "df_scf_guess": False,
+                  "e_convergence": 1e-9,
+                  "d_convergence": 1e-9,
+                  "cphf_tasks": ['polarizability']})
+
+helper = helper_CPHF(mol, method='direct')
 # For the $2n+1$ rule, the quadratic response starting quantities must
 # come from linear response.
-from CPHF import *
+helper.solve()
 
-moenergies = epsilon
-C = np.asarray(C)
-norb = C.shape[1]
-x = np.asarray(x)
+moenergies = helper.epsilon
+C = np.asarray(helper.C)
+Co = helper.Co
+Cv = helper.Cv
+nbf, norb = C.shape
+nocc = Co.shape[1]
+x = np.asarray(helper.x)
 ncomp = x.shape[0]
 integrals_ao = np.asarray([np.asarray(dipole_ao_component)
-                           for dipole_ao_component in tmp_dipoles])
+                           for dipole_ao_component in helper.tmp_dipoles])
 
 # form full MO-basis dipole integrals
 integrals_mo = np.empty(shape=(ncomp, norb, norb))
@@ -38,7 +67,7 @@ for i in range(ncomp):
 
 # form G matrices from perturbation and generalized Fock matrices; do
 # one more Fock build for each response vector
-jk = psi4.core.JK.build(scf_wfn.basisset())
+jk = psi4.core.JK.build(helper.scf_wfn.basisset())
 jk.initialize()
 G = np.empty_like(U)
 R = psi4.core.Matrix(nbf, nocc)

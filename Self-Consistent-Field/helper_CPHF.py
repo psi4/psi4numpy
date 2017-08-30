@@ -35,10 +35,10 @@ class helper_CPHF(object):
         # Grab perturbation tensors in MO basis
         nCo = np.asarray(self.Co)
         nCv = np.asarray(self.Cv)
-        tmp_dipoles = self.mints.so_dipole()
+        self.tmp_dipoles = self.mints.so_dipole()
         self.dipoles_xyz = []
         for num in range(3):
-            Fso = np.asarray(tmp_dipoles[num])
+            Fso = np.asarray(self.tmp_dipoles[num])
             Fia = (nCo.T).dot(Fso).dot(nCv)
             Fia *= -2
             self.dipoles_xyz.append(Fia)
