@@ -48,13 +48,13 @@ psi4.set_options({"basis": "aug-cc-pVDZ",
 
 # Set defaults
 # Can be direct or iterative
-method = 'direct'
+method = 'iterative'
 numpy_memory = 2
 use_diis = True
 
 # Iterative settings
 maxiter = 20
-conv = 1.e-6
+conv = 1.e-9
 
 # Compute the reference wavefunction and CPHF using Psi 
 scf_e, scf_wfn = psi4.energy('SCF', return_wfn=True)
@@ -134,11 +134,6 @@ if method == 'direct':
         xcomp = np.einsum('iajb,ia->jb', Hinv, dipoles_xyz[numx])
         x.append(xcomp)
 
-    # Compute 3x3 polarizability tensor
-    polar = np.empty((3, 3))
-    for numx in range(3):        
-        for numf in range(3):
-            polar[numx, numf] = np.einsum('ia,ia->', x[numx], dipoles_xyz[numf])
 
 elif method == 'iterative':
 
@@ -224,6 +219,20 @@ elif method == 'iterative':
 else:
     raise Exception("Method %s is not recognized" % method)
 
+
+# Compute 3x3 polarizability tensor
+polar = np.empty((3, 3))
+for numx in range(3):        
+    for numf in range(3):
+        polar[numx, numf] = np.einsum('ia,ia->', x[numx], dipoles_xyz[numf])
+
+# Compare against reference
+ref = np.array([
+    [  8.01523,  -0.,        0.     ],
+    [ -0.,       12.50373,   0.     ],
+    [  0.,        0.,       10.04227]
+])
+assert np.allclose(polar, ref, rtol=0, atol=1.e-3)
 
 print('\nCPHF Dipole Polarizability:')
 print(np.around(polar, 5))
