@@ -37,19 +37,22 @@ reference_folders = [
 "Symmetry-Adapted-Perturbation-Theory",
 "Electron-Propagator"]
 
-#reference_folders = []
-
 # List of folders to run the jupyter scripts in
 tutorial_folders = [
-"Tutorials/01_Psi4NumPy-Basics",
-"Tutorials/03_Hartree-Fock",
-"Tutorials/02_Linear_Algebra",
-# "Tutorials/04_Density_Functional_Theory",
-"Tutorials/05_Moller-Plesset",
-"Tutorials/06_Molecular_Properties"]
+"01_Psi4NumPy-Basics",
+"02_Linear_Algebra",
+"03_Hartree-Fock",
+# "04_Density_Functional_Theory",
+"05_Moller-Plesset",
+"06_Molecular_Properties",
+"07_Symmetry_Adapted_Perturbation_Theory",
+"08_CEPA0_and_CCD",
+"09_Configuration_Interaction",
+"10_Orbital_Optimized_Methods",
+"11_Integrals",
+]
 
-# Not quite ready to test tutorials
-#tutorial_folders = []
+tutorial_folders = ["Tutorials/" + x for x in tutorial_folders]
 
 ### Helper functions
 
