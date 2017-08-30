@@ -54,6 +54,7 @@ coverage.xml
 docs/_build/
 
 # Psi4 output files
+*.py.dat
 *.out
 *clean
 *timer.dat
