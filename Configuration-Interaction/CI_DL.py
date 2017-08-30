@@ -44,7 +44,7 @@ H 1 1.1 2 104
 symmetry c1
 """)
  # Number of roots
-nroot = 3
+nroot = 1
 psi4.set_options({"BASIS": "6-31g", "NUM_ROOTS" : 3})
 
 # Build the SCF Wavefunction
@@ -97,7 +97,7 @@ for x in range(guess_size):
     guess = np.zeros((ciwfn.ndet()))
     guess[:guess_size] = gevecs[:, x]
     gvecs.append(guess)
-    print('Guess CI energy (Hsize %d)   %2.9f' % (guess_size, gevals[x]))
+    print('Guess CI energy (Hsize %d)   %2.9f' % (guess_size, gevals[x] + mol.nuclear_repulsion_energy()))
 print("")
 
 # Maximum number of vectors
@@ -168,6 +168,7 @@ for CI_ITER in range(max_guess - 1):
         avg_dc += delta_c[n]
     avg_energy /= nroot
     avg_dc /= nroot
+    avg_energy += mol.nuclear_repulsion_energy()
 
     print('CI Iteration %3d: Energy = %4.16f   dE = % 1.5E   dC = %1.5E' % (CI_ITER, avg_energy, (avg_energy - Eold),
                                                                             avg_dc))
