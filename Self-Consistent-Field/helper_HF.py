@@ -65,7 +65,7 @@ class helper_HF(object):
 
         """
 
-        # Build and all 2D values
+        # Build and store all 2D values
         print('Building rank 2 integrals...')
         t = time.time()
 
