@@ -1,15 +1,17 @@
-# A simple Psi 4 input script to compute EP2 using spin-orbitals
-# From Szabo and Ostlund page 390
-# Requirements scipy 0.13.0+ and numpy 1.7.2+
-#
-# Created by: Daniel G. A. Smith
-# Date: 7/29/14
-# License: GPL v3.0
-#
-import itertools as it
+"""
+A simple Psi 4 input script to compute EP2 using spin-orbitals
+From Szabo and Ostlund page 390
+"""
+
+__authors__ = "Daniel G. A. Smith"
+__credits__ = ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-9-30"
+
 import time
 import numpy as np
-from scipy import linalg as SLA
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 

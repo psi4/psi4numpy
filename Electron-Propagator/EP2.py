@@ -1,15 +1,17 @@
-# A simple Psi 4 input script to compute EP2 using spin-orbitals
-# From Szabo and Ostlund page 390
-# Requirements scipy 0.13.0+ and numpy 1.7.2+
-#
-# Created by: Daniel G. A. Smith
-# Date: 7/29/14
-# License: GPL v3.0
-#
-import itertools as it
+"""
+A simple Psi 4 input script to compute EP2 using spin-orbitals
+From Szabo and Ostlund page 390
+"""
+
+__authors__ = "Daniel G. A. Smith"
+__credits__ = ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-9-30"
+
 import time
 import numpy as np
-from scipy import linalg as SLA
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
@@ -44,14 +46,14 @@ t = time.time()
 # First compute RHF energy using Psi4
 scf_e, wfn = psi4.energy('SCF', return_wfn=True)
 
-# Grab data from wavfunction class 
+# Grab data from wavfunction class
 ndocc = wfn.doccpi()[0]
 nmo = wfn.nmo()
 SCF_E = wfn.energy()
 eps = np.asarray(wfn.epsilon_a())
 
 # Compute size of ERI tensor in GB
-ERI_Size = (nmo ** 4) * 8e-9
+ERI_Size = (nmo**4) * 8e-9
 print('Size of the ERI/MO tensor will be %4.2f GB.' % ERI_Size)
 memory_footprint = ERI_Size * 2.5
 if memory_footprint > numpy_memory:
@@ -95,8 +97,8 @@ for orbital in range(start_orbs + 1, start_orbs + num_orbs + 1):
         Eold = E
 
         # Build energy denominators
-        epsilon1 = 1/(E + Eocc.reshape(-1, 1, 1) - Evir.reshape(-1, 1) - Evir)
-        epsilon2 = 1/(E + Evir.reshape(-1, 1, 1) - Eocc.reshape(-1, 1) - Eocc)
+        epsilon1 = 1 / (E + Eocc.reshape(-1, 1, 1) - Evir.reshape(-1, 1) - Evir)
+        epsilon2 = 1 / (E + Evir.reshape(-1, 1, 1) - Eocc.reshape(-1, 1) - Eocc)
 
         # Compute sigma's
         tmp1 = (2 * MO[orbital, o, v, v] - MO[o, orbital, v, v])

@@ -1,15 +1,17 @@
-# A simple Psi 4 input script to compute EP2 using spin-orbitals
-# From Szabo and Ostlund page 390
-# Requirements scipy 0.13.0+ and numpy 1.7.2+
-#
-# Created by: Daniel G. A. Smith
-# Date: 7/29/14
-# License: GPL v3.0
-#
-import itertools as it
+"""
+A simple Psi 4 input script to compute EP3 using spin-orbitals
+From Szabo and Ostlund page 390
+"""
+
+__authors__ = "Daniel G. A. Smith"
+__credits__ = ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-9-30"
+
 import time
 import numpy as np
-from scipy import linalg as SLA
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
 
@@ -24,9 +26,9 @@ numpy_memory = 2
 num_orbs = 5
 
 mol = psi4.geometry("""
-O -0.0247847074 0. -0.0175254347
-H  0.0232702345 0.  0.9433790708
-H  0.8971830624 0. -0.2925203027
+O -0.0247847074 0.0000000 -0.0175254347
+H  0.0232702345 0.0000000  0.9433790708
+H  0.8971830624 0.0000000 -0.2925203027
 symmetry c1
 """)
 
@@ -52,14 +54,14 @@ SCF_E = wfn.energy()
 eps = wfn.epsilon_a()
 eps = np.array([eps.get(x) for x in range(C.shape[0])])
 
-
 # Compute size of SO-ERI tensor in GB
-ERI_Size = (nmo**4)*(2**4)*8.0 / 1E9
+ERI_Size = (nmo**4) * (2**4) * 8.0 / 1E9
 print("\nSize of the SO ERI tensor will be %4.2f GB." % ERI_Size)
-memory_footprint = ERI_Size*2.2
+memory_footprint = ERI_Size * 2.2
 if memory_footprint > numpy_memory:
     clean()
-    raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." % (memory_footprint, numpy_memory))
+    raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory limit of %4.2f GB." %
+                    (memory_footprint, numpy_memory))
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
@@ -67,11 +69,10 @@ mints = psi4.core.MintsHelper(wfn.basisset())
 I = np.array(mints.ao_eri())
 I = I.reshape(nmo, nmo, nmo, nmo)
 
-print('\nTotal time taken for ERI integrals: %.3f seconds.\n' % (time.time()-t))
-
+print('\nTotal time taken for ERI integrals: %.3f seconds.\n' % (time.time() - t))
 
 #Make spin-orbital MO
-t=time.time()
+t = time.time()
 print('Starting AO -> spin-orbital MO transformation...')
 nso = nmo * 2
 
@@ -139,7 +140,7 @@ def EP_term(n, orbital, factor, string, eps_views):
 
     # Get slices
     slices = string.split(',')
-    if len(slices)!=(n*2-1):
+    if len(slices) != (n * 2 - 1):
         clean()
         raise Exception('Number of terms does not match the order of pertubation theory')
 
@@ -156,8 +157,8 @@ def EP_term(n, orbital, factor, string, eps_views):
     views = views + eps_views
 
     # Remove i and j indices
-    string = string.replace('i','')
-    string = string.replace('j','')
+    string = string.replace('i', '')
+    string = string.replace('j', '')
 
     # Compute term!
     string += '->'
@@ -166,7 +167,7 @@ def EP_term(n, orbital, factor, string, eps_views):
 
 ep2_arr = []
 ep3_arr = []
-for orbital in range(nocc-num_orbs*2, nocc, 2):
+for orbital in range(nocc - num_orbs * 2, nocc, 2):
     E = eps[orbital]
     ep2_conv = False
     ep3_conv = False
@@ -176,8 +177,8 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
         Eold = E
 
         # Build energy denominators
-        epsilon1 = 1/(E + eocc.reshape(-1, 1, 1) - evirt.reshape(-1, 1) - evirt)
-        epsilon2 = 1/(E + evirt.reshape(-1, 1, 1) - eocc.reshape(-1, 1) - eocc)
+        epsilon1 = 1 / (E + eocc.reshape(-1, 1, 1) - evirt.reshape(-1, 1) - evirt)
+        epsilon2 = 1 / (E + evirt.reshape(-1, 1, 1) - eocc.reshape(-1, 1) - eocc)
         epsilon1_2 = np.power(epsilon1, 2)
         epsilon2_2 = np.power(epsilon2, 2)
 
@@ -209,9 +210,9 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
     # EP3
 
     # EP3 self energy independant terms
-    eps_ov = 1/(eocc.reshape(-1, 1) - evirt)
-    eps_oovv = 1/(eocc.reshape(-1, 1, 1, 1) + eocc.reshape(-1, 1, 1) - evirt.reshape(-1, 1) - evirt)
-    eps_vvoo = 1/(evirt.reshape(-1, 1, 1, 1) + evirt.reshape(-1, 1, 1) - eocc.reshape(-1, 1) - eocc)
+    eps_ov = 1 / (eocc.reshape(-1, 1) - evirt)
+    eps_oovv = 1 / (eocc.reshape(-1, 1, 1, 1) + eocc.reshape(-1, 1, 1) - evirt.reshape(-1, 1) - evirt)
+    eps_vvoo = 1 / (evirt.reshape(-1, 1, 1, 1) + evirt.reshape(-1, 1, 1) - eocc.reshape(-1, 1) - eocc)
 
     eps_oovv_2 = np.power(eps_oovv, 2)
     eps_vvoo_2 = np.power(eps_vvoo, 2)
@@ -232,8 +233,8 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
         Eold = E
 
         # Compute energy denominators
-        eps_eovv = 1/(E + eocc.reshape(-1, 1, 1) - evirt.reshape(-1, 1) - evirt)
-        eps_evoo = 1/(E + evirt.reshape(-1, 1, 1) - eocc.reshape(-1, 1) - eocc)
+        eps_eovv = 1 / (E + eocc.reshape(-1, 1, 1) - evirt.reshape(-1, 1) - evirt)
+        eps_evoo = 1 / (E + evirt.reshape(-1, 1, 1) - eocc.reshape(-1, 1) - eocc)
         eps_eovv_2 = np.power(eps_eovv, 2)
         eps_evoo_2 = np.power(eps_evoo, 2)
 
@@ -312,7 +313,7 @@ print("---------------------------------------------------------------------")
 KP_arr = eps[:nocc][::2] * 27.21138505
 
 for orbital in range(0, len(ep2_arr)):
-    print("% 4d     % 16.4f    % 16.4f    % 16.4f" % ((len(ep2_arr)-orbital-1), KP_arr[orbital], ep2_arr[orbital], ep3_arr[orbital]))
-
+    print("% 4d     % 16.4f    % 16.4f    % 16.4f" % ((len(ep2_arr) - orbital - 1), KP_arr[orbital], ep2_arr[orbital],
+                                                      ep3_arr[orbital]))
 
 # 13.46 11.27
