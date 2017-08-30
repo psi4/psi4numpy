@@ -49,6 +49,7 @@ Co = helper.Co
 Cv = helper.Cv
 nbf, norb = C.shape
 nocc = Co.shape[1]
+nvir = norb - nocc
 x = np.asarray(helper.x)
 ncomp = x.shape[0]
 integrals_ao = np.asarray([np.asarray(dipole_ao_component)
@@ -62,8 +63,8 @@ for i in range(ncomp):
 # repack response vectors to [norb, norb]; 1/2 is due to RHF
 U = np.zeros_like(integrals_mo)
 for i in range(ncomp):
-    U[i, :nocc, nocc:] = 0.5 * x[i, ...]
-    U[i, nocc:, :nocc] = -0.5 * x[i, ...].T
+    U[i, :nocc, nocc:] = 0.5 * x[i, ...].reshape(nocc, nvir)
+    U[i, nocc:, :nocc] = -0.5 * x[i, ...].reshape(nocc, nvir).T
 
 # form G matrices from perturbation and generalized Fock matrices; do
 # one more Fock build for each response vector
@@ -81,7 +82,7 @@ for i in range(ncomp):
     # frequency-dependent response. 1/2 is due to RHF
     jk.C_clear()
     L = Co
-    npR[...] = np.dot(x[i, ...], np.asarray(Cv).T).T
+    npR[...] = np.dot(x[i, ...].reshape(nocc, nvir), np.asarray(Cv).T).T
     jk.C_left_add(L)
     jk.C_right_add(R)
     jk.compute()
