@@ -14,6 +14,7 @@ import time
 import numpy as np
 import psi4
 
+
 # N dimensional dot
 # Like a mini DPD library
 def ndot(input_string, op1, op2, prefactor=None):
@@ -42,8 +43,8 @@ def ndot(input_string, op1, op2, prefactor=None):
     # Tensordot axes
     left_pos, right_pos = (), ()
     for s in idx_removed:
-        left_pos += (input_left.find(s),)
-        right_pos += (input_right.find(s),)
+        left_pos += (input_left.find(s), )
+        right_pos += (input_right.find(s), )
     tdot_axes = (left_pos, right_pos)
 
     # Get result ordering
@@ -67,23 +68,19 @@ def ndot(input_string, op1, op2, prefactor=None):
     # Matrix multiply
     # No transpose needed
     if input_left[-rs:] == input_right[:rs]:
-        new_view = np.dot(op1.reshape(dim_left, dim_removed),
-                          op2.reshape(dim_removed, dim_right))
+        new_view = np.dot(op1.reshape(dim_left, dim_removed), op2.reshape(dim_removed, dim_right))
 
     # Transpose both
     elif input_left[:rs] == input_right[-rs:]:
-        new_view = np.dot(op1.reshape(dim_removed, dim_left).T,
-                          op2.reshape(dim_right, dim_removed).T)
+        new_view = np.dot(op1.reshape(dim_removed, dim_left).T, op2.reshape(dim_right, dim_removed).T)
 
     # Transpose right
     elif input_left[-rs:] == input_right[-rs:]:
-        new_view = np.dot(op1.reshape(dim_left, dim_removed),
-                          op2.reshape(dim_right, dim_removed).T)
+        new_view = np.dot(op1.reshape(dim_left, dim_removed), op2.reshape(dim_right, dim_removed).T)
 
     # Tranpose left
     elif input_left[:rs] == input_right[:rs]:
-        new_view = np.dot(op1.reshape(dim_removed, dim_left).T,
-                          op2.reshape(dim_removed, dim_right))
+        new_view = np.dot(op1.reshape(dim_removed, dim_left).T, op2.reshape(dim_removed, dim_right))
 
     # If we have to transpose vector-matrix, einsum is faster
     elif (len(keep_left) == 0) or (len(keep_right) == 0):
@@ -114,7 +111,6 @@ def ndot(input_string, op1, op2, prefactor=None):
 
 
 class helper_CCSD(object):
-
     def __init__(self, mol, freeze_core=False, memory=2):
 
         if freeze_core:
@@ -126,13 +122,13 @@ class helper_CCSD(object):
 
         print('Computing RHF reference.')
         psi4.core.set_active_molecule(mol)
-        psi4.set_module_options('SCF', {'SCF_TYPE':'PK'})
-        psi4.set_module_options('SCF', {'E_CONVERGENCE':10e-10})
-        psi4.set_module_options('SCF', {'D_CONVERGENCE':10e-10})
+        psi4.set_module_options('SCF', {'SCF_TYPE': 'PK'})
+        psi4.set_module_options('SCF', {'E_CONVERGENCE': 10e-10})
+        psi4.set_module_options('SCF', {'D_CONVERGENCE': 10e-10})
 
         # Core is frozen by default
         if not freeze_core:
-            psi4.set_module_options('CCENERGY', {'FREEZE_CORE':'FALSE'})
+            psi4.set_module_options('CCENERGY', {'FREEZE_CORE': 'FALSE'})
 
         self.rhf_e, self.wfn = psi4.energy('SCF', return_wfn=True)
         print('RHF Final Energy                          % 16.10f\n' % (self.rhf_e))
@@ -187,7 +183,7 @@ class helper_CCSD(object):
         #Make spin-orbital MO
         print('Starting AO -> spin-orbital MO transformation...')
 
-        ERI_Size = (self.nmo ** 4) * 128.e-9
+        ERI_Size = (self.nmo**4) * 128.e-9
         memory_footprint = ERI_Size * 5
         if memory_footprint > self.memory:
             psi.clean()
@@ -209,8 +205,7 @@ class helper_CCSD(object):
         self.slice_o = slice(self.nfzc, self.nocc + self.nfzc)
         self.slice_v = slice(self.nocc + self.nfzc, self.nso)
         self.slice_a = slice(0, self.nso)
-        self.slice_dict = {'f': self.slice_nfzc, 'o' : self.slice_o, 'v' : self.slice_v,
-                           'a' : self.slice_a}
+        self.slice_dict = {'f': self.slice_nfzc, 'o': self.slice_o, 'v': self.slice_v, 'a': self.slice_a}
 
         #Extend eigenvalues
         self.eps = np.repeat(self.eps, 2)
@@ -242,15 +237,14 @@ class helper_CCSD(object):
         if len(string) != 4:
             psi4.core.clean()
             raise Exception('get_MO: string %s must have 4 elements.' % string)
-        return self.MO[self.slice_dict[string[0]], self.slice_dict[string[1]],
-                       self.slice_dict[string[2]], self.slice_dict[string[3]]]
+        return self.MO[self.slice_dict[string[0]], self.slice_dict[string[1]], self.slice_dict[string[2]],
+                       self.slice_dict[string[3]]]
 
     def get_F(self, string):
         if len(string) != 2:
             psi4.core.clean()
             raise Exception('get_F: string %s must have 4 elements.' % string)
         return self.F[self.slice_dict[string[0]], self.slice_dict[string[1]]]
-
 
     #Bulid Eqn 9: tilde{\Tau})
     def build_tilde_tau(self):
@@ -260,7 +254,6 @@ class helper_CCSD(object):
         ttau -= tmp.swapaxes(2, 3)
         return ttau
 
-
     #Build Eqn 10: \Tau)
     def build_tau(self):
         ttau = self.t2.copy()
@@ -268,7 +261,6 @@ class helper_CCSD(object):
         ttau += tmp
         ttau -= tmp.swapaxes(2, 3)
         return ttau
-
 
     #Build Eqn 3:
     def build_Fae(self):
@@ -281,7 +273,6 @@ class helper_CCSD(object):
         Fae -= ndot('mnaf,mnef->ae', self.build_tilde_tau(), self.get_MO('oovv'), prefactor=0.5)
         return Fae
 
-
     #Build Eqn 4:
     def build_Fmi(self):
         Fmi = self.get_F('oo').copy()
@@ -293,13 +284,11 @@ class helper_CCSD(object):
         Fmi += ndot('inef,mnef->mi', self.build_tilde_tau(), self.get_MO('oovv'), prefactor=0.5)
         return Fmi
 
-
     #Build Eqn 5:
     def build_Fme(self):
         Fme = self.get_F('ov').copy()
         Fme += ndot('nf,mnef->me', self.t1, self.get_MO('oovv'))
         return Fme
-
 
     #Build Eqn 6:
     def build_Wmnij(self):
@@ -311,7 +300,6 @@ class helper_CCSD(object):
 
         Wmnij += ndot('ijef,mnef->mnij', self.build_tau(), self.get_MO('oovv'), prefactor=0.25)
         return Wmnij
-
 
     #Build Eqn 7:
     def build_Wabef(self):
@@ -325,7 +313,6 @@ class helper_CCSD(object):
         Wabef += ndot('mnab,mnef->abef', self.build_tau(), self.get_MO('oovv'), prefactor=0.25)
         return Wabef
 
-
     #Build Eqn 8:
     def build_Wmbej(self):
         Wmbej = self.get_MO('ovvo').copy()
@@ -337,7 +324,6 @@ class helper_CCSD(object):
 
         Wmbej -= ndot('jnfb,mnef->mbej', tmp, self.get_MO('oovv'))
         return Wmbej
-
 
     def update(self):
         # Updates amplitudes
@@ -439,7 +425,8 @@ class helper_CCSD(object):
             CCSDcorr_E = self.compute_corr_energy()
 
             # Print CCSD iteration information
-            print('CCSD Iteration %3d: CCSD correlation = %.12f   dE = % .5E   DIIS = %d' % (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old), diis_size))
+            print('CCSD Iteration %3d: CCSD correlation = %.12f   dE = % .5E   DIIS = %d' %
+                  (CCSD_iter, CCSDcorr_E, (CCSDcorr_E - CCSDcorr_E_old), diis_size))
 
             # Check convergence
             if (abs(CCSDcorr_E - CCSDcorr_E_old) < e_conv):
@@ -495,7 +482,8 @@ class helper_CCSD(object):
                     self.t2 += ci[num] * diis_vals_t2[num + 1]
 
             # End DIIS amplitude update
-# End CCSD class
+            # End CCSD class
+
 
 if __name__ == "__main__":
     arr4 = np.random.rand(4, 4, 4, 4)
