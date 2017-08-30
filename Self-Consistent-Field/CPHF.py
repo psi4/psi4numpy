@@ -101,7 +101,7 @@ if method == 'direct':
     # Estimate memory usage
     memory_footprint = I_Size * 1.5
     if I_Size > numpy_memory:
-        clean()
+        psi4.core.clean()
         raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory \
                         limit of %4.2f GB." % (memory_footprint, numpy_memory))
 
