@@ -1,10 +1,13 @@
-# A simple Psi 4 input script to compute a SCF reference using second-order optimizations
-# Requires scipy numpy 1.7.2+
-#
-# Created by: Daniel G. A. Smith
-# Date: 2/27/15
-# License: GPL v3.0
-#
+"""
+A second-order restricted Hartree-Fock script using the Psi4NumPy Formalism
+"""
+
+__authors__ = "Daniel G. A. Smith"
+__credits__ = ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-9-30"
 
 import time
 import numpy as np
@@ -71,7 +74,8 @@ for SCF_ITER in range(1, 20):
     # SCF energy and update
     scf_e = hf.compute_hf_energy()
     dRMS = np.mean(diis_e**2)**0.5
-    print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.3E   dRMS = %1.3E   %s' % (SCF_ITER, hf.scf_e, (hf.scf_e - Eold), dRMS, iter_type))
+    print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.3E   dRMS = %1.3E   %s' %
+          (SCF_ITER, hf.scf_e, (hf.scf_e - Eold), dRMS, iter_type))
     if (abs(hf.scf_e - Eold) < E_conv) and (dRMS < D_conv):
         break
 
@@ -96,7 +100,8 @@ for SCF_ITER in range(1, 20):
         MO = np.asarray(mints.mo_transform(mI, occ_mC, mC, mC, mC))
 
         # Build electronic hessian
-        Biajb  = np.einsum('ab,ij->iajb', moF[ndocc:, ndocc:], np.diag(np.ones(ndocc)))
+        # 4 * [(Fab - Fij) + 4 * (ia|jb) - (ib|ja) - (ij|ab)]
+        Biajb = np.einsum('ab,ij->iajb', moF[ndocc:, ndocc:], np.diag(np.ones(ndocc)))
         Biajb -= np.einsum('ij,ab->iajb', moF[:ndocc:, :ndocc], np.diag(np.ones(nvirt)))
         Biajb += 4 * MO[:, ndocc:, :ndocc, ndocc:]
         Biajb -= MO[:, ndocc:, :ndocc, ndocc:].swapaxes(0, 2)
@@ -122,7 +127,7 @@ for SCF_ITER in range(1, 20):
         hf.set_Cleft(C)
         iter_type = 'SOSCF'
 
-print('Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t))
+print('Total time taken for SCF iterations: %.3f seconds \n' % (time.time() - t))
 
 print('Final SCF energy:     %.8f hartree' % hf.scf_e)
 

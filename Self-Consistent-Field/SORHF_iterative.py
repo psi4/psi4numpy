@@ -1,10 +1,13 @@
-# A simple Psi 4 input script to compute a SCF reference using second-order optimizations
-# Requires scipy numpy 1.7.2+
-#
-# Created by: Daniel G. A. Smith
-# Date: 2/27/15
-# License: GPL v3.0
-#
+"""
+A iterative second-order restricted Hartree-Fock script using the Psi4NumPy Formalism
+"""
+
+__authors__ = "Daniel G. A. Smith"
+__credits__ = ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-9-30"
 
 import time
 import numpy as np
@@ -55,13 +58,13 @@ def SCF_Hx(x, moF, Co, Cv):
     """
     Compute a hessian vector guess where x is a ov matrix of nonredundant operators.
     """
-    F  = np.dot(moF[:ndocc, :ndocc], x)
+    F = np.dot(moF[:ndocc, :ndocc], x)
     F -= np.dot(x, moF[ndocc:, ndocc:])
 
     # Build two electron part, M = -4 (4 G_{mnip} - g_{mpin} - g_{npim}) K_{ip}
     C_right = np.einsum('ia,sa->si', -x, Cv)
     J, K = hf.build_jk(Co, C_right)
-    F  += (Co.T).dot(4 * J - K.T - K).dot(Cv)
+    F += (Co.T).dot(4 * J - K.T - K).dot(Cv)
     F *= -4
     return F
 
@@ -77,8 +80,9 @@ for SCF_ITER in range(1, max_macro):
 
     # SCF energy and update
     scf_e = hf.compute_hf_energy()
-    dRMS = np.mean(diis_e ** 2) ** 0.5
-    print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E   %s' % (SCF_ITER, hf.scf_e, (hf.scf_e - Eold), dRMS, iter_type))
+    dRMS = np.mean(diis_e**2)**0.5
+    print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E   %s' %
+          (SCF_ITER, hf.scf_e, (hf.scf_e - Eold), dRMS, iter_type))
     if (abs(hf.scf_e - Eold) < E_conv) and (dRMS < D_conv):
         break
 
@@ -107,9 +111,9 @@ for SCF_ITER in range(1, max_macro):
         r = gradient - Ax
         z = r / precon
         p = z.copy()
-        rms = (np.vdot(r, r) / grad_dot) ** 0.5
+        rms = (np.vdot(r, r) / grad_dot)**0.5
         if micro_print:
-            print('Micro Iteration Guess: Rel. RMS = %1.5e' %  (rms))
+            print('Micro Iteration Guess: Rel. RMS = %1.5e' % (rms))
 
         # CG iterations
         for rot_iter in range(max_micro):
@@ -122,10 +126,10 @@ for SCF_ITER in range(1, max_macro):
             r -= alpha * Ap
             z = r / precon
 
-            rms = (np.vdot(r, r) / grad_dot) ** 0.5
+            rms = (np.vdot(r, r) / grad_dot)**0.5
 
             if micro_print:
-                print('Micro Iteration %5d: Rel. RMS = %1.5e' %  (rot_iter + 1, rms))
+                print('Micro Iteration %5d: Rel. RMS = %1.5e' % (rot_iter + 1, rms))
             if rms < micro_conv:
                 break
 
@@ -137,7 +141,7 @@ for SCF_ITER in range(1, max_macro):
         hf.set_Cleft(C)
         iter_type = 'SOSCF, nmicro ' + str(rot_iter + 1)
 
-print('Total time taken for SCF iterations: %.3f seconds \n' % (time.time()-t))
+print('Total time taken for SCF iterations: %.3f seconds \n' % (time.time() - t))
 
 print('Final SCF energy:     %.8f hartree' % hf.scf_e)
 

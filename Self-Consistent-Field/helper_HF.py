@@ -384,6 +384,9 @@ def compute_jk(jk, C_left, C_right=None):
 
     # Do we have C_right?
     if C_right is not None:
+        if not isinstance(C_right, (list, tuple)):
+            C_right = [C_right]
+
         if len(C_left) != len(C_right):
             raise ValueError("JK: length of left and right matrices is not equal")
 

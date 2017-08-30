@@ -1,9 +1,14 @@
-# A simple Psi 4 input script to compute TDHF linear response. As a note this
-# is, by far, not the most efficiently algorithm, but certainly the most verbose.
-#
-# Created by: Daniel G. A. Smith
-# Date: 11/1/16
-# License: GPL v3.0
+"""
+A Psi4 input script to compute TDHF linear response. As a note this is, by far,
+not the most efficiently algorithm, but certainly the most verbose.
+"""
+
+__authors__ = "Daniel G. A. Smith"
+__credits__ = ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-9-30"
 
 import time
 import numpy as np
@@ -66,9 +71,6 @@ for num in range(3):
     Fia *= -2
     dipoles_xyz.append(Fia)
 
-#print(np.array(wfn.Ca_subset("AO", "ALL")))
-#print(dipoles_xyz[0])
-
 # Build orbital-Hessian
 t = time.time()
 E1  = np.einsum('ab,ij->iajb', np.diag(eps_v), np.diag(np.ones(ndocc)))
@@ -76,7 +78,7 @@ E1 -= np.einsum('ij,ab->iajb', np.diag(eps_o), np.diag(np.ones(nvir)))
 E1 += 4 * v_iajb
 E1 -= v_ijab.swapaxes(1, 2)
 E1 -= v_iajb.swapaxes(0, 2)
-E1 *= 4 
+E1 *= 4
 
 
 # Since we are time dependent we need to build the full Hessian:
@@ -116,10 +118,9 @@ S = np.vstack((S1, S2))
 print('Hessian formation took  %5.3f seconds\n' % ( time.time() - t))
 
 
-
 Hess = Hess.astype(np.complex)
 S = S.astype(np.complex)
-   
+
 dip_x = dipoles_xyz[0].astype(np.complex)
 B = np.hstack((dip_x.ravel(), -dip_x.ravel()))
 

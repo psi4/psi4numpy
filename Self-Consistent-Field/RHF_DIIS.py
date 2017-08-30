@@ -1,10 +1,13 @@
-# A simple Psi 4 input script to compute a SCF using DIIS reference
-# Requires umpy 1.7.2+
-#
-# Created by: Daniel G. A. Smith
-# Date: 7/29/14
-# License: GPL v3.0
-#
+"""
+Applies DIIS ot the RHF formalism
+"""
+
+__authors__ = "Daniel G. A. Smith"
+__credits__ = ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-9-30"
 
 import time
 import numpy as np
@@ -49,7 +52,7 @@ print('\nNumber of occupied orbitals: %d' % ndocc)
 print('Number of basis functions: %d' % nbf)
 
 # Run a quick check to make sure everything will fit into memory
-I_Size = (nbf ** 4) * 8.e-9
+I_Size = (nbf**4) * 8.e-9
 print("\nSize of the ERI tensor will be %4.2f GB." % I_Size)
 
 # Estimate memory usage

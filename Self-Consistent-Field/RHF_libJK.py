@@ -1,10 +1,13 @@
-# A simple Psi 4 input script to compute a SCF reference using Psi4's libJK
-# Requires numpy 1.7.2+
-#
-# Created by: Daniel G. A. Smith
-# Date: 4/1/15
-# License: GPL v3.0
-#
+"""
+A restricted Hartree-Fock code using the Psi4 JK class for the 4-index electron repulsion integrals.
+"""
+
+__authors__ = "Daniel G. A. Smith"
+__credits__ = ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-9-30"
 
 import time
 import numpy as np
@@ -125,7 +128,7 @@ for SCF_ITER in range(1, maxiter + 1):
     diis_e = psi4.core.Matrix.triplet(F, D, S, False, False, False)
     diis_e.subtract(psi4.core.Matrix.triplet(S, D, F, False, False, False))
     diis_e = psi4.core.Matrix.triplet(A, diis_e, A, False, False, False)
-    
+
     diis.add(F, diis_e)
 
     # SCF energy and update

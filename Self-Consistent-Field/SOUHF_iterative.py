@@ -1,12 +1,13 @@
-# A simple Psi 4 input script to compute a SCF reference using Psi4's libJK
-# Requires numpy 1.7.2+
-#
-# This is more of a testing ground, excuse the mess
-#
-# Created by: Daniel G. A. Smith
-# Date: 4/1/15
-# License: GPL v3.0
-#
+"""
+A iterative second-order unrestricted open-shell Hartree-Fock script using the Psi4NumPy Formalism
+"""
+
+__authors__ = "Daniel G. A. Smith"
+__credits__ = ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-9-30"
 
 import time
 import numpy as np
@@ -81,33 +82,34 @@ def diag_H(H, nocc):
     D = np.einsum('pi,qi->pq', Cocc, Cocc)
     return (C, D)
 
+
 def SCF_Hx(xa, xb, moFa, Co_a, Cv_a, moFb, Co_b, Cv_b):
     """
     Compute a hessian vector guess where x is a ov matrix of nonredundant operators.
     """
-    Hx_a  = np.dot(moFa[:nbeta, :nbeta], xa)
+    Hx_a = np.dot(moFa[:nbeta, :nbeta], xa)
     Hx_a -= np.dot(xa, moFa[nbeta:, nbeta:])
 
-    Hx_b  = np.dot(moFb[:nalpha, :nalpha], xb)
+    Hx_b = np.dot(moFb[:nalpha, :nalpha], xb)
     Hx_b -= np.dot(xb, moFb[nalpha:, nalpha:])
 
     # Build two electron part, M = -4 (4 G_{mnip} - g_{mpin} - g_{npim}) K_{ip}
     C_right_a = np.einsum('ia,sa->si', -xa, Cv_a)
     C_right_b = np.einsum('ia,sa->si', -xb, Cv_b)
 
-    J, K = scf_helper.compute_jk(jk, [Co_a, Co_b], [C_right_a, C_right_b]) 
+    J, K = scf_helper.compute_jk(jk, [Co_a, Co_b], [C_right_a, C_right_b])
 
     Jab = J[0] + J[1]
     Hx_a += (Co_a.T).dot(2 * Jab - K[0].T - K[0]).dot(Cv_a)
     Hx_b += (Co_b.T).dot(2 * Jab - K[1].T - K[1]).dot(Cv_b)
-    
-    Hx_a *= -4 
-    Hx_b *= -4 
+
+    Hx_a *= -4
+    Hx_b *= -4
 
     return (Hx_a, Hx_b)
 
-Ca, Da = diag_H(H, nbeta)    
-Cb, Db = diag_H(H, nalpha)    
+Ca, Da = diag_H(H, nbeta)
+Cb, Db = diag_H(H, nalpha)
 
 t = time.time()
 E = 0.0
@@ -149,7 +151,7 @@ for SCF_ITER in range(1, maxiter + 1):
     SCF_E += np.einsum('pq,pq->', Da, Fa)
     SCF_E += np.einsum('pq,pq->', Db, Fb)
     SCF_E *= 0.5
-    SCF_E += Enuc 
+    SCF_E += Enuc
 
     dRMS = 0.5 * (np.mean(diisa_e**2)**0.5 + np.mean(diisb_e**2)**0.5)
     print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
@@ -179,8 +181,8 @@ for SCF_ITER in range(1, maxiter + 1):
         Fb = diisb.extrapolate()
 
         # Diagonalize Fock matrix
-        Ca, Da = diag_H(Fa, nbeta)    
-        Cb, Db = diag_H(Fb, nalpha)    
+        Ca, Da = diag_H(Fa, nbeta)
+        Cb, Db = diag_H(Fb, nalpha)
 
     else:
 
@@ -188,11 +190,11 @@ for SCF_ITER in range(1, maxiter + 1):
 
         eps_a = np.diag(moF_a)
         precon_a = -4 * (eps_a[:nbeta].reshape(-1, 1) - eps_a[nbeta:])
-        x_a = gradient_a / precon_a 
+        x_a = gradient_a / precon_a
 
         eps_b = np.diag(moF_b)
         precon_b = -4 * (eps_b[:nalpha].reshape(-1, 1) - eps_b[nalpha:])
-        x_b = gradient_b / precon_b 
+        x_b = gradient_b / precon_b
 
         Hx_a, Hx_b = SCF_Hx(x_a, x_b, moF_a, Co_a, Cv_a, moF_b, Co_b, Cv_b)
 
@@ -211,7 +213,7 @@ for SCF_ITER in range(1, maxiter + 1):
 
             alpha = rz_old / (np.vdot(Hx_a, p_a) + np.vdot(Hx_b, p_b))
 
-            # CG update            
+            # CG update
             x_a += alpha * p_a
             r_a -= alpha * Hx_a
             z_a = r_a / precon_a
@@ -230,7 +232,7 @@ for SCF_ITER in range(1, maxiter + 1):
             if gradient_norm > 1.e-2:
                 denom = gradient_norm
             else:
-                denom = 1.e-2   
+                denom = 1.e-2
             rms = ((np.linalg.norm(r_a) + np.linalg.norm(r_b)) / denom) ** 0.5
 
             if micro_print:

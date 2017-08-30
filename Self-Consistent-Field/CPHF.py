@@ -4,6 +4,21 @@
 # Date: 3/31/15
 # License: GPL v3.0
 #
+"""
+A reference implementation of second-order Moller-Plesset perturbation theory.
+
+References:
+Algorithms were taken directly from Daniel Crawford's programming website:
+http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+Special thanks to Rob Parrish for initial assistance with libmints
+"""
+
+__authors__    = "Daniel G. A. Smith"
+__credits__   = ["Daniel G. A. Smith", "Dominic A. Sirianni"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2017-05-23"
 
 import time
 import numpy as np

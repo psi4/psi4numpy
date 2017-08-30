@@ -1,10 +1,13 @@
-# A simple Psi 4 input script to compute a SCF reference using Psi4's libJK
-# Requires numpy 1.7.2+
-#
-# Created by: Daniel G. A. Smith
-# Date: 4/1/15
-# License: GPL v3.0
-#
+"""
+A second-order restricted open-shell Hartree-Fock script using the Psi4NumPy Formalism
+"""
+
+__authors__ = "Daniel G. A. Smith"
+__credits__ = ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-9-30"
 
 import time
 import numpy as np
@@ -56,7 +59,6 @@ nbf = S.shape[0]
 
 jk = psi4.core.JK.build(wfn.basisset())
 jk.initialize()
-
 if nbf > 100:
     raise Exception("This has a N^4 memory overhead, killing if nbf > 100.")
 
@@ -78,12 +80,15 @@ A = mints.ao_overlap()
 A.power(-0.5, 1.e-16)
 A = np.asarray(A)
 
-print('\nTotal time taken for integrals: %.3f seconds.' % (time.time()-t))
+print('\nTotal time taken for integrals: %.3f seconds.' % (time.time() - t))
 
 t = time.time()
 
+
 def transform(I, C1, C2, C3, C4):
-    #MO = np.einsum('pA,pqrs->Aqrs', C1,  I)
+    """
+    Transforms the 4-index ERI I with the 4 transformation matrices C1 to C4.
+    """
     nao = I.shape[0]
     MO = np.dot(C1.T, I.reshape(nao, -1)).reshape(C1.shape[1], nao, nao, nao)
 
@@ -91,6 +96,7 @@ def transform(I, C1, C2, C3, C4):
     MO = np.einsum('rC,ABrs->ABCs', C3, MO)
     MO = np.einsum('sD,ABCs->ABCD', C4, MO)
     return MO
+
 
 # Build initial orbitals and density matrices
 Hp = A.dot(H).dot(A)
@@ -157,11 +163,11 @@ for SCF_ITER in range(1, maxiter + 1):
     diis.add(Feff, diis_e)
 
     # SCF energy and update
-    SCF_E  = np.einsum('pq,pq->', Docc + Ddocc, H)
+    SCF_E = np.einsum('pq,pq->', Docc + Ddocc, H)
     SCF_E += np.einsum('pq,pq->', Docc, Fa)
     SCF_E += np.einsum('pq,pq->', Ddocc, Fb)
     SCF_E *= 0.5
-    SCF_E += Enuc 
+    SCF_E += Enuc
 
     dRMS = np.mean(diis_e**2)**0.5
     print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E   %s' % \
@@ -216,17 +222,23 @@ for SCF_ITER in range(1, maxiter + 1):
 
         IAJB += 0.5 * np.einsum('IJ,AB->IAJB', np.diag(np.ones(nocc)), moFa[ndocc:, ndocc:])
         IAJB -= 0.5 * np.einsum('AB,IJ->IAJB', np.diag(np.ones(nvir)), moFa[:nocc, :nocc])
+
+        # We need to zero out the redundant rotations
         IAJB[:, :nsocc, :, :] = 0.0
         IAJB[:, :, :, :nsocc] = 0.0
 
         iajb += 0.5 * np.einsum('IJ,AB->IAJB', np.diag(np.ones(nocc)), moFb[ndocc:, ndocc:])
         iajb -= 0.5 * np.einsum('AB,IJ->IAJB', np.diag(np.ones(nvir)), moFb[:nocc, :nocc])
+
+        # We need to zero out the redundant rotations
         iajb[:, :, ndocc:, :] = 0.0
         iajb[ndocc:, :, :, :] = 0.0
 
         IAjb = MOovov.copy()
         for i in range(nsocc):
             IAjb[ndocc + i, :, :, i] += 0.5 * moFb[ndocc:, :nocc]
+
+        # We need to zero out the redundant rotations
         IAjb[:, :, ndocc:, :] = 0.0
         IAjb[:, :nsocc, :, :] = 0.0
 
@@ -238,8 +250,8 @@ for SCF_ITER in range(1, maxiter + 1):
         Hess *= 4
         ndim = Hess.shape[0] * Hess.shape[1]
 
-        Hess = Hess.reshape(gradient.size, -1) # Make the hessian square
-        Hess[np.diag_indices_from(Hess)] += 1.e-14 # Prevent singularities
+        Hess = Hess.reshape(gradient.size, -1)  # Make the hessian square
+        Hess[np.diag_indices_from(Hess)] += 1.e-14  # Prevent singularities
         x = np.linalg.solve(Hess, gradient.ravel()).reshape(nocc, nvir)
 
         # Special orbital rotation, some overlap in the middle
@@ -264,7 +276,6 @@ for SCF_ITER in range(1, maxiter + 1):
     Docc = np.dot(Cnocc, Cnocc.T)
     Cndocc = C[:, :ndocc]
     Ddocc = np.dot(Cndocc, Cndocc.T)
-
 
 print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 

@@ -1,10 +1,13 @@
-# A simple Psi 4 input script to compute a SCF reference using Psi4's libJK
-# Requires numpy 1.7.2+
-#
-# Created by: Daniel G. A. Smith
-# Date: 4/1/15
-# License: GPL v3.0
-#
+"""
+A unrestricted Hartree-Fock script using the Psi4NumPy Formalism
+"""
+
+__authors__ = "Daniel G. A. Smith"
+__credits__ = ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-9-30"
 
 import time
 import numpy as np

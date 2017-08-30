@@ -1,10 +1,13 @@
-# A simple Psi 4 input script to compute a SCF reference using Psi4's libJK
-# Requires numpy 1.7.2+
-#
-# Created by: Daniel G. A. Smith
-# Date: 4/1/15
-# License: GPL v3.0
-#
+"""
+A second-order unrestricted open-shell Hartree-Fock script using the Psi4NumPy Formalism
+"""
+
+__authors__ = "Daniel G. A. Smith"
+__credits__ = ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-9-30"
 
 import time
 import numpy as np
@@ -105,7 +108,7 @@ def rotate_orbs(C, x, nocc):
     expU, r = np.linalg.qr(expU.T)
     Cn = C.dot(expU)
     D = np.dot(Cn[:,:nocc], Cn[:,:nocc].T)
-    return (Cn, D) 
+    return (Cn, D)
 
 for SCF_ITER in range(1, maxiter + 1):
 
@@ -127,7 +130,7 @@ for SCF_ITER in range(1, maxiter + 1):
     SCF_E += np.einsum('pq,pq->', Da, Fa)
     SCF_E += np.einsum('pq,pq->', Db, Fb)
     SCF_E *= 0.5
-    SCF_E += Enuc 
+    SCF_E += Enuc
 
     dRMS = 0.5 * (np.mean(diisa_e**2)**0.5 + np.mean(diisb_e**2)**0.5)
     print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
@@ -152,7 +155,7 @@ for SCF_ITER in range(1, maxiter + 1):
     # Form off diagonal contributions
     Jab = 8 * transform(I, Cocca, Cvira, Coccb, Cvirb)
 
-    # Form diagonal a contributions
+    # Form diagonal alpha contributions
     MOaa = transform(I, Cocca, Ca, Ca, Ca)
     Ha  = np.einsum('ab,ij->iajb', moFa[nalpha:, nalpha:], np.diag(np.ones(nalpha)))
     Ha -= np.einsum('ij,ab->iajb', moFa[:nalpha:, :nalpha], np.diag(np.ones(nbf-nalpha)))
@@ -161,7 +164,7 @@ for SCF_ITER in range(1, maxiter + 1):
     Ha -= MOaa[:, :nalpha, nalpha:, nalpha:].swapaxes(1, 2)
     Ha *= 4
 
-    # Form diagonal b contributions
+    # Form diagonal beta contributions
     MObb = transform(I, Coccb, Cb, Cb, Cb)
     Hb  = np.einsum('ab,ij->iajb', moFb[nbeta:, nbeta:], np.diag(np.ones(nbeta)))
     Hb -= np.einsum('ij,ab->iajb', moFb[:nbeta:, :nbeta], np.diag(np.ones(nbf-nbeta)))
@@ -189,7 +192,7 @@ for SCF_ITER in range(1, maxiter + 1):
 
     gradvec = np.hstack((grada.reshape(-1), gradb.reshape(-1)))
     resultx = np.einsum('ij,j->i', Hinv, gradvec)
-    
+
     xa = resultx[:na].reshape(Ha.shape[0], Ha.shape[1])
     xb = resultx[na:].reshape(Hb.shape[0], Hb.shape[1])
 

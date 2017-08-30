@@ -1,10 +1,13 @@
-# A simple Psi 4 input script to compute a SCF reference using Psi4's libJK
-# Requires numpy 1.7.2+
-#
-# Created by: Daniel G. A. Smith
-# Date: 4/1/15
-# License: GPL v3.0
-#
+"""
+A iterative second-order restricted open-shell Hartree-Fock script using the Psi4NumPy Formalism
+"""
+
+__authors__ = "Daniel G. A. Smith"
+__credits__ = ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-9-30"
 
 import time
 import numpy as np
@@ -100,11 +103,11 @@ def SCF_Hx(x, moFa, moFb, C):
     iajb[ndocc:, :] = 0.0
 
     IAjb = (C[:, :nocc].T).dot(J2).dot(C[:, ndocc:])
-    IAjb[ndocc:] += 0.5 * np.dot(x[:, :nsocc].T, moFb[:nocc, ndocc:]) 
+    IAjb[ndocc:] += 0.5 * np.dot(x[:, :nsocc].T, moFb[:nocc, ndocc:])
     IAjb[:, :nsocc] = 0.0
-    
+
     iaJB = (C[:, :nocc].T).dot(J1).dot(C[:, ndocc:])
-    iaJB[:, :nsocc] += 0.5 * np.dot(moFb[:nocc, nocc:], x[ndocc:, nsocc:].T) 
+    iaJB[:, :nsocc] += 0.5 * np.dot(moFb[:nocc, nocc:], x[ndocc:, nsocc:].T)
     iaJB[ndocc:] = 0.0
 
     ret = 4 * (IAJB + IAjb + iaJB + iajb)
@@ -181,7 +184,7 @@ for SCF_ITER in range(1, maxiter + 1):
     SCF_E += np.einsum('pq,pq->', Docc, Fa)
     SCF_E += np.einsum('pq,pq->', Ddocc, Fb)
     SCF_E *= 0.5
-    SCF_E += Enuc 
+    SCF_E += Enuc
 
     dRMS = np.mean(diis_e**2)**0.5
     print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E   %s' % \
@@ -216,9 +219,9 @@ for SCF_ITER in range(1, maxiter + 1):
         precon[ndocc:] *= 0.5
         precon[:, :nsocc] *= 0.5
         precon[ndocc:, :nsocc] = 1
-        x = gradient / precon 
+        x = gradient / precon
 
-        Ax = SCF_Hx(x, moFa, moFb, C) 
+        Ax = SCF_Hx(x, moFa, moFb, C)
         r = gradient - Ax
         z = r / precon
         p = z.copy()
