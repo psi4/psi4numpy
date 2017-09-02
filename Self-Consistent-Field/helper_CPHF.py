@@ -250,3 +250,48 @@ class helper_CPHF(object):
         for numx in range(3):
             for numf in range(3):
                 self.polar[numx, numf] = self.x[numx].dot(self.rhsvecs[numf])
+
+if __name__ == '__main__':
+    print('\n')
+    print('@test_CPHF running CPHF.py')
+
+    from CPHF import *
+
+    from helper_CPHF import helper_CPHF
+
+    helper = helper_CPHF(mol)
+
+    print('\n')
+    print('@test_CPHF running solve_static_direct')
+
+    helper.solve_static_direct()
+    helper.form_polarizability()
+    np.allclose(polar, helper.polar, rtol=0, atol=1.e-13)
+
+    print('\n')
+    print('@test_CPHF running solve_static_iterative')
+
+    helper.solve_static_iterative()
+    helper.form_polarizability()
+    np.allclose(polar, helper.polar, rtol=0, atol=1.e-13)
+
+    print('\n')
+    f = 0.0
+    print('@test_CPHF running solve_dynamic_direct ({})'.format(f))
+
+    helper.solve_dynamic_direct(omega=f)
+    helper.form_polarizability()
+    np.allclose(polar, helper.polar, rtol=0, atol=1.e-13)
+
+    print('\n')
+    f = 0.0773178
+    print('@test_CPHF running solve_dynamic_direct ({})'.format(f))
+
+    helper.solve_dynamic_direct(omega=f)
+    helper.form_polarizability()
+    ref = np.array([
+        [8.19439986, 0.00000000, -0.00000000],
+        [0.00000000, 12.75967150, -0.00000000],
+        [-0.00000000, -0.00000000, 10.25213928]
+    ])
+    np.allclose(ref, helper.polar, rtol=0, atol=1.e-13)

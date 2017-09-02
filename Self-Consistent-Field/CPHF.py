@@ -56,7 +56,7 @@ use_diis = True
 maxiter = 20
 conv = 1.e-9
 
-# Compute the reference wavefunction and CPHF using Psi 
+# Compute the reference wavefunction and CPHF using Psi
 scf_e, scf_wfn = psi4.energy('SCF', return_wfn=True)
 
 C = scf_wfn.Ca()
@@ -97,7 +97,7 @@ if method == 'direct':
     print("ERI tensor           %4.2f GB." % I_Size)
     print("oNNN MO tensor       %4.2f GB." % oNNN_Size)
     print("ovov Hessian tensor  %4.2f GB." % ovov_Size)
-    
+
     # Estimate memory usage
     memory_footprint = I_Size * 1.5
     if I_Size > numpy_memory:
@@ -111,17 +111,17 @@ if method == 'direct':
     docc = np.diag(np.ones(nocc))
     dvir = np.diag(np.ones(nvir))
     eps_diag = epsilon[nocc:].reshape(-1, 1) - epsilon[:nocc]
-    
+
     # Form oNNN MO tensor, oN^4 cost
     MO = np.asarray(mints.mo_eri(Co, C, C, C))
-    
+
     H = np.einsum('ai,ij,ab->iajb', eps_diag, docc, dvir)
     H += 4 * MO[:, nocc:, :nocc, nocc:]
     H -= MO[:, nocc:, :nocc, nocc:].swapaxes(0, 2)
     H -= MO[:, :nocc, nocc:, nocc:].swapaxes(1, 2)
-    
+
     print('...formed hessian in %.3f seconds.' % (time.time() - t))
-    
+
     # Invert hessian (o^3 v^3)
     print('\nInverting hessian...')
     t = time.time()
@@ -154,7 +154,7 @@ elif method == 'iterative':
     x_old = []
     diis = []
     ia_denom = - epsilon[:nocc].reshape(-1, 1) + epsilon[nocc:]
-    for xyz in range(3): 
+    for xyz in range(3):
         x.append(dipoles_xyz[xyz] / ia_denom)
         x_old.append(np.zeros(ia_denom.shape))
         diis.append(DIIS_helper())
@@ -171,7 +171,7 @@ elif method == 'iterative':
         # Update jk's C_right
         for xyz in range(3):
             npC_right[xyz][:] = Cv.dot(x[xyz].T)
-        
+
         # Compute JK objects
         jk.compute()
 
@@ -185,11 +185,11 @@ elif method == 'iterative':
             X = dipoles_xyz[xyz].copy()
             X -= (Co.T).dot(4 * J - K.T - K).dot(Cv)
             X /= ia_denom
-            
+
             # DIIS for good measure
             if use_diis:
                 diis[xyz].add(X, X - x_old[xyz])
-                X = diis[xyz].extrapolate() 
+                X = diis[xyz].extrapolate()
             x[xyz] = X.copy()
 
         # Check for convergence
@@ -208,7 +208,7 @@ elif method == 'iterative':
         print('CPHF Iteration %3d: Average RMS = %3.8f  Maximum RMS = %3.8f' %
                 (CPHF_ITER, avg_RMS, max_RMS))
 
-    
+
     # Compute 3x3 polarizability tensor
     polar = np.empty((3, 3))
     for numx in range(3):
@@ -222,7 +222,7 @@ else:
 
 # Compute 3x3 polarizability tensor
 polar = np.empty((3, 3))
-for numx in range(3):        
+for numx in range(3):
     for numf in range(3):
         polar[numx, numf] = np.einsum('ia,ia->', x[numx], dipoles_xyz[numf])
 
