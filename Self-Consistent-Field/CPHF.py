@@ -209,13 +209,6 @@ elif method == 'iterative':
                 (CPHF_ITER, avg_RMS, max_RMS))
 
 
-    # Compute 3x3 polarizability tensor
-    polar = np.empty((3, 3))
-    for numx in range(3):
-        for numf in range(3):
-            polar[numx, numf] = np.einsum('ia,ia->', x[numx], dipoles_xyz[numf])
-
-
 else:
     raise Exception("Method %s is not recognized" % method)
 
