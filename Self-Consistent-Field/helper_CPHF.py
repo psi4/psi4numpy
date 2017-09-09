@@ -266,32 +266,35 @@ if __name__ == '__main__':
 
     helper.solve_static_direct()
     helper.form_polarizability()
-    np.allclose(polar, helper.polar, rtol=0, atol=1.e-13)
+    assert np.allclose(polar, helper.polar, rtol=0, atol=1.e-5)
 
     print('\n')
     print('@test_CPHF running solve_static_iterative')
 
     helper.solve_static_iterative()
     helper.form_polarizability()
-    np.allclose(polar, helper.polar, rtol=0, atol=1.e-13)
+    assert np.allclose(polar, helper.polar, rtol=0, atol=1.e-5)
+
+    f = 0.0
 
     print('\n')
-    f = 0.0
     print('@test_CPHF running solve_dynamic_direct ({})'.format(f))
 
     helper.solve_dynamic_direct(omega=f)
     helper.form_polarizability()
-    np.allclose(polar, helper.polar, rtol=0, atol=1.e-13)
+    assert np.allclose(polar, helper.polar, rtol=0, atol=1.e-5)
 
     print('\n')
     f = 0.0773178
+    ref = np.array([
+        [8.19439986,  0.00000000,  0.00000000],
+        [0.00000000, 12.75967150,  0.00000000],
+        [0.00000000,  0.00000000, 10.25213928]
+    ])
+
+    print('\n')
     print('@test_CPHF running solve_dynamic_direct ({})'.format(f))
 
     helper.solve_dynamic_direct(omega=f)
     helper.form_polarizability()
-    ref = np.array([
-        [8.19439986, 0.00000000, -0.00000000],
-        [0.00000000, 12.75967150, -0.00000000],
-        [-0.00000000, -0.00000000, 10.25213928]
-    ])
-    np.allclose(ref, helper.polar, rtol=0, atol=1.e-13)
+    assert np.allclose(ref, helper.polar, rtol=0, atol=1.e-5)
