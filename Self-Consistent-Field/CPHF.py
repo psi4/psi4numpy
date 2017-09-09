@@ -33,8 +33,8 @@ psi4.core.set_output_file("output.dat", False)
 
 mol = psi4.geometry("""
 O
-H 1 1.1
-H 1 1.1 2 104
+H 1 0.9435
+H 1 0.9435 2 105.9443
 symmetry c1
 """)
 
@@ -221,9 +221,9 @@ for numx in range(3):
 
 # Compare against reference
 ref = np.array([
-    [  8.01523,  -0.,        0.     ],
-    [ -0.,       12.50373,   0.     ],
-    [  0.,        0.,       10.04227]
+    [ 7.25872, 0.     , 0.     ],
+    [ 0.     , 8.79691, 0.     ],
+    [ 0.     , 0.     , 7.85397]
 ])
 assert np.allclose(polar, ref, rtol=0, atol=1.e-3)
 
