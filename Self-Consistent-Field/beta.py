@@ -25,8 +25,8 @@ psi4.core.set_output_file("output.dat", False)
 
 mol = psi4.geometry("""
 O
-H 1 1.1
-H 1 1.1 2 104
+H 1 0.9435
+H 1 0.9435 2 105.9443
 symmetry c1
 """)
 
@@ -38,10 +38,10 @@ psi4.set_options({"basis": "aug-cc-pVDZ",
                   "d_convergence": 1e-9,
                   "cphf_tasks": ['polarizability']})
 
-helper = helper_CPHF(mol, method='direct')
+helper = helper_CPHF(mol)
 # For the $2n+1$ rule, the quadratic response starting quantities must
 # come from linear response.
-helper.solve()
+helper.run()
 
 moenergies = helper.epsilon
 C = np.asarray(helper.C)
@@ -50,6 +50,7 @@ Cv = helper.Cv
 nbf, norb = C.shape
 nocc = Co.shape[1]
 nvir = norb - nocc
+nov = nocc * nvir
 x = np.asarray(helper.x)
 ncomp = x.shape[0]
 integrals_ao = np.asarray([np.asarray(dipole_ao_component)
@@ -58,7 +59,7 @@ integrals_ao = np.asarray([np.asarray(dipole_ao_component)
 # form full MO-basis dipole integrals
 integrals_mo = np.empty(shape=(ncomp, norb, norb))
 for i in range(ncomp):
-    integrals_mo[i, ...] = np.dot(C.T, np.dot(integrals_ao[i, ...], C))
+    integrals_mo[i, ...] = (C.T).dot(integrals_ao[i, ...]).dot(C)
 
 # repack response vectors to [norb, norb]; 1/2 is due to RHF
 U = np.zeros_like(integrals_mo)
@@ -82,7 +83,7 @@ for i in range(ncomp):
     # frequency-dependent response. 1/2 is due to RHF
     jk.C_clear()
     L = Co
-    npR[...] = np.dot(x[i, ...].reshape(nocc, nvir), np.asarray(Cv).T).T
+    npR[...] = x[i, ...].reshape(nocc, nvir).dot(np.asarray(Cv).T).T
     jk.C_left_add(L)
     jk.C_right_add(R)
     jk.compute()
@@ -125,14 +126,13 @@ for r in range(6):
 
 
 ref_static = np.array([
-    [0.00000000,   0.00000000,   0.22845961],
-    [0.00000000,   0.00000001, -25.35477024],
-    [0.00000000,   0.00000000, -10.84022133],
-    [0.00000000,   0.00000000,   0.00000000],
-    [0.22845961,   0.00000000,   0.00000000],
-    [0.00000000, -25.35477024,   0.00000000]
+    [ 0.00000001,   0.00000000,  -0.10826460],
+    [ 0.00000000,   0.00000000, -11.22412215],
+    [ 0.00000000,   0.00000000,  -4.36450397],
+    [ 0.00000000,   0.00000000,  -0.00000001],
+    [-0.10826460,  -0.00000001,   0.00000000],
+    [-0.00000001, -11.22412215,   0.00000000]
 ])
-
 assert np.allclose(ref_static, hyperpolarizability, rtol=0.0, atol=1.0e-3)
 print('\nFirst dipole hyperpolarizability (static):')
 print(hyperpolarizability)
