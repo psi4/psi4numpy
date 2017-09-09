@@ -245,6 +245,108 @@ class helper_CPHF(object):
             print('CPHF Iteration %3d: Average RMS = %3.8f  Maximum RMS = %3.8f' %
                   (CPHF_ITER, avg_RMS, max_RMS))
 
+    def solve_dynamic_iterative(self, omega=0.0, maxiter=20, conv=1.e-9, use_diis=True):
+
+        # Init JK object
+        jk_l = psi4.core.JK.build(self.scf_wfn.basisset())
+        jk_l.initialize()
+        jk_r = psi4.core.JK.build(self.scf_wfn.basisset())
+        jk_r.initialize()
+
+        # Add blank matrices to the jk object and numpy hooks to C_right
+        npC_l_right = []
+        npC_r_right = []
+        for xyz in range(3):
+            jk_l.C_left_add(self.Co)
+            mC_l = psi4.core.Matrix(self.nbf, self.nocc)
+            npC_l_right.append(np.asarray(mC_l))
+            jk_l.C_right_add(mC_l)
+            jk_r.C_left_add(self.Co)
+            mC_r = psi4.core.Matrix(self.nbf, self.nocc)
+            npC_r_right.append(np.asarray(mC_r))
+            jk_r.C_right_add(mC_r)
+
+        # Build initial guess, previous vectors, diis object, and C_left updates
+        x_l, x_r = [], []
+        x_l_old, x_r_old = [], []
+        diis_l, diis_r = [], []
+        ia_denom_l = self.epsilon[self.nocc:] - self.epsilon[:self.nocc].reshape(-1, 1) - omega
+        ia_denom_r = self.epsilon[self.nocc:] - self.epsilon[:self.nocc].reshape(-1, 1) + omega
+        for xyz in range(3):
+            x_l.append(self.dipoles_xyz[xyz] / ia_denom_l)
+            x_r.append(self.dipoles_xyz[xyz] / ia_denom_r)
+            x_l_old.append(np.zeros(ia_denom_l.shape))
+            x_r_old.append(np.zeros(ia_denom_r.shape))
+            diis_l.append(DIIS_helper())
+            diis_r.append(DIIS_helper())
+
+        # Convert Co and Cv to numpy arrays
+        Co = np.asarray(self.Co)
+        Cv = np.asarray(self.Cv)
+
+        print('\nStarting CPHF iterations:')
+        t = time.time()
+        for CPHF_ITER in range(1, maxiter + 1):
+
+            # Update jk's C_right
+            for xyz in range(3):
+                npC_l_right[xyz][:] = Cv.dot(x_l[xyz].T)
+                npC_r_right[xyz][:] = Cv.dot(x_r[xyz].T)
+
+            # Compute JK objects
+            jk_l.compute()
+            jk_r.compute()
+
+            # Update amplitudes
+            for xyz in range(3):
+                # Build J and K objects
+                J_l = np.asarray(jk_l.J()[xyz])
+                K_l = np.asarray(jk_l.K()[xyz])
+                J_r = np.asarray(jk_r.J()[xyz])
+                K_r = np.asarray(jk_r.K()[xyz])
+
+                # Bulid new guess
+                X_l = self.dipoles_xyz[xyz].copy()
+                X_r = self.dipoles_xyz[xyz].copy()
+                X_l -= (Co.T).dot(2 * J_l - K_l).dot(Cv)
+                X_r -= (Co.T).dot(2 * J_r - K_r).dot(Cv)
+                X_l /= ia_denom_l
+                X_r /= ia_denom_r
+
+                # DIIS for good measure
+                if use_diis:
+                    diis_l[xyz].add(X_l, X_l - x_l_old[xyz])
+                    X_l = diis_l[xyz].extrapolate()
+                    diis_r[xyz].add(X_r, X_r - x_r_old[xyz])
+                    X_r = diis_r[xyz].extrapolate()
+                x_l[xyz] = X_l.copy()
+                x_r[xyz] = X_r.copy()
+
+            # Check for convergence
+            rms = []
+            for xyz in range(3):
+                rms_l = np.max((x_l[xyz] - x_l_old[xyz]) ** 2)
+                rms_r = np.max((x_r[xyz] - x_r_old[xyz]) ** 2)
+                rms.append(max(rms_l, rms_r))
+                x_l_old[xyz] = x_l[xyz]
+                x_r_old[xyz] = x_r[xyz]
+
+            avg_RMS = sum(rms) / 3
+            max_RMS = max(rms)
+
+            if max_RMS < conv:
+                print('CPHF converged in %d iterations and %.2f seconds.' % (CPHF_ITER, time.time() - t))
+                self.rhsvecs = []
+                for numx in range(3):
+                    rhsvec = self.dipoles_xyz[numx].reshape(-1)
+                    self.rhsvecs.append(np.concatenate((rhsvec, -rhsvec)))
+                    self.x.append(np.concatenate((x_l[numx].reshape(-1),
+                                                  x_r[numx].reshape(-1))))
+                break
+
+            print('CPHF Iteration %3d: Average RMS = %3.8f  Maximum RMS = %3.8f' %
+                  (CPHF_ITER, avg_RMS, max_RMS))
+
     def form_polarizability(self):
         self.polar = np.empty((3, 3))
         for numx in range(3):
@@ -285,6 +387,12 @@ if __name__ == '__main__':
     assert np.allclose(polar, helper.polar, rtol=0, atol=1.e-5)
 
     print('\n')
+    print('@test_CPHF running solve_dynamic_iterative ({})'.format(f))
+
+    helper.solve_dynamic_iterative(omega=f)
+    helper.form_polarizability()
+    assert np.allclose(polar, helper.polar, rtol=0, atol=1.e-5)
+
     f = 0.0773178
     ref = np.array([
         [8.19439986,  0.00000000,  0.00000000],
@@ -296,5 +404,12 @@ if __name__ == '__main__':
     print('@test_CPHF running solve_dynamic_direct ({})'.format(f))
 
     helper.solve_dynamic_direct(omega=f)
+    helper.form_polarizability()
+    assert np.allclose(ref, helper.polar, rtol=0, atol=1.e-5)
+
+    print('\n')
+    print('@test_CPHF running solve_dynamic_iterative ({})'.format(f))
+
+    helper.solve_dynamic_iterative(omega=f)
     helper.form_polarizability()
     assert np.allclose(ref, helper.polar, rtol=0, atol=1.e-5)
