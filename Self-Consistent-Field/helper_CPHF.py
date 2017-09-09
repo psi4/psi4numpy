@@ -7,10 +7,9 @@ from helper_HF import DIIS_helper
 
 class helper_CPHF(object):
 
-    def __init__(self, mol, method='direct', numpy_memory=2):
+    def __init__(self, mol, numpy_memory=2):
 
         self.mol = mol
-        self.method = method
         self.numpy_memory = numpy_memory
 
         # Compute the reference wavefunction and CPHF using Psi
@@ -46,11 +45,18 @@ class helper_CPHF(object):
         self.x = None
         self.rhsvecs = None
 
-    def solve(self):
+    def run(self, method='direct', omega=None):
+        self.method = method
         if self.method == 'direct':
-            self.solve_static_direct()
+            if not omega:
+                self.solve_static_direct()
+            else:
+                self.solve_dynamic_direct(omega=omega)
         elif self.method == 'iterative':
-            self.solve_static_iterative()
+            if not omega:
+                self.solve_static_iterative()
+            else:
+                self.solve_dynamic_iterative(omega=omega)
         else:
             raise Exception("Method %s is not recognized" % self.method)
         self.form_polarizability()
