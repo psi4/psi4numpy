@@ -10,7 +10,10 @@ matrix:
   include:
 
   - env:
-      - PYTHON_VER='3.5'
+    - PYTHON_VER='2.7'
+
+  - env:
+    - PYTHON_VER='3.6'
 
 
 before_install:
@@ -20,15 +23,20 @@ before_install:
   - ulimit -a
 
 install:
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  #- conda create -q -n p4env python=3.5 psi4 scipy jupyter -c psi4
-  - conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 -c psi4
+  # jupyter
+  - if [[ "$PYTHON_VER" == "2.7" ]]; then
+        conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 -c psi4;
+    else
+        conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 scipy -c psi4/label/dev -c psi4;
+    fi
+
   - source activate p4env
   - conda install pytest pytest-cov codecov -c conda-forge
   #- pip install deepdiff
@@ -39,11 +47,8 @@ before_script:
   - python -V
 
 script:
-  #- python .scripts/travis_test.py
-  #- make pytest VERBOSE=1
-  #- PYTHONPATH=stage/usr/local/pylibefp/lib/ pytest -v --cov --ignore=external ../tests/
-  #- cd ../tests && PYTHONPATH=../build/stage/usr/local/pylibefp/lib/ python -m pytest -v --ignore=../build/external --cov
-  - cd ${TRAVIS_BUILD_DIR}/tests && python -m pytest -rws -v --capture=sys ${TRAVIS_BUILD_DIR}/tests --cov
+  #- cd ${TRAVIS_BUILD_DIR}/tests && python -m pytest -rws -v --capture=sys ${TRAVIS_BUILD_DIR}/tests --cov  # -v -s
+  - cd tests && python -m pytest -rw -v --cov
 
 cache:
   directories:
