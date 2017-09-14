@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # SAPT0(ROHF) script for the oxygen dimer (two triplets making a quintet)
 # The code is transparent but not optimized in any way, and this test might take up to a couple minutes.
 #

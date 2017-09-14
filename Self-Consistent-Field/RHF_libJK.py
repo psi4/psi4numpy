@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 A restricted Hartree-Fock code using the Psi4 JK class for the 4-index electron repulsion integrals.
 """

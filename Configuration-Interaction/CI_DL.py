@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 A Psi4 input script to compute CI energy using an iterative Davidson-Lu solver.
 

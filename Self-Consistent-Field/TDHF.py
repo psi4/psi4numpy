@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 A Psi4 input script to compute TDHF linear response. As a note this is, by far,
 not the most efficiently algorithm, but certainly the most verbose.

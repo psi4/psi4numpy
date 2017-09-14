@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 A reference implementation of density-fitted MP2 from a RHF reference.
 

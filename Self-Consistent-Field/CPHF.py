@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # A simple Psi 4 input script to compute MP2 from a SCF reference
 #
 # Created by: Daniel G. A. Smith

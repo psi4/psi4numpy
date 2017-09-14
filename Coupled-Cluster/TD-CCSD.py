@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # A simple Psi4 script to compute TD-CCSD from a CCSD reference
 # Scipy and numpy python modules are required
 # This script runs a post-CCSD computation, using the ERI

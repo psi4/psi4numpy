@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Reference implementation of MP3 with focus on auto-generating einsum expressions
 

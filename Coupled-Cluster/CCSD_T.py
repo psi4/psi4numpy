@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # A simple Psi 4 script to compute CCSD from a RHF reference
 # Scipy and numpy python modules are required
 #

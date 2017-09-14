@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 A restricted Hartree-Fock script using the Psi4NumPy Formalism
 """
