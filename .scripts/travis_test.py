@@ -1,7 +1,7 @@
 """A script that runs each of the Psi4NumPy reference implementations and checks that they exit successfully."""
 
 __author__ = "Daniel G. A. Smith"
-__license__ = "BSC-3-Clause"
+__license__ = "BSD-3-Clause"
 __copyright__ = "(c) 2017, The Psi4NumPy Developers"
 
 import glob
