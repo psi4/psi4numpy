@@ -32,9 +32,9 @@ install:
   - conda info -a
   # jupyter
   - if [[ "$PYTHON_VER" == "2.7" ]]; then
-        conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 -c psi4;
+        conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 jupyter -c psi4;
     else
-        conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 scipy -c psi4/label/dev -c psi4;
+        conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 jupyter scipy -c psi4/label/dev -c psi4;
     fi
 
   - source activate p4env
@@ -48,7 +48,8 @@ before_script:
 
 script:
   #- cd ${TRAVIS_BUILD_DIR}/tests && python -m pytest -rws -v --capture=sys ${TRAVIS_BUILD_DIR}/tests --cov  # -v -s
-  - cd tests && python -m pytest -rw -v --cov
+  #- cd tests && python -m pytest -rw -v --cov
+  - cd tests && python -m pytest -rw -v test_Tut_03.py test_RI_CI.py --cov
 
 cache:
   directories:

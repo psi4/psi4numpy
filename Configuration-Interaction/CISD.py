@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 A Psi4 input script to compute CISD energy from a SCF reference
 
