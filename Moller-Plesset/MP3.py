@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Reference implementation for the correlation energy of MP3 with an RHF reference.
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Reference implementation of the MP3 correlation energy utilizing antisymmetrized
 spin-orbitals from an RHF reference.

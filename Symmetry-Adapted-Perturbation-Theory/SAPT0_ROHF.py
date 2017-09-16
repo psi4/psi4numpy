@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # SAPT0(ROHF) script for the oxygen dimer (two triplets making a quintet)
 # The code is transparent but not optimized in any way, and this test might take up to a couple minutes.
 #
@@ -1486,9 +1484,9 @@ Eind = psi4.get_variable('SAPT IND20,R ENERGY')
 Eexind = psi4.get_variable('SAPT EXCH-IND20,R ENERGY')
 Edisp = psi4.get_variable('SAPT DISP20 ENERGY')
 Eexdisp = psi4.get_variable('SAPT EXCH-DISP20 ENERGY')
-psi4.driver.p4util.compare_values(Eelst, Elst10, 5, 'Elst100')
-psi4.driver.p4util.compare_values(Eexch, Exch100, 5, 'Exch100(S^2)')
-psi4.driver.p4util.compare_values(Edisp, Disp200, 5, 'Disp200')
-psi4.driver.p4util.compare_values(Eexdisp, ExchDisp20, 5, 'Exch-Disp200')
-psi4.driver.p4util.compare_values(Eind, Ind20r, 5, 'Ind200,r')
-psi4.driver.p4util.compare_values(Eexind, ExchInd20, 5, 'Exch-Ind200,r')
+psi4.compare_values(Eelst, Elst10, 5, 'Elst100')
+psi4.compare_values(Eexch, Exch100, 5, 'Exch100(S^2)')
+psi4.compare_values(Edisp, Disp200, 5, 'Disp200')
+psi4.compare_values(Eexdisp, ExchDisp20, 5, 'Exch-Disp200')
+psi4.compare_values(Eind, Ind20r, 5, 'Ind200,r')
+psi4.compare_values(Eexind, ExchInd20, 5, 'Exch-Ind200,r')

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 A simple Psi 4 input script to compute EP3 using spin-orbitals
 From Szabo and Ostlund page 390

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 A reference implementation of second-order Moller-Plesset perturbation theory.
 

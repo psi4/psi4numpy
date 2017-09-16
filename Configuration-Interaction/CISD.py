@@ -120,4 +120,4 @@ print('CISD correlation:    % 16.10f' % (cisd_mol_e - scf_e))
 print('Total CISD energy:   % 16.10f' % (cisd_mol_e))
 
 if compare_psi4:
-    psi4.driver.p4util.compare_values(psi4.energy('DETCI'), cisd_mol_e, 6, 'CISD Energy')
+    psi4.compare_values(psi4.energy('DETCI'), cisd_mol_e, 6, 'CISD Energy')

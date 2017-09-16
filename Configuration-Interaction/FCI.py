@@ -123,4 +123,4 @@ print('FCI correlation:    % 16.10f' % (fci_mol_e - scf_e))
 print('Total FCI energy:   % 16.10f' % (fci_mol_e))
 
 if compare_psi4:
-    psi4.driver.p4util.compare_values(psi4.energy('FCI'), fci_mol_e, 6, 'FCI Energy')
+    psi4.compare_values(psi4.energy('FCI'), fci_mol_e, 6, 'FCI Energy')

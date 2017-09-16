@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # A simple Psi 4 input script to compute SAPT interaction energies
 #
 # Created by: Daniel G. A. Smith

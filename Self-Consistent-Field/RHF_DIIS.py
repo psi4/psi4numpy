@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Applies DIIS ot the RHF formalism
 """

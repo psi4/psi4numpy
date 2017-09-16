@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 A iterative second-order restricted Hartree-Fock script using the Psi4NumPy Formalism
 """

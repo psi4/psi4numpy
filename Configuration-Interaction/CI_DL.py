@@ -227,5 +227,4 @@ E = psi4.energy('detci')
 for n in range(nroot):
     ci_ref = psi4.get_variable('CI ROOT %d TOTAL ENERGY' % n)
     ci_compute = CI_E[n] + mol.nuclear_repulsion_energy()
-    #psi4.compare_values(ci_ref, ci_compute, 6, 'CI Root %d Total Energy' % n)
-    psi4.driver.p4util.compare_values(6.0, ci_compute, 6, 'CI Root %d Total Energy' % n)
+    psi4.compare_values(ci_ref, ci_compute, 6, 'CI Root %d Total Energy' % n)
