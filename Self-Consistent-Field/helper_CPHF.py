@@ -254,23 +254,18 @@ class helper_CPHF(object):
     def solve_dynamic_iterative(self, omega=0.0, maxiter=20, conv=1.e-9, use_diis=True):
 
         # Init JK object
-        jk_l = psi4.core.JK.build(self.scf_wfn.basisset())
-        jk_l.initialize()
-        jk_r = psi4.core.JK.build(self.scf_wfn.basisset())
-        jk_r.initialize()
+        jk = psi4.core.JK.build(self.scf_wfn.basisset())
+        jk.initialize()
 
-        # Add blank matrices to the jk object and numpy hooks to C_right
-        npC_l_right = []
-        npC_r_right = []
-        for xyz in range(3):
-            jk_l.C_left_add(self.Co)
-            mC_l = psi4.core.Matrix(self.nbf, self.nocc)
-            npC_l_right.append(np.asarray(mC_l))
-            jk_l.C_right_add(mC_l)
-            jk_r.C_left_add(self.Co)
-            mC_r = psi4.core.Matrix(self.nbf, self.nocc)
-            npC_r_right.append(np.asarray(mC_r))
-            jk_r.C_right_add(mC_r)
+        # Add blank matrices to the JK object and NumPy hooks to
+        # C_right; there are 6 sets of matrices to account for X and Y
+        # vectors separately.
+        npC_right = []
+        for xyz in range(6):
+            jk.C_left_add(self.Co)
+            mC = psi4.core.Matrix(self.nbf, self.nocc)
+            npC_right.append(np.asarray(mC))
+            jk.C_right_add(mC)
 
         # Build initial guess, previous vectors, diis object, and C_left updates
         x_l, x_r = [], []
@@ -294,22 +289,21 @@ class helper_CPHF(object):
         t = time.time()
         for CPHF_ITER in range(1, maxiter + 1):
 
-            # Update jk's C_right
+            # Update jk's C_right; ordering is Xx, Xy, Xz, Yx, Yy, Yz
             for xyz in range(3):
-                npC_l_right[xyz][:] = Cv.dot(x_l[xyz].T)
-                npC_r_right[xyz][:] = Cv.dot(x_r[xyz].T)
+                npC_right[xyz][:] = Cv.dot(x_l[xyz].T)
+                npC_right[xyz + 3][:] = Cv.dot(x_r[xyz].T)
 
-            # Compute JK objects
-            jk_l.compute()
-            jk_r.compute()
+            # Perform generalized J/K build
+            jk.compute()
 
             # Update amplitudes
             for xyz in range(3):
                 # Build J and K objects
-                J_l = np.asarray(jk_l.J()[xyz])
-                K_l = np.asarray(jk_l.K()[xyz])
-                J_r = np.asarray(jk_r.J()[xyz])
-                K_r = np.asarray(jk_r.K()[xyz])
+                J_l = np.asarray(jk.J()[xyz])
+                K_l = np.asarray(jk.K()[xyz])
+                J_r = np.asarray(jk.J()[xyz + 3])
+                K_r = np.asarray(jk.K()[xyz + 3])
 
                 # Bulid new guess
                 X_l = self.dipoles_xyz[xyz].copy()
