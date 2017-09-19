@@ -46,12 +46,8 @@ before_script:
 script:
   - python -m pytest -rs -v -m "not long" --cov --durations=5
 
-cache:
-  directories:
-    - $HOME/cache
-before_cache:
-  # Remove all untarred directories.
-  - find $CONDA_INSTALL_LOCN/pkgs/ -mindepth 1 -maxdepth 1 -type d -exec rm -r {} \;
+after_success:
+  - codecov
 
 notifications:
   email: false
