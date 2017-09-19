@@ -14,6 +14,6 @@ def test_SAPT0ao(workspace):
 def test_SAPT0(workspace):
     exe_py(workspace, tdir, 'SAPT0')
 
-
-def test_SAPT0_ROHF(workspace):
-    exe_py(workspace, tdir, 'SAPT0_ROHF')
+# Currently an excessive amount of time 
+# def test_SAPT0_ROHF(workspace):
+#     exe_py(workspace, tdir, 'SAPT0_ROHF')
