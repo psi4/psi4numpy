@@ -44,7 +44,7 @@ before_script:
   - python -V
 
 script:
-  - python -m pytest -rs -v --cov
+  - python -m pytest -rs -v --cov --durations=5
 
 cache:
   directories:
