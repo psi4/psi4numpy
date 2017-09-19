@@ -1,5 +1,6 @@
 import pytest
 
+
 def _plugin_import(plug):
     import sys
     if sys.version_info >= (3, 4):

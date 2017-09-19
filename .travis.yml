@@ -15,7 +15,6 @@ matrix:
   - env:
     - PYTHON_VER='3.6'
 
-
 before_install:
   - uname -a
   - free -m
@@ -38,7 +37,6 @@ install:
 
   - source activate p4env
   - conda install pytest pytest-cov codecov -c conda-forge
-  #- pip install deepdiff
   - pip install pytest-shutil
   - conda list
 
@@ -46,7 +44,6 @@ before_script:
   - python -V
 
 script:
-  #- cd ${TRAVIS_BUILD_DIR}/tests && python -m pytest -rws -v --capture=sys ${TRAVIS_BUILD_DIR}/tests --cov  # -v -s
   - cd tests && python -m pytest -rs -v --cov
 
 cache:
