@@ -7,7 +7,13 @@ language: python
 sudo: false
 
 matrix:
-    - python: 3.5
+  include:
+
+  - env:
+    - PYTHON_VER='2.7'
+
+  - env:
+    - PYTHON_VER='3.6'
 
 before_install:
   - uname -a
@@ -16,22 +22,29 @@ before_install:
   - ulimit -a
 
 install:
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda create -q -n p4env python=3.5 psi4 scipy jupyter -c psi4
+  - if [[ "$PYTHON_VER" == "2.7" ]]; then
+        conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 numpy=1.12 matplotlib jupyter -c psi4;
+    else
+        conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 numpy=1.13 matplotlib jupyter scipy -c psi4/label/dev -c psi4;
+    fi
+
   - source activate p4env
+  - conda install pytest pytest-cov codecov -c conda-forge
+  - pip install pytest-shutil
   - conda list
 
 before_script:
   - python -V
 
 script:
-  - python .scripts/travis_test.py
+  - python -m pytest -rs -v -m "not long" --cov --durations=5
 
 cache:
   directories:

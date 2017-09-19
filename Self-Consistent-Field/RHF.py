@@ -129,4 +129,4 @@ print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
 
 print('Final SCF energy: %.8f hartree' % SCF_E)
 SCF_E_psi = psi4.energy('SCF')
-psi4.driver.p4util.util.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')
+psi4.compare_values(SCF_E_psi, SCF_E, 6, 'SCF Energy')

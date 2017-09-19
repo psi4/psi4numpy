@@ -189,6 +189,15 @@ psi4.compare_values(expected, computed, digits, label)
 where `expected` is the reference value, and `computed` is the final output of the
 script/tutorial.  
 
+Also for the health of the repository and to ensure continued
+compatibility with Psi4 and NumPy advances, all reference
+implementations and interactive tutorials should be added to the
+testing framework. See tests/test_RI_*py and tests/test_TU_*py for
+very simple models to follow. If running requires any special tools
+(a latest version of Psi4 or NumPy, scipy, etc.), mark with decorators
+from tests/addons.py. If running takes longer than ~40s on Travis,
+additionally add `@pytest.mark.long` decorator to suppress CI testing.
+
 ## Styleguides
 
 ### Python Styleguide
