@@ -5,6 +5,9 @@ import tempfile
 from contextlib import contextmanager
 
 
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 @contextmanager
 def uplusx(fd):
     """Context Manager to turn ``fd`` executable, then reset it to rw-rw-r--"""
@@ -16,12 +19,12 @@ def uplusx(fd):
 
 
 def exe_py(workspace, tdir, py):
-    script = os.getcwd() + '/../' + tdir + '/' + py + '.py'
+    script = base_dir + '/' + tdir + '/' + py + '.py'
     workspace.run('python ' + script)
 
 
 def exe_scriptified_ipynb(workspace, tdir, ipynb):
-    script = os.getcwd() + '/../' + tdir + '/' + ipynb + '.ipynb'
+    script = base_dir + '/' + tdir + '/' + ipynb + '.ipynb'
     path = workspace.workspace
     workspace.run('jupyter nbconvert --to script ' + script + ' --output-dir=' + path)
     script_py = path + '/' + ipynb + '.py'
@@ -38,7 +41,7 @@ def exe_scriptified_ipynb(workspace, tdir, ipynb):
 
 
 def copy_helpers(workspace, tdir, files):
-    from_dir = os.getcwd() + '/../' + tdir + '/'
+    from_dir = base_dir + '/' + tdir + '/'
     for fl in files:
         shutil.copy(from_dir + fl, workspace.workspace)
 

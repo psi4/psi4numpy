@@ -44,7 +44,7 @@ before_script:
   - python -V
 
 script:
-  - cd tests && python -m pytest -rs -v --cov
+  - python -m pytest -rs -v --cov
 
 cache:
   directories:
