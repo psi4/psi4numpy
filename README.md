@@ -4,6 +4,7 @@
 <a href="https://zenodo.org/badge/latestdoi/22622192"> <img src="https://zenodo.org/badge/22622192.svg" /></a>
 <a href="https://travis-ci.org/psi4/psi4numpy"><img src="https://travis-ci.org/psi4/psi4numpy.svg?branch=master"></a>
 <a href="https://codecov.io/gh/psi4/psi4numpy"> <img src="https://codecov.io/gh/psi4/psi4numpy/branch/master/graph/badge.svg" /></a>
+<a href="https://opensource.org/licenses/BSD-3-Clause"><img src="https://img.shields.io/badge/License-BSD%203--Clause-blue.svg" /></a>
 <br>
 </p>
 
