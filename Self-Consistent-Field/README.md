@@ -2,19 +2,19 @@ Self-consistent Field (SCF)
 ====================================
 
 The following codes are available:
-- `RHF.dat`: A simple Restricted Hartree-Fock (RHF) program.
-- `RHF_DIIS.dat`: A RHF program that uses direct inversion of the iterative subspace (DIIS) to accelerate convergence.
-- `RHF_libJK.dat`: A RHF program that uses Psi4's libJK to evaluate J and K matrices.
-- `UHF_libJK.dat`: A UHF program that uses Psi4's libJK to evaluate J and K matrices.
-- `CPHF.dat`: A Coupled-Perturbed RHF code for dipole polarizabilities.
+- `RHF.py`: A simple Restricted Hartree-Fock (RHF) program.
+- `RHF_DIIS.py`: A RHF program that uses direct inversion of the iterative subspace (DIIS) to accelerate convergence.
+- `RHF_libJK.py`: A RHF program that uses Psi4's libJK to evaluate J and K matrices.
+- `UHF_libJK.py`: A UHF program that uses Psi4's libJK to evaluate J and K matrices.
+- `CPHF.py`: A Coupled-Perturbed RHF code for dipole polarizabilities.
 
 Second-order SCF and Hessians:
-- `SORHF.dat`: A second-order RHF program. Uses the electronic hessian to facilitate quadratic convergence.
-- `SORHF.dat`: A second-order iterative RHF program.
-- `SOROHF.dat`: A second-order ROHF program. Uses the electronic hessian to facilitate quadratic convergence.
-- `SOROHF.dat`: A second-order iterative ROHF program.
-- `SOUHF.dat`: A second-order UHF program. Uses the electronic hessian to facilitate quadratic convergence.
-- `SOUHF.dat`: A second-order iterative UHF program.
+- `SORHF.py`: A second-order RHF program. Uses the electronic hessian to facilitate quadratic convergence.
+- `SORHF.py`: A second-order iterative RHF program.
+- `SOROHF.py`: A second-order ROHF program. Uses the electronic hessian to facilitate quadratic convergence.
+- `SOROHF.py`: A second-order iterative ROHF program.
+- `SOUHF.py`: A second-order UHF program. Uses the electronic hessian to facilitate quadratic convergence.
+- `SOUHF.py`: A second-order iterative UHF program.
 
 Helper programs:
 - `helper_HF.py`: A collection of helper classes and functions for Hartree-Fock.
