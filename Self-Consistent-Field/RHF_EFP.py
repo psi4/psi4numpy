@@ -3,7 +3,8 @@ Reference implementation of RHF/EFP using libefp through PylibEFP.
 
 Requirements:
 NumPy
-PylibEFP >=0.6
+PylibEFP >=0.1
+libEFP >=1.5b1
 Psi4 >=1.2a1.dev507 (c. late Aug 2017)
 
 References:
@@ -29,8 +30,6 @@ import psi4
 import pylibefp
 
 import os
-print('Psi4  loc:', os.path.abspath(psi4.__file__))
-print('PyLibEFP  loc:', os.path.abspath(pylibefp.__file__))
 
 
 # Memory for Psi4 in GB
