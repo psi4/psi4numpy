@@ -48,7 +48,7 @@ script:
   #- python -m pytest -rs -v -k "RHF"  # e.g., run only tests with RHF in name
 
 after_success:
-  - codecov
+  #- codecov
 
 notifications:
   email: false
