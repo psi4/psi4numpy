@@ -21,6 +21,12 @@ def test_RHF(workspace):
     exe_py(workspace, tdir, 'RHF')
 
 
+@using_psi4_efpmints
+@using_pylibefp
+def test_RHF_EFP(workspace):
+    exe_py(workspace, tdir, 'RHF_EFP')
+
+
 def test_ROHF_libJK(workspace):
     exe_py(workspace, tdir, 'ROHF_libJK')
 
