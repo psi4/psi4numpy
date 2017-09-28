@@ -32,7 +32,7 @@ install:
   - if [[ "$PYTHON_VER" == "2.7" ]]; then
         conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 numpy=1.12 matplotlib jupyter -c psi4;
     else
-        conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 numpy=1.13 matplotlib jupyter scipy -c psi4/label/dev -c psi4;
+        conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 numpy=1.13 matplotlib jupyter scipy pylibefp -c psi4/label/dev -c psi4;
     fi
 
   - source activate p4env
@@ -44,10 +44,11 @@ before_script:
   - python -V
 
 script:
-  - python -m pytest -rs -v -m "not long" --cov --durations=5
+  #- python -m pytest -rs -v -m "not long" --cov --durations=5
+  - python -m pytest -rs -v -k "RHF"
 
 after_success:
-  - codecov
+  #- codecov
 
 notifications:
   email: false
