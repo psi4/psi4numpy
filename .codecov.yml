@@ -1,13 +1,9 @@
-comment:
-  layout: header, changes, diff
 coverage:
   status:
+    patch: false
     project:
       default:
         threshold: 50%
-    patch:
-      default:
-        threshold: 50%
   ignore:
-    - "tests/"
-    - "tmp/"
+    - "tests/.*"
+    - "setup.py"
