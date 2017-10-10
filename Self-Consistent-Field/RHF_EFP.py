@@ -156,9 +156,18 @@ def field_fn(xyz):
     Returns
     -------
     list
-        3 * n_pt (flat) array of electric field at points in `xyz1.
+        3 * n_pt (flat) array of electric field at points in `xyz`.
+
+    Notes
+    -----
+    Function signature defined by libefp, so function uses number of
+    basis functions `nbf` and density matrix `efp_density` from global
+    namespace.
 
     """
+    global nbf
+    global efp_density
+
     points = np.array(xyz).reshape(-1, 3)
     n_pt = len(points)
 
@@ -172,9 +181,9 @@ def field_fn(xyz):
         # get electric field integrals from Psi4
         p4_field_ints = mints.electric_field(origin=points[ipt])
 
-        field[ipt] = [np.vdot(density, np.asarray(p4_field_ints[0])) * 2.0,  # Ex
-                      np.vdot(density, np.asarray(p4_field_ints[1])) * 2.0,  # Ey
-                      np.vdot(density, np.asarray(p4_field_ints[2])) * 2.0]  # Ez
+        field[ipt] = [np.vdot(efp_density, np.asarray(p4_field_ints[0])) * 2.0,  # Ex
+                      np.vdot(efp_density, np.asarray(p4_field_ints[1])) * 2.0,  # Ey
+                      np.vdot(efp_density, np.asarray(p4_field_ints[2])) * 2.0]  # Ez
 
     field = np.reshape(field, 3 * n_pt)
 
@@ -307,12 +316,11 @@ Dold = np.zeros_like(D)
 for SCF_ITER in range(1, maxiter + 1):
 
     # <-- efp: add contribution to Fock matrix
-    H = Horig
     verbose_dipoles = 1 if (SCF_ITER == 1) else 0
     # [Kaliman:2013:2284] Fig. 4 -- Compute electric field from wavefunction
     # [Kaliman:2013:2284] Fig. 4 -- Compute electric field from induced dipoles
     Vefp = modify_Fock_induced(nbf, efpmol, verbose=verbose_dipoles)
-    H = H + Vefp
+    H = Horig.copy() + Vefp
     # --> efp
 
     # Build fock matrix
@@ -329,7 +337,7 @@ for SCF_ITER in range(1, maxiter + 1):
     dRMS = np.mean(diis_e**2)**0.5
 
     # <-- efp: add contribution to energy
-    density = D
+    efp_density = D
     # [Kaliman:2013:2284] Fig. 4 -- Compute EFP induced dipoles
     efp_wfn_dependent_energy = efpmol.get_wavefunction_dependent_energy()
     SCF_E += efp_wfn_dependent_energy
