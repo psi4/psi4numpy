@@ -45,3 +45,6 @@ using_numpy_113 = pytest.mark.skipif(is_numpy_new_enough("1.13.0") is False,
 
 using_matplotlib = pytest.mark.skipif(_plugin_import('matplotlib') is False,
                                 reason='Note detecting module matplotlib. Install package if necessary and add to envvar PYTHONPATH')
+
+using_pylibefp = pytest.mark.skipif(_plugin_import('pylibefp') is False,
+                                reason='Not detecting module pylibefp. Install package if necessary and add to envvar PYTHONPATH')

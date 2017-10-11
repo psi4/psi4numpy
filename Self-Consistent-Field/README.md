@@ -39,3 +39,7 @@ Helper HF methods:
 - `compute_hf_energy` - Computes the HF energy using current orbitals.
 - `diis_add` - Adds a matrix to the DIIS vector, uses FDS - SDF for error vectors.
 - `diis_update` - Updates orbitals using the DIIS method.
+
+### References
+ 1) libefp paper: "LIBEFP: A New Parallel Implementation of the Effective Fragment Potential Method as a Portable Software Library"
+    - [[Kaliman:2013:2284](http://dx.doi.org/10.1002/jcc.23375)] I. Kaliman and L. Slipchenko, *J. Comput. Chem.*, 34, 2284 (2013).
