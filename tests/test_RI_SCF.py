@@ -20,6 +20,9 @@ def test_RHF_libJK(workspace):
 def test_RHF(workspace):
     exe_py(workspace, tdir, 'RHF')
 
+def test_RHF_libSADGuess(workspace):
+    exe_py(workspace, tdir, 'RHF_libSADGuess')
+
 
 @using_psi4_efpmints
 @using_pylibefp
