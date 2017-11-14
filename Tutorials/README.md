@@ -35,7 +35,7 @@ Below is a list of the available interactive tutorials, grouped by module:
     * Conventional MP2: Overview and implementation of the conventional formulation of second-order Møller-Plesset Perturbation Theory (MP2), using full 4-index ERIs.
     * Density Fitted MP2: Discusses the implementation of the density-fitted formulation of MP2 with an efficient, low-memory algorithm utilizing permutational ERI symmetry.
 
-8. Geometry Optimization Theory
+12. Geometry Optimization Theory
     * Internal coordinates and the B-matrix.
     * Hessians: guessing, updating, and transforming them.
     * Rational Function Optimization (RFO), an improved Newton-Raphson step method.
