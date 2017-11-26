@@ -1,12 +1,13 @@
-# A simple Psi 4 input script to compute the dipole polarizability
-# from an SCF reference
+# A simple Psi4 input script to compute the dipole polarizability from
+# an SCF reference
 #
 # Created by: Daniel G. A. Smith
 # Date: 3/31/15
 # License: GPL v3.0
 #
 """
-A reference implementation of second-order Moller-Plesset perturbation theory.
+A reference implementation of the Hartree-Fock static dipole
+polarizability.
 
 References:
 Algorithms were taken directly from Daniel Crawford's programming website:
@@ -14,8 +15,8 @@ http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
 Special thanks to Rob Parrish for initial assistance with libmints
 """
 
-__authors__    = "Daniel G. A. Smith"
-__credits__   = ["Daniel G. A. Smith", "Dominic A. Sirianni"]
+__authors__   =  "Daniel G. A. Smith"
+__credits__   = ["Daniel G. A. Smith", "Dominic A. Sirianni", "Eric J. Berquist"]
 
 __copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
 __license__   = "BSD-3-Clause"
@@ -33,8 +34,8 @@ psi4.core.set_output_file("output.dat", False)
 
 mol = psi4.geometry("""
 O
-H 1 0.9435
-H 1 0.9435 2 105.9443
+H 1 1.1
+H 1 1.1 2 104
 symmetry c1
 """)
 
@@ -221,9 +222,9 @@ for numx in range(3):
 
 # Compare against reference
 ref = np.array([
-    [ 7.25872, 0.     , 0.     ],
-    [ 0.     , 8.79691, 0.     ],
-    [ 0.     , 0.     , 7.85397]
+    [8.01522720,  0.00000000,  0.00000000],
+    [0.00000000, 12.50372724,  0.00000000],
+    [0.00000000,  0.00000000, 10.04226990]
 ])
 assert np.allclose(polar, ref, rtol=0, atol=1.e-3)
 

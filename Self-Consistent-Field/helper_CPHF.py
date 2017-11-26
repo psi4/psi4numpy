@@ -1,3 +1,15 @@
+"""
+Helper classes and functions for molecular properties requiring
+solution of CPHF equations.
+"""
+
+__authors__   =  "Daniel G. A. Smith"
+__credits__   = ["Daniel G. A. Smith", "Eric J. Berquist"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2017-8-30"
+
 import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
@@ -395,9 +407,9 @@ if __name__ == '__main__':
 
     f = 0.0773178
     ref = np.array([
-        [7.40459697, 0.00000000, 0.00000000],
-        [0.00000000, 8.90940199, 0.00000000],
-        [0.00000000, 0.00000000, 7.97531673]
+        [8.19440121,  0.00000000,  0.00000000],
+        [0.00000000, 12.75967150,  0.00000000],
+        [0.00000000,  0.00000000, 10.25213939]
     ])
 
     print('\n')
