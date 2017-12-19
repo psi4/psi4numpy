@@ -5,8 +5,16 @@ from utils import *
 tdir = 'Self-Consistent-Field'
 
 
+def test_beta(workspace):
+    exe_py(workspace, tdir, 'beta')
+
+
 def test_CPHF(workspace):
     exe_py(workspace, tdir, 'CPHF')
+
+
+def test_helper_CPHF(workspace):
+    exe_py(workspace, tdir, 'helper_CPHF')
 
 
 def test_RHF_DIIS(workspace):
