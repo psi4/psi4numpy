@@ -1,18 +1,20 @@
 """
-A simple to compute the first dipole hyperpolarizability $\beta$
-from a restricted HF reference using the $2n+1$ rule from perturbation
-theory.
+A reference implementation to compute the first dipole
+hyperpolarizability $\beta$ from a restricted HF reference using the
+$2n+1$ rule from perturbation theory.
 
 References:
 Equations taken from [Karna:1991:487], http://dx.doi.org/10.1002/jcc.540120409
 """
 
-__authors__ = "Eric J. Berquist"
-__credits__ = ["Eric J. Berquist"]
+__authors__   =  "Eric J. Berquist"
+__credits__   = ["Eric J. Berquist"]
 
 __copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
-__license__ = "BSD-3-Clause"
-__date__    = "2017-08-26"
+__license__   = "BSD-3-Clause"
+__date__      = "2017-08-26"
+
+from itertools import permutations, product
 
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
@@ -25,8 +27,8 @@ psi4.core.set_output_file("output.dat", False)
 
 mol = psi4.geometry("""
 O
-H 1 0.9435
-H 1 0.9435 2 105.9443
+H 1 1.1
+H 1 1.1 2 104
 symmetry c1
 """)
 
@@ -35,14 +37,14 @@ psi4.set_options({"basis": "aug-cc-pVDZ",
                   "scf_type": "direct",
                   "df_scf_guess": False,
                   "e_convergence": 1e-9,
-                  "d_convergence": 1e-9,
-                  "cphf_tasks": ['polarizability']})
+                  "d_convergence": 1e-9})
 
 helper = helper_CPHF(mol)
 # For the $2n+1$ rule, the quadratic response starting quantities must
 # come from linear response.
 helper.run()
 
+na = np.newaxis
 moenergies = helper.epsilon
 C = np.asarray(helper.C)
 Co = helper.Co
@@ -98,8 +100,8 @@ for i in range(ncomp):
 E = G.copy()
 omega = 0
 for i in range(ncomp):
-    eoU = (moenergies[..., np.newaxis] + omega) * U[i, ...]
-    Ue = U[i, ...] * moenergies[np.newaxis, ...]
+    eoU = (moenergies[..., na] + omega) * U[i, ...]
+    Ue = U[i, ...] * moenergies[na, ...]
     E[i, ...] += (eoU - Ue)
 
 # Assume some symmetry and calculate only part of the tensor.
@@ -126,12 +128,12 @@ for r in range(6):
 
 
 ref_static = np.array([
-    [ 0.00000001,   0.00000000,  -0.10826460],
-    [ 0.00000000,   0.00000000, -11.22412215],
-    [ 0.00000000,   0.00000000,  -4.36450397],
-    [ 0.00000000,   0.00000000,  -0.00000001],
-    [-0.10826460,  -0.00000001,   0.00000000],
-    [-0.00000001, -11.22412215,   0.00000000]
+    [ 0.00000001,   0.00000000,   0.22843772],
+    [ 0.00000000,   0.00000000, -25.35476040],
+    [ 0.00000000,   0.00000000, -10.84023375],
+    [ 0.00000000,   0.00000000,   0.00000000],
+    [ 0.22843772,   0.00000000,   0.00000000],
+    [ 0.00000000, -25.35476040,   0.00000000]
 ])
 assert np.allclose(ref_static, hyperpolarizability, rtol=0.0, atol=1.0e-3)
 print('\nFirst dipole hyperpolarizability (static):')
