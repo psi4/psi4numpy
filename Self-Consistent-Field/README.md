@@ -7,8 +7,6 @@ The following codes are available:
 - `RHF_libJK.py`: A RHF program that uses Psi4's libJK to evaluate J and K matrices.
 - `ROHF_libJK.py`: A ROHF program that uses Psi4's libJK to evaluate J and K matrices.
 - `UHF_libJK.py`: A UHF program that uses Psi4's libJK to evaluate J and K matrices.
-- `CPHF.py`: A Coupled-Perturbed RHF code for dipole polarizabilities with both direct electronic Hessian inversion and iterative solvers.
-- `beta.py`: A Coupled-Perturbed RHF code for first dipole hyperpolarizabilities using the $2n+1$ rule.
 
 Second-order SCF and Hessians:
 - `SORHF.py`: A second-order RHF program. Uses the electronic Hessian to facilitate quadratic convergence.
@@ -20,7 +18,6 @@ Second-order SCF and Hessians:
 
 Helper programs:
 - `helper_HF.py`: A collection of helper classes and functions for Hartree-Fock.
-- `helper_CPHF.py`: A collection of helper classes and functions for Coupled-Perturbed Hartree-Fock (such as solvers).
 
 Helper HF initialization:
 ```python
