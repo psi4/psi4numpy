@@ -14,6 +14,11 @@ import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
 import psi4
+
+import os.path
+import sys
+dirname = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(dirname, '../../Self-Consistent-Field'))
 from helper_HF import DIIS_helper
 
 
