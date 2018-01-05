@@ -63,7 +63,7 @@ integrals_mo = np.empty(shape=(ncomp, norb, norb))
 for i in range(ncomp):
     integrals_mo[i, ...] = (C.T).dot(integrals_ao[i, ...]).dot(C)
 
-# repack response vectors to [norb, norb]; 1/2 is due to RHF
+# repack response vectors to [norb, norb]; 1/2 is due to X + Y
 U = np.zeros_like(integrals_mo)
 for i in range(ncomp):
     U[i, :nocc, nocc:] = 0.5 * x[i, ...].reshape(nocc, nvir)
@@ -93,7 +93,7 @@ for i in range(ncomp):
     jk.C_left_add(L)
     jk.C_right_add(R)
     jk.compute()
-    # 1/2 is due to RHF
+    # 1/2 is due to X + Y
     J = 0.5 * np.asarray(jk.J()[0])
     K = 0.5 * np.asarray(jk.K()[0])
 
@@ -161,7 +161,7 @@ print(helper2.polar)
 rspvecs1 = helper1.x
 rspvecs2 = helper2.x
 
-# repack response vectors to [norb, norb]; 1/2 is due to RHF
+# repack response vectors to [norb, norb]
 U1 = np.zeros_like(integrals_mo)
 U2 = np.zeros_like(integrals_mo)
 for i in range(ncomp):
