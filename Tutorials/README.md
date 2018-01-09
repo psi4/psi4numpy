@@ -36,10 +36,11 @@ Below is a list of the available interactive tutorials, grouped by module:
     * Density Fitted MP2: Discusses the implementation of the density-fitted formulation of MP2 with an efficient, low-memory algorithm utilizing permutational ERI symmetry.
 
 13. Geometry Optimization Theory
-    * Internal coordinates and the B-matrix.
-    * Hessians: guessing, updating, and transforming them.
-    * Rational Function Optimization (RFO), an improved Newton-Raphson step method.
-    * Step Backtransformation: From displacements in internals to displacements in Cartesians.
+    * Internal coordinates: the B-matrix and coordinate transformations.
+    * Hessians: estimating and transforming second derivatives.
+    * Hessians: update schemes with the example of BFGS.
+    * RFO: Rational Function Optimization minimizations.
+    * The Step Backtransformation: From displacements in internals to displacements in Cartesians.
 
 Note: These tutorials are under active construction.
 
