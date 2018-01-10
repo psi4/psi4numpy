@@ -5,9 +5,10 @@ from . import optExceptions
 from . import physconst as pc
 from . import v3d
 from .misc import delta, ZtoPeriod, HguessLindhRho
-from .physconst import bohr2angstroms
 from .simple import *
 
+BOHR2ANGSTROMS = psi4.constants.bohr2angstroms
+HARTREE2AJ = psi4.constants.hartree2aJ
 
 class STRE(SIMPLE):
     def __init__(self, a, b, frozen=False, fixedEqVal=None, inverse=False):
@@ -53,11 +54,11 @@ class STRE(SIMPLE):
 
     @property
     def qShowFactor(self):
-        return pc.bohr2angstroms
+        return BOHR2ANGSTROMS
 
     @property
     def fShowFactor(self):
-        return pc.hartree2aJ / pc.bohr2angstroms
+        return HARTREE2AJ / BOHR2ANGSTROMS
 
     # If mini == False, dqdx is 1x(3*number of atoms in fragment).
     # if mini == True, dqdx is 1x6.
@@ -159,7 +160,7 @@ class STRE(SIMPLE):
 
         elif guessType == "FISCHER":
             Rcov = (
-                covRadii.R[int(Z[self.A])] + covRadii.R[int(Z[self.B])]) / bohr2angstroms
+                covRadii.R[int(Z[self.A])] + covRadii.R[int(Z[self.B])]) / BOHR2ANGSTROMS
             R = v3d.dist(geom[self.A], geom[self.B])
             AA = 0.3601
             BB = 1.944

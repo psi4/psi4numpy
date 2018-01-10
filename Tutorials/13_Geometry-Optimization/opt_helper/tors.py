@@ -7,11 +7,11 @@ from . import optExceptions
 from . import physconst as pc  # has physical constants
 from . import v3d
 from .misc import HguessLindhRho
-from .physconst import bohr2angstroms
 from .simple import *
 
 FIX_VAL_NEAR_PI = 1.57
-
+BOHR2ANGSTROMS = psi4.constants.bohr2angstroms
+HARTREE2AJ = psi4.constants.hartree2aJ
 
 class TORS(SIMPLE):
     def __init__(self, a, b, c, d, frozen=False, fixedEqVal=None):
@@ -55,14 +55,14 @@ class TORS(SIMPLE):
 
     @property
     def qShowFactor(self):
-        return 180.0 / pc.pi
+        return 180.0 / np.pi
 
     def qShow(self, geom):  # return in degrees
         return self.q(geom) * self.qShowFactor
 
     @property
     def fShowFactor(self):
-        return pc.hartree2aJ * pc.pi / 180.0
+        return HARTREE2AJ * np.pi / 180.0
 
     @staticmethod
     def zeta(a, m, n):
@@ -79,9 +79,9 @@ class TORS(SIMPLE):
         # Extend values domain of torsion angles beyond pi or -pi, so that
         # delta(values) can be calculated
         if self._near180 == -1 and tau > FIX_VAL_NEAR_PI:
-            return tau - 2.0 * pc.pi
+            return tau - 2.0 * np.pi
         elif self._near180 == +1 and tau < -1 * FIX_VAL_NEAR_PI:
-            return tau + 2.0 * pc.pi
+            return tau + 2.0 * np.pi
         else:
             return tau
 
@@ -249,7 +249,7 @@ class TORS(SIMPLE):
         elif guessType == "SCHLEGEL":
             R_BC = v3d.dist(geom[self.B], geom[self.C])
             Rcov = (
-                covRadii.R[int(Z[self.B])] + covRadii.R[int(Z[self.C])]) / bohr2angstroms
+                covRadii.R[int(Z[self.B])] + covRadii.R[int(Z[self.C])]) / BOHR2ANGSTROMS
             a = 0.0023
             b = 0.07
             if R_BC > (Rcov + a / b):
@@ -259,7 +259,7 @@ class TORS(SIMPLE):
         elif guessType == "FISCHER":
             R = v3d.dist(geom[self.B], geom[self.C])
             Rcov = (
-                covRadii.R[int(Z[self.B])] + covRadii.R[int(Z[self.C])]) / bohr2angstroms
+                covRadii.R[int(Z[self.B])] + covRadii.R[int(Z[self.C])]) / BOHR2ANGSTROMS
             a = 0.0015
             b = 14.0
             c = 2.85

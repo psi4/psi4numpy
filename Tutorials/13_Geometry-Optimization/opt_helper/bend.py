@@ -7,9 +7,10 @@ from . import optExceptions
 from . import physconst as pc  # has physical constants
 from . import v3d
 from .misc import delta, HguessLindhRho
-from .physconst import bohr2angstroms
 from .simple import *
 
+BOHR2ANGSTROMS = psi4.constants.bohr2angstroms
+HARTREE2AJ = psi4.constants.hartree2aJ
 
 class BEND(SIMPLE):
     def __init__(self, a, b, c, frozen=False, fixedEqVal=None, bendType="REGULAR"):
@@ -128,14 +129,14 @@ class BEND(SIMPLE):
 
     @property
     def qShowFactor(self):
-        return 180.0 / pc.pi
+        return 180.0 / np.pi
 
     def qShow(self, geom):  # return in degrees
         return self.q(geom) * self.qShowFactor
 
     @property
     def fShowFactor(self):
-        return pc.hartree2aJ * pc.pi / 180.0
+        return HARTREE2AJ * np.pi / 180.0
 
     @staticmethod
     def zeta(a, m, n):
@@ -242,9 +243,9 @@ class BEND(SIMPLE):
             c = 0.44
             d = -0.42
             Rcov_AB = (
-                covRadii.R[int(Z[self.A])] + covRadii.R[int(Z[self.B])]) / bohr2angstroms
+                covRadii.R[int(Z[self.A])] + covRadii.R[int(Z[self.B])]) / BOHR2ANGSTROMS
             Rcov_BC = (
-                covRadii.R[int(Z[self.C])] + covRadii.R[int(Z[self.B])]) / bohr2angstroms
+                covRadii.R[int(Z[self.C])] + covRadii.R[int(Z[self.B])]) / BOHR2ANGSTROMS
             R_AB = v3d.dist(geom[self.A], geom[self.B])
             R_BC = v3d.dist(geom[self.B], geom[self.C])
             return a + b / (np.power(Rcov_AB * Rcov_BC, d)) * np.exp(

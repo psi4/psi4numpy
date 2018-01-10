@@ -1,11 +1,11 @@
 from math import cos, sin, tan
 
 from . import optExceptions
-from . import physconst as pc  # has physical constants
 from . import v3d
 from .simple import *
 
 FIX_VAL_NEAR_PI = 1.57
+HARTREE2AJ = psi4.constants.hartree2aJ
 
 # Class for out-of-plane angle.  Definition (A,B,C,D) means angle AB with respect
 # to the CBD plane; canonical order is C < D
@@ -51,14 +51,14 @@ class OOFP(SIMPLE):
 
     @property
     def qShowFactor(self):
-        return 180.0 / pc.pi
+        return 180.0 / np.pi
 
     def qShow(self, geom):  # return in degrees
         return self.q(geom) * self.qShowFactor
 
     @property
     def fShowFactor(self):
-        return pc.hartree2aJ * pc.pi / 180.0
+        return HARTREE2AJ * np.pi / 180.0
 
     # compute angle and return value in radians
     def q(self, geom):
@@ -69,9 +69,9 @@ class OOFP(SIMPLE):
 
         # Extend domain of out-of-plane angles to beyond pi
         if self._near180 == -1 and tau > FIX_VAL_NEAR_PI:
-            return tau - 2.0 * pc.pi
+            return tau - 2.0 * np.pi
         elif self._near180 == +1 and tau < -1 * FIX_VAL_NEAR_PI:
-            return tau + 2.0 * pc.pi
+            return tau + 2.0 * np.pi
         else:
             return tau
 
