@@ -2,7 +2,7 @@
 # Scipy and numpy python modules are required
 #
 # Algorithms were taken directly from Daniel Crawford's programming website:
-# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+# http://github.com/CrawfordGroup/ProgrammingProjects
 # Special thanks to Lori Burns for integral help
 #
 # Created by: Daniel G. A. Smith

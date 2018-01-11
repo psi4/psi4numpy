@@ -1,7 +1,7 @@
 # A simple Psi4 script to compute CCSD linear response properties (spin-free) from 
 # RHF reference Scipy and numpy python modules are required
 # Algorithms were taken directly from Daniel Crawford's programming website:
-# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+# http://github.com/CrawfordGroup/ProgrammingProjects
 # Equations were spin-adapted using unitary group approach used in the moelcular 
 # electronic structure theory. 
 # Special thanks to Dr. T Daniel Crawford for help in spin-adaptation of 
