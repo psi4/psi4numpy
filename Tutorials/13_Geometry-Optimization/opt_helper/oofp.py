@@ -5,7 +5,8 @@ from . import v3d
 from .simple import *
 
 FIX_VAL_NEAR_PI = 1.57
-HARTREE2AJ = psi4.constants.hartree2aJ
+from psi4 import constants
+HARTREE2AJ = constants.hartree2aJ
 
 # Class for out-of-plane angle.  Definition (A,B,C,D) means angle AB with respect
 # to the CBD plane; canonical order is C < D

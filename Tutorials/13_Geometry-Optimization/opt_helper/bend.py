@@ -4,13 +4,13 @@ import numpy as np
 
 from . import covRadii
 from . import optExceptions
-from . import physconst as pc  # has physical constants
 from . import v3d
 from .misc import delta, HguessLindhRho
 from .simple import *
 
-BOHR2ANGSTROMS = psi4.constants.bohr2angstroms
-HARTREE2AJ = psi4.constants.hartree2aJ
+from psi4 import constants
+BOHR2ANGSTROMS = constants.bohr2angstroms
+HARTREE2AJ = constants.hartree2aJ
 
 class BEND(SIMPLE):
     def __init__(self, a, b, c, frozen=False, fixedEqVal=None, bendType="REGULAR"):
