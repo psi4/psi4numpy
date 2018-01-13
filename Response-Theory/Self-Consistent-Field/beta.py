@@ -39,6 +39,9 @@ psi4.set_options({"basis": "aug-cc-pvdz",
                   "e_convergence": 1e-9,
                   "d_convergence": 1e-9})
 
+# Compute the (first) hyperpolarizability corresponding to static
+# fields, beta(0;0,0), eqns. (IV-2a) and (VII-4).
+
 helper = helper_CPHF(mol)
 # For the $2n+1$ rule, the quadratic response starting quantities must
 # come from linear response.
@@ -79,15 +82,15 @@ npR = np.asarray(R)
 for i in range(ncomp):
     V = integrals_mo[i]
 
-    # eqn. (III-1b)
-    # Note: this simplified handling of the response vector
-    # transformation for the Fock build is insufficient for
+    # eqn. (III-1b) Note: this simplified handling of the response
+    # vector transformation for the Fock build is insufficient for
     # frequency-dependent response.
     jk.C_clear()
-    # Psi4's JK builders don't take a density, but a left set of coefficients
-    # with shape [nbf, nocc] and a right set of coefficents with shape [nbf,
-    # nocc]. Because the response vector describes occ -> vir transitions, we
-    # perform ([nocc, nvir] * [nbf, nvir]^T)^T.
+    # Psi4's JK builders don't take a density, but a left set of
+    # coefficients with shape [nbf, nocc] and a right set of
+    # coefficents with shape [nbf, nocc]. Because the response vector
+    # describes occ -> vir transitions, we perform ([nocc, nvir] *
+    # [nbf, nvir]^T)^T.
     L = Co
     npR[:] = x[i].reshape(nocc, nvir).dot(np.asarray(Cv).T).T
     jk.C_left_add(L)
@@ -143,7 +146,16 @@ assert np.allclose(ref_static, hyperpolarizability, rtol=0.0, atol=1.0e-3)
 print('\nFirst dipole hyperpolarizability (static):')
 print(hyperpolarizability)
 
+# Compute the (first) hyperpolarizability corresponding to
+# second-harmonic generation, beta(-2w;w,w), eqns. (IV-2c) and
+# (VII-1). Because two different frequencies are involved, the linear
+# response equations must be solved twice.
+
 print('Setting up for second-harmonic generation (SHG) calculation...')
+# In SHG, the first frequency is doubled to obtain the second
+# frequency. All variables containing '1' correspond to the first
+# (set) frequency, and all variables containing '2' correspond to the
+# second (doubled) frequency.
 f1 = 0.0773178
 f2 = 2 * f1
 
