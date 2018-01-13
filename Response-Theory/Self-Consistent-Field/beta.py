@@ -61,13 +61,13 @@ integrals_ao = np.asarray([np.asarray(dipole_ao_component)
 # form full MO-basis dipole integrals
 integrals_mo = np.empty(shape=(ncomp, norb, norb))
 for i in range(ncomp):
-    integrals_mo[i, ...] = (C.T).dot(integrals_ao[i, ...]).dot(C)
+    integrals_mo[i] = (C.T).dot(integrals_ao[i]).dot(C)
 
 # repack response vectors to [norb, norb]; 1/2 is due to X + Y
 U = np.zeros_like(integrals_mo)
 for i in range(ncomp):
-    U[i, :nocc, nocc:] = 0.5 * x[i, ...].reshape(nocc, nvir)
-    U[i, nocc:, :nocc] = -0.5 * x[i, ...].reshape(nocc, nvir).T
+    U[i, :nocc, nocc:] = 0.5 * x[i].reshape(nocc, nvir)
+    U[i, nocc:, :nocc] = -0.5 * x[i].reshape(nocc, nvir).T
 
 # form G matrices from perturbation and generalized Fock matrices; do
 # one more Fock build for each response vector
@@ -77,7 +77,7 @@ G = np.empty_like(U)
 R = psi4.core.Matrix(nbf, nocc)
 npR = np.asarray(R)
 for i in range(ncomp):
-    V = integrals_mo[i, ...]
+    V = integrals_mo[i]
 
     # eqn. (III-1b)
     # Note: this simplified handling of the response vector
@@ -89,7 +89,7 @@ for i in range(ncomp):
     # nocc]. Because the response vector describes occ -> vir transitions, we
     # perform ([nocc, nvir] * [nbf, nvir]^T)^T.
     L = Co
-    npR[...] = x[i, ...].reshape(nocc, nvir).dot(np.asarray(Cv).T).T
+    npR[:] = x[i].reshape(nocc, nvir).dot(np.asarray(Cv).T).T
     jk.C_left_add(L)
     jk.C_right_add(R)
     jk.compute()
@@ -99,15 +99,15 @@ for i in range(ncomp):
 
     # eqn. (21b)
     F = (C.T).dot(4 * J - K.T - K).dot(C)
-    G[i, ...] = V + F
+    G[i] = V + F
 
 # form epsilon matrices, eqn. (34)
 E = G.copy()
 omega = 0
 for i in range(ncomp):
-    eoU = (moenergies[..., na] + omega) * U[i, ...]
-    Ue = U[i, ...] * moenergies[na, ...]
-    E[i, ...] += (eoU - Ue)
+    eoU = (moenergies[..., na] + omega) * U[i]
+    Ue = U[i] * moenergies[na]
+    E[i] += (eoU - Ue)
 
 # Assume some symmetry and calculate only part of the tensor.
 # eqn. (VII-4)
@@ -118,15 +118,15 @@ for r in range(6):
     b = off1[r]
     c = off2[r]
     for a in range(3):
-        tl1 = 2 * np.trace(U[a, ...].dot(G[b, ...]).dot(U[c, ...])[:nocc, :nocc])
-        tl2 = 2 * np.trace(U[a, ...].dot(G[c, ...]).dot(U[b, ...])[:nocc, :nocc])
-        tl3 = 2 * np.trace(U[c, ...].dot(G[a, ...]).dot(U[b, ...])[:nocc, :nocc])
-        tr1 = np.trace(U[c, ...].dot(U[b, ...]).dot(E[a, ...])[:nocc, :nocc])
-        tr2 = np.trace(U[b, ...].dot(U[c, ...]).dot(E[a, ...])[:nocc, :nocc])
-        tr3 = np.trace(U[c, ...].dot(U[a, ...]).dot(E[b, ...])[:nocc, :nocc])
-        tr4 = np.trace(U[a, ...].dot(U[c, ...]).dot(E[b, ...])[:nocc, :nocc])
-        tr5 = np.trace(U[b, ...].dot(U[a, ...]).dot(E[c, ...])[:nocc, :nocc])
-        tr6 = np.trace(U[a, ...].dot(U[b, ...]).dot(E[c, ...])[:nocc, :nocc])
+        tl1 = 2 * np.trace(U[a].dot(G[b]).dot(U[c])[:nocc, :nocc])
+        tl2 = 2 * np.trace(U[a].dot(G[c]).dot(U[b])[:nocc, :nocc])
+        tl3 = 2 * np.trace(U[c].dot(G[a]).dot(U[b])[:nocc, :nocc])
+        tr1 = np.trace(U[c].dot(U[b]).dot(E[a])[:nocc, :nocc])
+        tr2 = np.trace(U[b].dot(U[c]).dot(E[a])[:nocc, :nocc])
+        tr3 = np.trace(U[c].dot(U[a]).dot(E[b])[:nocc, :nocc])
+        tr4 = np.trace(U[a].dot(U[c]).dot(E[b])[:nocc, :nocc])
+        tr5 = np.trace(U[b].dot(U[a]).dot(E[c])[:nocc, :nocc])
+        tr6 = np.trace(U[a].dot(U[b]).dot(E[c])[:nocc, :nocc])
         tl = tl1 + tl2 + tl3
         tr = tr1 + tr2 + tr3 + tr4 + tr5 + tr6
         hyperpolarizability[r, a] = -2 * (tl - tr)
@@ -193,16 +193,16 @@ nCo = np.asarray(Co)
 # Do 4 Fock builds at a time: X/Y vectors for both frequencies; loop
 # over operator components
 for i in range(3):
-    V = integrals_mo[i, ...]
+    V = integrals_mo[i]
 
     x1 = U1[i, :nocc, :]
     y1 = U1[i, :, :nocc]
     x2 = U2[i, :nocc, :]
     y2 = U2[i, :, :nocc]
-    npR1_l[...] = C.dot(x1.T)
-    npR1_r[...] = C.dot(y1)
-    npR2_l[...] = C.dot(x2.T)
-    npR2_r[...] = C.dot(y2)
+    npR1_l[:] = C.dot(x1.T)
+    npR1_r[:] = C.dot(y1)
+    npR2_l[:] = C.dot(x2.T)
+    npR2_r[:] = C.dot(y2)
 
     jk.compute()
 
@@ -228,12 +228,12 @@ for i in range(3):
 E1 = G1.copy()
 E2 = G2.copy()
 for i in range(ncomp):
-    eoU1 = (moenergies[..., na] + f1) * U1[i, ...]
-    Ue1 = U1[i, ...] * moenergies[na, ...]
-    E1[i, ...] += (eoU1 - Ue1)
-    eoU2 = (moenergies[..., na] + f2) * U2[i, ...]
-    Ue2 = U2[i, ...] * moenergies[na, ...]
-    E2[i, ...] += (eoU2 - Ue2)
+    eoU1 = (moenergies[..., na] + f1) * U1[i]
+    Ue1 = U1[i] * moenergies[na]
+    E1[i] += (eoU1 - Ue1)
+    eoU2 = (moenergies[..., na] + f2) * U2[i]
+    Ue2 = U2[i] * moenergies[na]
+    E2[i] += (eoU2 - Ue2)
 
 # Assume some symmetry and calculate only part of the tensor.
 
@@ -242,18 +242,18 @@ for r in range(6):
     b = off1[r]
     c = off2[r]
     for a in range(3):
-        tl1 = np.trace(U2[a, ...].T.dot(G1[b, ...]).dot(U1[c, ...])[:nocc, :nocc])
-        tl2 = np.trace(U1[c, ...].dot(G1[b, ...]).dot(U2[a, ...].T)[:nocc, :nocc])
-        tl3 = np.trace(U2[a, ...].T.dot(G1[c, ...]).dot(U1[b, ...])[:nocc, :nocc])
-        tl4 = np.trace(U1[b, ...].dot(G1[c, ...]).dot(U2[a, ...].T)[:nocc, :nocc])
-        tl5 = np.trace(U1[c, ...].dot(-G2[a, ...].T).dot(U1[b, ...])[:nocc, :nocc])
-        tl6 = np.trace(U1[b, ...].dot(-G2[a, ...].T).dot(U1[c, ...])[:nocc, :nocc])
-        tr1 = np.trace(U1[c, ...].dot(U1[b, ...]).dot(-E2[a, ...].T)[:nocc, :nocc])
-        tr2 = np.trace(U1[b, ...].dot(U1[c, ...]).dot(-E2[a, ...].T)[:nocc, :nocc])
-        tr3 = np.trace(U1[c, ...].dot(U2[a, ...].T).dot(E1[b, ...])[:nocc, :nocc])
-        tr4 = np.trace(U2[a, ...].T.dot(U1[c, ...]).dot(E1[b, ...])[:nocc, :nocc])
-        tr5 = np.trace(U1[b, ...].dot(U2[a, ...].T).dot(E1[c, ...])[:nocc, :nocc])
-        tr6 = np.trace(U2[a, ...].T.dot(U1[b, ...]).dot(E1[c, ...])[:nocc, :nocc])
+        tl1 = np.trace(U2[a].T.dot(G1[b]).dot(U1[c])[:nocc, :nocc])
+        tl2 = np.trace(U1[c].dot(G1[b]).dot(U2[a].T)[:nocc, :nocc])
+        tl3 = np.trace(U2[a].T.dot(G1[c]).dot(U1[b])[:nocc, :nocc])
+        tl4 = np.trace(U1[b].dot(G1[c]).dot(U2[a].T)[:nocc, :nocc])
+        tl5 = np.trace(U1[c].dot(-G2[a].T).dot(U1[b])[:nocc, :nocc])
+        tl6 = np.trace(U1[b].dot(-G2[a].T).dot(U1[c])[:nocc, :nocc])
+        tr1 = np.trace(U1[c].dot(U1[b]).dot(-E2[a].T)[:nocc, :nocc])
+        tr2 = np.trace(U1[b].dot(U1[c]).dot(-E2[a].T)[:nocc, :nocc])
+        tr3 = np.trace(U1[c].dot(U2[a].T).dot(E1[b])[:nocc, :nocc])
+        tr4 = np.trace(U2[a].T.dot(U1[c]).dot(E1[b])[:nocc, :nocc])
+        tr5 = np.trace(U1[b].dot(U2[a].T).dot(E1[c])[:nocc, :nocc])
+        tr6 = np.trace(U2[a].T.dot(U1[b]).dot(E1[c])[:nocc, :nocc])
         tl = tl1 + tl2 + tl3 + tl4 + tl5 + tl6
         tr = tr1 + tr2 + tr3 + tr4 + tr5 + tr6
         hyperpolarizability[r, a] = 2 * (tl - tr)
@@ -281,9 +281,9 @@ print(ref)
 # Transpose all frequency-doubled quantities (+2w) to get -2w.
 
 for i in range(ncomp):
-    U2[i, ...] = U2[i, ...].T
-    G2[i, ...] = -G2[i, ...].T
-    E2[i, ...] = -E2[i, ...].T
+    U2[i] = U2[i].T
+    G2[i] = -G2[i].T
+    E2[i] = -E2[i].T
 
 # Assume some symmetry and calculate only part of the tensor. This
 # time, work with the in-place manipulated quantities (this tests
@@ -300,18 +300,18 @@ for r in range(6):
     b = off1[r]
     c = off2[r]
     for a in range(3):
-        tl1 = np.trace(mU[0][a, ...].dot(mG[1][b, ...]).dot(mU[1][c, ...])[:nocc, :nocc])
-        tl2 = np.trace(mU[1][c, ...].dot(mG[1][b, ...]).dot(mU[0][a, ...])[:nocc, :nocc])
-        tl3 = np.trace(mU[0][a, ...].dot(mG[1][c, ...]).dot(mU[1][b, ...])[:nocc, :nocc])
-        tl4 = np.trace(mU[1][b, ...].dot(mG[1][c, ...]).dot(mU[0][a, ...])[:nocc, :nocc])
-        tl5 = np.trace(mU[1][c, ...].dot(mG[0][a, ...]).dot(mU[1][b, ...])[:nocc, :nocc])
-        tl6 = np.trace(mU[1][b, ...].dot(mG[0][a, ...]).dot(mU[1][c, ...])[:nocc, :nocc])
-        tr1 = np.trace(mU[1][c, ...].dot(mU[1][b, ...]).dot(me[0][a, ...])[:nocc, :nocc])
-        tr2 = np.trace(mU[1][b, ...].dot(mU[1][c, ...]).dot(me[0][a, ...])[:nocc, :nocc])
-        tr3 = np.trace(mU[1][c, ...].dot(mU[0][a, ...]).dot(me[1][b, ...])[:nocc, :nocc])
-        tr4 = np.trace(mU[0][a, ...].dot(mU[1][c, ...]).dot(me[1][b, ...])[:nocc, :nocc])
-        tr5 = np.trace(mU[1][b, ...].dot(mU[0][a, ...]).dot(me[1][c, ...])[:nocc, :nocc])
-        tr6 = np.trace(mU[0][a, ...].dot(mU[1][b, ...]).dot(me[1][c, ...])[:nocc, :nocc])
+        tl1 = np.trace(mU[0][a].dot(mG[1][b]).dot(mU[1][c])[:nocc, :nocc])
+        tl2 = np.trace(mU[1][c].dot(mG[1][b]).dot(mU[0][a])[:nocc, :nocc])
+        tl3 = np.trace(mU[0][a].dot(mG[1][c]).dot(mU[1][b])[:nocc, :nocc])
+        tl4 = np.trace(mU[1][b].dot(mG[1][c]).dot(mU[0][a])[:nocc, :nocc])
+        tl5 = np.trace(mU[1][c].dot(mG[0][a]).dot(mU[1][b])[:nocc, :nocc])
+        tl6 = np.trace(mU[1][b].dot(mG[0][a]).dot(mU[1][c])[:nocc, :nocc])
+        tr1 = np.trace(mU[1][c].dot(mU[1][b]).dot(me[0][a])[:nocc, :nocc])
+        tr2 = np.trace(mU[1][b].dot(mU[1][c]).dot(me[0][a])[:nocc, :nocc])
+        tr3 = np.trace(mU[1][c].dot(mU[0][a]).dot(me[1][b])[:nocc, :nocc])
+        tr4 = np.trace(mU[0][a].dot(mU[1][c]).dot(me[1][b])[:nocc, :nocc])
+        tr5 = np.trace(mU[1][b].dot(mU[0][a]).dot(me[1][c])[:nocc, :nocc])
+        tr6 = np.trace(mU[0][a].dot(mU[1][b]).dot(me[1][c])[:nocc, :nocc])
         tl = [tl1, tl2, tl3, tl4, tl5, tl6]
         tr = [tr1, tr2, tr3, tr4, tr5, tr6]
         hyperpolarizability[r, a] = 2 * (sum(tl) - sum(tr))
@@ -330,10 +330,10 @@ for ip, p in enumerate(list(product(range(3), range(3), range(3)))):
     # 2nd tuple -> index frequency (0 -> -2w, 1 -> +w)
     for iq, q in enumerate(list(permutations(zip(p, (0, 1, 1)), 3))):
         d, e, f = q
-        tlp = (mU[d[1]][d[0], ...]).dot(mG[e[1]][e[0], ...]).dot(mU[f[1]][f[0], ...])
+        tlp = (mU[d[1]][d[0]]).dot(mG[e[1]][e[0]]).dot(mU[f[1]][f[0]])
         tle = np.trace(tlp[:nocc, :nocc])
         tl.append(tle)
-        trp = (mU[d[1]][d[0], ...]).dot(mU[e[1]][e[0], ...]).dot(me[f[1]][f[0], ...])
+        trp = (mU[d[1]][d[0]]).dot(mU[e[1]][e[0]]).dot(me[f[1]][f[0]])
         tre = np.trace(trp[:nocc, :nocc])
         tr.append(tre)
     hyperpolarizability_full[a, b, c] = 2 * (sum(tl) - sum(tr))
