@@ -21,6 +21,14 @@ def test_RHF(workspace):
     exe_py(workspace, tdir, 'RHF')
 
 
+def test_RHF_Gradient(workspace):
+    exe_py(workspace, tdir, 'RHF_Gradient')
+
+
+def test_RHF_Hessian(workspace):
+    exe_py(workspace, tdir, 'RHF_Hessian')
+
+
 @using_psi4_efpmints
 @using_pylibefp
 def test_RHF_EFP(workspace):
