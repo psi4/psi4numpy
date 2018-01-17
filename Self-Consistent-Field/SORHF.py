@@ -119,7 +119,7 @@ for SCF_ITER in range(1, 20):
         U += 0.5 * np.dot(U, U)
         U[np.diag_indices_from(hf.A)] += 1
 
-        # Easy acess to shmidt orthogonalization
+        # Easy access to Schmidt orthogonalization
         U, r = np.linalg.qr(U.T)
 
         # Rotate and set orbitals

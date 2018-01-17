@@ -5,10 +5,6 @@ from utils import *
 tdir = 'Self-Consistent-Field'
 
 
-def test_CPHF(workspace):
-    exe_py(workspace, tdir, 'CPHF')
-
-
 def test_RHF_DIIS(workspace):
     exe_py(workspace, tdir, 'RHF_DIIS')
 
@@ -64,10 +60,6 @@ def test_SOUHF_iterative(workspace):
 
 def test_SOUHF(workspace):
     exe_py(workspace, tdir, 'SOUHF')
-
-
-def test_TDHF(workspace):
-    exe_py(workspace, tdir, 'TDHF')
 
 
 def test_UHF_libJK(workspace):
