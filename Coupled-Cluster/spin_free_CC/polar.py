@@ -48,7 +48,7 @@ cclambda = HelperCCLambda(ccsd,cchbar)
 cclambda.compute_lambda(r_conv=1e-13)
 omega = 0.0
 
-cart = {0:'X', 1: 'Y', 2: 'Z'}
+cart = ['X', 'Y', 'Z']
 mu = {}
 ccpert = {}
 polar_AB = {}
