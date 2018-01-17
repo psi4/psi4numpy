@@ -17,3 +17,7 @@ def test_SAPT0(workspace):
 @pytest.mark.long
 def test_SAPT0_ROHF(workspace):
     exe_py(workspace, tdir, 'SAPT0_ROHF')
+
+
+def test_SAPT0_no_S2(workspace):
+    exe_py(workspace, tdir, 'SAPT0_no_S2')
