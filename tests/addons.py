@@ -40,6 +40,9 @@ using_psi4_libxc = pytest.mark.skipif(is_psi4_new_enough("1.2a1.dev100") is Fals
 using_psi4_efpmints = pytest.mark.skipif(is_psi4_new_enough("1.2a1.dev507") is False,
                                 reason="Psi4 does not include EFP integrals in mints. Update to development head")
 
+using_psi4_python_integral_deriv = pytest.mark.skipif(is_psi4_new_enough("1000") is False,
+                                reason="Psi4 does not include derivatives of integrals exported to python. Update to development head")
+
 using_numpy_113 = pytest.mark.skipif(is_numpy_new_enough("1.13.0") is False,
                                 reason='NumPy does not include 1.13 features. Update package and add to envvar PYTHONPATH')
 
