@@ -35,6 +35,12 @@ Below is a list of the available interactive tutorials, grouped by module:
     * Conventional MP2: Overview and implementation of the conventional formulation of second-order Møller-Plesset Perturbation Theory (MP2), using full 4-index ERIs.
     * Density Fitted MP2: Discusses the implementation of the density-fitted formulation of MP2 with an efficient, low-memory algorithm utilizing permutational ERI symmetry.
 
+13. Geometry Optimization Theory
+    * Internal coordinates: the B-matrix and coordinate transformations.
+    * Hessians: estimating and transforming second derivatives.
+    * Hessians: update schemes with the example of BFGS.
+    * RFO: Rational Function Optimization minimizations.
+    * The Step Backtransformation: From displacements in internals to displacements in Cartesians.
 
 Note: These tutorials are under active construction.
 
