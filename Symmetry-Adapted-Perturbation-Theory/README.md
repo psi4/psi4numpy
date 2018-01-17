@@ -1,5 +1,15 @@
 Symmetry-Adapted-Perturbation-Theory
 ====================================
+
+The following codes are available:
+- `SAPT0.py`: A simple Psi 4 input script to compute SAPT interaction energies.
+- `SAPT0_ROHF.py`: A SAPT0(ROHF) script for the oxygen dimer (two triplets making a quintet).
+- `SAPT0_no_S2.py`: A script to compute the SAPT0 interaction energy without the the Single-Exchange Approximation.
+- `SAPT0ao.py`: A Psi 4 input script to compute SAPT interaction energies in atomic orbitals.
+
+Helper programs:
+- `helper_SAPT.py`: A collection of helper classes and functions for SAPT.
+
 The most important operator in SAPT is the intermolecular interaction operator `\tilde{V}`, that is defined as follows:
 
 ![TildeV](../media/SAPT_V_TILDE.png)
