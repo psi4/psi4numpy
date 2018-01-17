@@ -1,10 +1,10 @@
-# A simple Psi4 script to compute CCSD linear response properties (spin-free) from 
+# A simple Psi4 script to compute CCSD linear response properties (spin-free) from
 # RHF reference Scipy and numpy python modules are required
 # Algorithms were taken directly from Daniel Crawford's programming website:
 # http://github.com/CrawfordGroup/ProgrammingProjects
-# Equations were spin-adapted using unitary group approach used in the moelcular 
-# electronic structure theory. 
-# Special thanks to Dr. T Daniel Crawford for help in spin-adaptation of 
+# Equations were spin-adapted using unitary group approach used in the molecular
+# electronic structure theory.
+# Special thanks to Dr. T Daniel Crawford for help in spin-adaptation of
 # the equations and Lori Burns for integral help
 #
 # Created by: Ashutosh Kumar, Daniel G. A. Smith.
@@ -176,7 +176,7 @@ class helper_ccenergy(object):
         H = np.asarray(self.mints.ao_kinetic()) + np.asarray(self.mints.ao_potential())
         self.nmo = H.shape[0]
 
-        # Update H, transform to MO basis 
+        # Update H, transform to MO basis
         H = np.einsum('uj,vi,uv', self.npC, self.npC, H)
 
         print('Starting AO ->  MO transformation...')
@@ -186,7 +186,8 @@ class helper_ccenergy(object):
         if memory_footprint > self.memory:
             psi.clean()
             raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory \
-                            limit of %4.2f GB." % (memory_footprint, self.memory))
+                            limit of %4.2f GB."
+                                                % (memory_footprint, self.memory))
 
         # Integral generation from Psi4's MintsHelper
         self.MO = np.asarray(self.mints.mo_eri(self.C, self.C, self.C, self.C))
@@ -194,7 +195,7 @@ class helper_ccenergy(object):
         print("Size of the ERI tensor is %4.2f GB, %d basis functions." % (ERI_Size, self.nmo))
 
         # Update nocc and nvirt
-        self.nocc = self.ndocc 
+        self.nocc = self.ndocc
         self.nvirt = self.nmo - self.nocc - self.nfzc
 
         # Make slices
@@ -341,7 +342,7 @@ class helper_ccenergy(object):
 
     def build_Zmbij(self):
         Zmbij = 0
-        Zmbij += ndot('mbef,ijef->mbij', self.get_MO('ovvv'), self.build_tau())	
+        Zmbij += ndot('mbef,ijef->mbij', self.get_MO('ovvv'), self.build_tau())
         return Zmbij
 
     def update(self):
@@ -378,24 +379,24 @@ class helper_ccenergy(object):
         r_T2 += tmp.swapaxes(0,1).swapaxes(2,3)
 
         # P^(ab)_(ij) {-0.5 * t_ijae t_mb Fme_me }
-        tmp = ndot('mb,me->be', self.t1, Fme) 
-        first = ndot('ijae,be->ijab', self.t2, tmp, prefactor=0.5)	
+        tmp = ndot('mb,me->be', self.t1, Fme)
+        first = ndot('ijae,be->ijab', self.t2, tmp, prefactor=0.5)
         r_T2 -= first
         r_T2 -= first.swapaxes(0,1).swapaxes(2,3)
 
         # P^(ab)_(ij) {-t_imab Fmi_mj }
-        tmp = ndot('imab,mj->ijab', self.t2, Fmi, prefactor=1.0) 
+        tmp = ndot('imab,mj->ijab', self.t2, Fmi, prefactor=1.0)
         r_T2 -= tmp
         r_T2 -= tmp.swapaxes(0,1).swapaxes(2,3)
 
-	# P^(ab)_(ij) {-0.5 * t_imab t_je Fme_me }
+        # P^(ab)_(ij) {-0.5 * t_imab t_je Fme_me }
         tmp = ndot('je,me->jm', self.t1, Fme)
-        first = ndot('imab,jm->ijab', self.t2, tmp, prefactor=0.5)      
+        first = ndot('imab,jm->ijab', self.t2, tmp, prefactor=0.5)
         r_T2 -= first
         r_T2 -= first.swapaxes(0,1).swapaxes(2,3)
-    
-	
-	# tau_mnab Wmnij_mnij + tau_ijef <ab|ef> }
+
+
+        # tau_mnab Wmnij_mnij + tau_ijef <ab|ef> }
         tmp_tau = self.build_tau()
         Wmnij = self.build_Wmnij()
         Wmbej = self.build_Wmbej()
@@ -410,13 +411,13 @@ class helper_ccenergy(object):
         tmp = ndot('ie,abej->ijab', self.t1, self.get_MO('vvvo'), prefactor=1.0)
         r_T2 += tmp
         r_T2 += tmp.swapaxes(0,1).swapaxes(2,3)
-        
+
         # P^(ab)_(ij) {-t_ma <mb|ij> }
         tmp = ndot('ma,mbij->ijab', self.t1, self.get_MO('ovoo'), prefactor=1.0)
         r_T2 -= tmp
         r_T2 -= tmp.swapaxes(0,1).swapaxes(2,3)
-	
-	# P...
+
+        # P...
         r_T2 += ndot('imae,mbej->ijab', self.t2, Wmbej, prefactor=1.0)
         r_T2 += ndot('imea,mbej->ijab', self.t2, Wmbej, prefactor=-1.0)
 
@@ -431,8 +432,8 @@ class helper_ccenergy(object):
 
         r_T2 += ndot('jmbe,maei->ijab', self.t2, Wmbej, prefactor=1.0)
         r_T2 += ndot('jmeb,maei->ijab', self.t2, Wmbej, prefactor=-1.0)
-	
-	# P....
+
+        # P....
 
         tmp = ndot('ie,ma->imea', self.t1, self.t1)
         r_T2 -= ndot('imea,mbej->ijab', tmp, self.get_MO('ovvo'))
@@ -446,8 +447,8 @@ class helper_ccenergy(object):
         tmp = ndot('je,mb->jmeb', self.t1, self.t1)
         r_T2 -= ndot('jmeb,maei->ijab', tmp, self.get_MO('ovvo'))
 
-        r_T2 -= ndot('ma,mbij->ijab', self.t1, Zmbij)	
-        r_T2 -= ndot('ma,mbij->jiba', self.t1, Zmbij)	
+        r_T2 -= ndot('ma,mbij->ijab', self.t1, Zmbij)
+        r_T2 -= ndot('ma,mbij->jiba', self.t1, Zmbij)
 
 
         ### Update T1 and T2 amplitudes
@@ -554,7 +555,7 @@ class helper_ccenergy(object):
                     self.t2 += ci[num] * diis_vals_t2[num + 1]
 
             # End DIIS amplitude update
-# End helper_ccenergy class
+            # End helper_ccenergy class
 
 class helper_cchbar(object):
 
@@ -917,7 +918,7 @@ class helper_cclambda(object):
 
             self.update()
 
-            # Compute lambda 
+            # Compute lambda
             pseudoenergy = self.pseudoenergy()
 
             # Print CCLAMBDA iteration information
@@ -1267,7 +1268,7 @@ class helper_ccpert(object):
         r_y1 -= ndot('mina,mn->ia', self.Hooov, self.build_Goo(self.t2, self.y2), prefactor=2.0)
         r_y1 -= ndot('imna,mn->ia', self.Hooov, self.build_Goo(self.t2, self.y2), prefactor=-1.0)
 
-        # Inhomogenous terms 
+        # Inhomogenous terms
 
 
         r_y1 += ndot('imae,me->ia', self.get_L('oovv'), self.x1, prefactor=2.0)
@@ -1311,7 +1312,7 @@ class helper_ccpert(object):
 
         ## 3-body terms over
 
-        ## X2 * L2 terms 
+        ## X2 * L2 terms
 
         r_y1  -=  ndot('mi,ma->ia', self.build_Goo(self.x2, self.l2), self.Hov)  # t
         r_y1  +=  ndot('ie,ea->ia', self.Hov, self.build_Gvv(self.x2, self.l2))  # t
@@ -1331,9 +1332,9 @@ class helper_ccpert(object):
         r_y1  -=  ndot('mioe,oame->ia', self.Hooov, self.build_l2x2ovov_3(self.l2, self.x2), prefactor=-1.0) # t
 
 
-        # y1 over !! 
+        # y1 over !!
 
-        # Homogenous terms of Y2 equations 
+        # Homogenous terms of Y2 equations
 
         r_y2 = 0.5 * self.omega * self.y2.copy()
         r_y2 += ndot('ia,jb->ijab', self.y1, self.Hov, prefactor=2.0)
@@ -1353,7 +1354,7 @@ class helper_ccpert(object):
         r_y2 += ndot('ijeb,ae->ijab', self.get_L('oovv'), self.build_Gvv(self.y2, self.t2))
         r_y2 -= ndot('mi,mjab->ijab', self.build_Goo(self.t2, self.y2), self.get_L('oovv'))
 
-        # InHomogenous terms of Y2 equations 
+        # InHomogenous terms of Y2 equations
 
         r_y2 += ndot('ia,jb->ijab', self.l1, self.build_Aov(), prefactor=2.0) # o
         r_y2 -= ndot('ja,ib->ijab', self.l1, self.build_Aov()) # o
@@ -1390,16 +1391,16 @@ class helper_ccpert(object):
         r_y2 += ndot('ibne,njea->ijab', self.build_l2x2ovov_2(self.l2, self.x2), self.get_MO('oovv'), prefactor=0.5) # x same.2
         r_y2 += ndot('ijfe,baef->ijab', self.get_MO('oovv'), self.build_l2x2vvvv(self.l2, self.x2), prefactor=0.5) # x
 
-        r_y2 -= ndot('inae,jbne->ijab', self.get_L('oovv'), self.build_l2x2ovov_2(self.l2, self.x2), prefactor=1.0) # x 
-        r_y2 -= ndot('in,jnba->ijab', self.build_Goo(self.get_L('oovv'), self.x2), self.l2, prefactor=1.0) # x 
-        r_y2 += ndot('ijfb,af->ijab', self.l2, self.build_Gvv(self.get_L('oovv'), self.x2), prefactor=1.0) # x 
+        r_y2 -= ndot('inae,jbne->ijab', self.get_L('oovv'), self.build_l2x2ovov_2(self.l2, self.x2), prefactor=1.0) # x
+        r_y2 -= ndot('in,jnba->ijab', self.build_Goo(self.get_L('oovv'), self.x2), self.l2, prefactor=1.0) # x
+        r_y2 += ndot('ijfb,af->ijab', self.l2, self.build_Gvv(self.get_L('oovv'), self.x2), prefactor=1.0) # x
 
-        r_y2 += ndot('ijae,be->ijab', self.get_L('oovv'), self.build_Gvv(self.l2, self.x2), prefactor=1.0) # x 
-        r_y2 -= ndot('imab,jm->ijab', self.get_L('oovv'), self.build_Goo(self.l2, self.x2), prefactor=1.0) # x 
-        r_y2 -= ndot('ibme,mjea->ijab', self.build_l2x2ovov_3(self.l2, self.x2), self.get_L('oovv'), prefactor=1.0) # x 
+        r_y2 += ndot('ijae,be->ijab', self.get_L('oovv'), self.build_Gvv(self.l2, self.x2), prefactor=1.0) # x
+        r_y2 -= ndot('imab,jm->ijab', self.get_L('oovv'), self.build_Goo(self.l2, self.x2), prefactor=1.0) # x
+        r_y2 -= ndot('ibme,mjea->ijab', self.build_l2x2ovov_3(self.l2, self.x2), self.get_L('oovv'), prefactor=1.0) # x
 
 
-        r_y2 += ndot('imae,jbme->ijab', self.get_L('oovv'), self.build_l2x2ovov_3(self.l2, self.x2), prefactor=2.0) # x 
+        r_y2 += ndot('imae,jbme->ijab', self.get_L('oovv'), self.build_l2x2ovov_3(self.l2, self.x2), prefactor=2.0) # x
         self.y1 += r_y1/self.Dia
         tmp = r_y2
         tmp += r_y2.swapaxes(0,1).swapaxes(2,3)
@@ -1409,9 +1410,9 @@ class helper_ccpert(object):
         polar1 = 0
         polar2 = 0
         if hand == 'right':
-            z1 = self.x1 ; z2 = self.x2
+            z1 = self.x1;  z2 = self.x2
         else:
-            z1 = self.y1 ; z2 = self.y2
+            z1 = self.y1;  z2 = self.y2
         polar1 += ndot('ia,ai->', z1, self.build_Avo(), prefactor=2.0)
         polar2 += ndot('ijab,abij->', z2, self.build_Avvoo(), prefactor=4.0)
         polar2 += ndot('ijba,abij->', z2, self.build_Avvoo(), prefactor=-2.0)
@@ -1422,9 +1423,9 @@ class helper_ccpert(object):
     def solve(self, hand, r_conv=1.e-13, maxiter=50, max_diis=8):
         ### Setup DIIS
         if hand == 'right':
-            z1 = self.x1 ; z2 = self.x2
+            z1 = self.x1;  z2 = self.x2
         else:
-            z1 = self.y1 ; z2 = self.y2
+            z1 = self.y1;  z2 = self.y2
 
         diis_vals_z1 = [z1.copy()]
         diis_vals_z2 = [z2.copy()]
@@ -1578,6 +1579,192 @@ class helper_cclinresp(object):
         return -1.0*(self.polar1 + self.polar2)
 
 # End cclinresp class
+
+
+class helper_cceom(object):
+    """
+    EOMCCSD helper class for spin adapted EOMCCSD
+
+    """
+
+    def __init__(self, ccsd, cchbar):
+        """
+        Initializes the helper_cceom object
+
+        Parameters
+        ----------
+        ccsd: helper_ccsd object
+            Energy should already be computed
+
+        cchbar: helper_cchbar object
+
+
+        Returns
+        -------
+        ret : helper_cceom
+            An initialized helper_cceom object
+
+        """
+        # Steal dimensions
+        self.ndocc = ccsd.ndocc
+        self.nmo = ccsd.nmo
+        self.nfzc = 0
+        self.nocc = ccsd.ndocc
+        self.nvir = ccsd.nmo - ccsd.nocc - ccsd.nfzc
+        self.nsingles = self.ndocc * self.nvir
+        self.ndoubles = self.ndocc * self.ndocc * self.nvir * self.nvir
+
+        # Steal integrals/amps from ccsd
+        self.MO = ccsd.MO
+        self.F = ccsd.F
+        self.t1 = ccsd.t1
+        self.t2 = ccsd.t2
+
+        # Steal "ova" translation
+        self.slice_nfzc = cchbar.slice_nfzc
+        self.slice_o = cchbar.slice_o
+        self.slice_v = cchbar.slice_v
+        self.slice_a = cchbar.slice_a
+        self.slice_dict = cchbar.slice_dict
+
+        # Steal Hbar blocks
+        self.Hov = cchbar.Hov
+        self.Hoo = cchbar.Hoo
+        self.Hvv = cchbar.Hvv
+        self.Hoooo = cchbar.Hoooo
+        self.Hvvvv = cchbar.Hvvvv
+        self.Hvovv = cchbar.Hvovv
+        self.Hooov = cchbar.Hooov
+        self.Hovvo = cchbar.Hovvo
+        self.Hovov = cchbar.Hovov
+        self.Hvvvo = cchbar.Hvvvo
+        self.Hovoo = cchbar.Hovoo
+
+        # Steal L integrals (L[pqrs] = 2*MO[pqrs] - MO[pqsr])
+        self.L = cchbar.L
+
+        # Build Approximate Diagonal of Hbar
+        self.Dia = self.Hoo.diagonal().reshape(-1, 1) - self.Hvv.diagonal()
+        self.Dijab = self.Hoo.diagonal().reshape(
+            -1, 1, 1, 1) + self.Hoo.diagonal().reshape(
+                -1, 1, 1) - self.Hvv.diagonal().reshape(
+                    -1, 1) - self.Hvv.diagonal()
+
+    def get_MO(self, string):
+        if len(string) != 4:
+            psi4.core.clean()
+            raise Exception('get_MO: string %s must have 4 elements.' % string)
+        return self.MO[self.slice_dict[string[0]], self.slice_dict[string[1]],
+                       self.slice_dict[string[2]], self.slice_dict[string[3]]]
+
+    def get_F(self, string):
+        if len(string) != 2:
+            psi4.core.clean()
+            raise Exception('get_F: string %s must have 4 elements.' % string)
+        return self.F[self.slice_dict[string[0]], self.slice_dict[string[1]]]
+
+    def get_L(self, string):
+        if len(string) != 4:
+            psi4.core.clean()
+            raise Exception('get_L: string %s must have 4 elements.' % string)
+        return self.L[self.slice_dict[string[0]], self.slice_dict[string[1]],
+                      self.slice_dict[string[2]], self.slice_dict[string[3]]]
+
+    def build_sigma1(self, C1, C2):
+        """
+        Compute the contributions to <ia|Hbar*C|0>
+
+        Parameters
+        ----------
+        C1: array like, shape(ndocc, nvir)
+          The first nsingles elements of a guess vector reshaped to (o,v)
+
+        C2: array like, shape(ndocc,ndocc,nvir,nvir)
+          The last ndoubles elements of a guess vector reshaped to (o,o,v,v)
+
+        Returns
+        -------
+        S1: ndarray shape(ndocc, nvir)
+
+        Examples
+        --------
+
+        >>> # Get some vectors as cols of a 2D numpy array and orthogonalize them
+        >>> c  = np.random.rand(eom.nsingles + eom.ndoubles, 2)
+        >>> c,  = np.linalg.qr(c)
+
+        >>> # Slice out the singles, doubles blocks of the first vector and reshape
+        >>> C1 = c[:,:nsingles].reshape(eom.ndocc, eom.nvir)
+        >>> C2 = c[:,nsingles:].reshape(eom.ndocc, eom.ndocc, eom.nvir, eom.nvir)
+        >>> S1 = eom.build_sigma1(C1, C2)
+
+        """
+        S1 = ndot('ie,ae->ia', C1, self.Hvv)
+        S1 -= ndot('mi,ma->ia', self.Hoo, C1)
+        S1 += ndot('maei,me->ia', self.Hovvo, C1, prefactor=2.0)
+        S1 += ndot('maie,me->ia', self.Hovov, C1, prefactor=-1.0)
+        S1 += ndot('miea,me->ia', C2, self.Hov, prefactor=2.0)
+        S1 += ndot('imea,me->ia', C2, self.Hov, prefactor=-1.0)
+        S1 += ndot('imef,amef->ia', C2, self.Hvovv, prefactor=2.0)
+        S1 += ndot('imef,amfe->ia', C2, self.Hvovv, prefactor=-1.0)
+        S1 -= ndot('mnie,mnae->ia', self.Hooov, C2, prefactor=2.0)
+        S1 -= ndot('nmie,mnae->ia', self.Hooov, C2, prefactor=-1.0)
+        return S1
+
+    def build_sigma2(self, C1, C2):
+        """
+        Compute the contributions to <ijab|Hbar*C|0>:
+
+        Parameters
+        ----------
+        C1: array like, shape(ndocc, nvir)
+          The first nsingles elements of a guess vector reshaped to (o,v)
+
+        C2: array like, shape(ndocc,ndocc,nvir,nvir)
+          The last ndoubles elements of a guess vector reshaped to (o,o,v,v)
+
+        Returns
+        -------
+        S2: ndarray shape(ndocc, ndocc, nvir, nvir)
+
+        Examples
+        --------
+
+        >>> # Get some vectors as cols of a 2D numpy array and orthogonalize them
+        >>> c  = np.random.rand(eom.nsingles + eom.ndoubles, 2)
+        >>> c,  = np.linalg.qr(c)
+
+        >>> # Slice out the singles, doubles blocks of the first vector and reshape
+        >>> C1 = c[:,:nsingles].reshape(eom.ndocc, eom.nvir)
+        >>> C2 = c[:,nsingles:].reshape(eom.ndocc, eom.ndocc, eom.nvir, eom.nvir)
+        >>> S2 = eom.build_sigma2(C1, C2)
+
+        """
+        S_2 = ndot('ie,abej->ijab', C1, self.Hvvvo)
+        S_2 -= ndot('mbij,ma->ijab', self.Hovoo, C1)
+
+        Zvv = ndot("amef,mf->ae", self.Hvovv, C1, prefactor=2.0)
+        Zvv += ndot("amfe,mf->ae", self.Hvovv, C1, prefactor=-1.0)
+        Zvv -= ndot('nmaf,nmef->ae', C2, self.get_L('oovv'))
+        S_2 += ndot('ijeb,ae->ijab', self.t2, Zvv)
+
+        Zoo = ndot('mnie,ne->mi', self.Hooov, C1, prefactor=-2.0)
+        Zoo -= ndot('nmie,ne->mi', self.Hooov, C1, prefactor=-1.0)
+        Zoo -= ndot('mnef,inef->mi', self.get_L('oovv'), C2)
+        S_2 += ndot('mi,mjab->ijab', Zoo, self.t2)
+
+        S_2 += ndot('ijeb,ae->ijab', C2, self.Hvv)
+        S_2 -= ndot('mi,mjab->ijab', self.Hoo, C2)
+
+        S_2 += ndot('mnij,mnab->ijab', self.Hoooo, C2, prefactor=0.5)
+        S_2 += ndot('ijef,abef->ijab', C2, self.Hvvvv, prefactor=0.5)
+
+        S_2 -= ndot('imeb,maje->ijab', C2, self.Hovov)
+        S_2 -= ndot('imea,mbej->ijab', C2, self.Hovvo)
+
+        S_2 += ndot('miea,mbej->ijab', C2, self.Hovvo, prefactor=2.0)
+        S_2 += ndot('miea,mbje->ijab', C2, self.Hovov, prefactor=-1.0)
+        return S_2 + S_2.swapaxes(0, 1).swapaxes(2, 3)
 
 if __name__ == "__main__":
     arr4 = np.random.rand(4, 4, 4, 4)
