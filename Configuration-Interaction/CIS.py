@@ -3,7 +3,7 @@ A Psi4 input script to compute CIS energy from a SCF reference
 
 References:
 Algorithms were taken directly from Daniel Crawford's programming website:
-http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+http://github.com/CrawfordGroup/ProgrammingProjects
 Equations from [Szabo:1996]
 """
 

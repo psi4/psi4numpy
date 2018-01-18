@@ -2,7 +2,7 @@
 # Scipy and numpy python modules are required
 #
 # Algorithms were taken directly from Daniel Crawford's programming website:
-# http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+# http://github.com/CrawfordGroup/ProgrammingProjects
 # Special thanks to Lori Burns for integral help
 #
 # Created by: Daniel G. A. Smith
@@ -89,7 +89,7 @@ Evirt = eps[v]
 print('..finished transformation in %.3f seconds.\n' % (time.time() - t))
 
 # DPD approach to CCSD equations
-# See: http://sirius.chem.vt.edu/wiki/doku.php?id=crawdad:programming
+# See: http://github.com/CrawfordGroup/ProgrammingProjects
 
 # occ orbitals i, j, k, l, m, n
 # virt orbitals a, b, c, d, e, f
