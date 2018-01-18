@@ -17,7 +17,7 @@ adaptation.
 """
 
 __authors__ = "Andrew M. James"
-__credits__ = ["T. Daniel Crawford", "Ashutosh Kumar"]
+__credits__ = ["T. Daniel Crawford", "Ashutosh Kumar", "Andrew M. James"]
 __copyright__ = "(c) 2017, The Psi4Numpy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2018-1-17"
