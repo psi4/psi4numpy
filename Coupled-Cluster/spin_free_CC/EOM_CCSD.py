@@ -22,9 +22,9 @@ __copyright__ = "(c) 2017, The Psi4Numpy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2018-1-17"
 
-from helper_cc import helper_ccenergy
-from helper_cc import helper_cchbar
-from helper_cc import helper_cceom
+from helper_cc import HelperCCEnergy
+from helper_cc import HelperCCHbar
+from helper_cc import HelperCCEom
 import psi4
 import time
 import numpy as np
@@ -53,7 +53,7 @@ max_iter = 80
 psi4.set_options({'basis': 'cc-pvdz', 'roots_per_irrep': [nroot]})
 
 # Compute CCSD energy for required integrals and T-amplitudes
-ccsd = helper_ccenergy(mol)
+ccsd = HelperCCEnergy(mol)
 ccsd.compute_energy()
 
 ccsd_cor_e = ccsd.ccsd_corr_e
@@ -64,7 +64,7 @@ print("{}{}".format('Final CCSD correlation energy:'.ljust(30, '.'),
 print("{}{}".format('Total CCSD energy:'.ljust(30, '.'),
                     "{:16.15f}".format(ccsd_tot_e).rjust(20, ',')))
 
-cchbar = helper_cchbar(ccsd)
+cchbar = HelperCCHbar(ccsd)
 
 # build CIS guess
 ndocc = ccsd.ndocc
@@ -86,8 +86,8 @@ Lmax = nroot * nvec_per_root
 # An array to hold the excitation energies
 theta = [0.0] * L
 
-# build a helper_cceom object
-cceom = helper_cceom(ccsd, cchbar)
+# build a HelperCCEom object
+cceom = HelperCCEom(ccsd, cchbar)
 
 # Get the approximate diagonal of Hbar
 D = np.hstack((cceom.Dia.flatten(), cceom.Dijab.flatten()))

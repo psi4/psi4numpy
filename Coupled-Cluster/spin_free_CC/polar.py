@@ -1,10 +1,10 @@
 import time
 import numpy as np
-from helper_cc import helper_ccenergy
-from helper_cc import helper_cchbar
-from helper_cc import helper_cclambda
-from helper_cc import helper_ccpert
-from helper_cc import helper_cclinresp
+from helper_cc import HelperCCEnergy
+from helper_cc import HelperCCHbar
+from helper_cc import HelperCCLambda
+from helper_cc import HelperCCPert
+from helper_cc import HelperCCLinresp
 
 np.set_printoptions(precision=15, linewidth=200, suppress=True)
 import psi4
@@ -29,7 +29,7 @@ psi4.set_options({'basis': 'sto-3g'})
 compare_psi4 = True
 
 # Compute CCSD
-ccsd = helper_ccenergy(mol, memory=2)
+ccsd = HelperCCEnergy(mol, memory=2)
 ccsd.compute_energy()
 
 CCSDcorr_E = ccsd.ccsd_corr_e
@@ -38,9 +38,9 @@ CCSD_E = ccsd.ccsd_e
 print('\nFinal CCSD correlation energy:          % 16.15f' % CCSDcorr_E)
 print('Total CCSD energy:                      % 16.15f' % CCSD_E)
 
-cchbar = helper_cchbar(ccsd)
+cchbar = HelperCCHbar(ccsd)
 
-cclambda = helper_cclambda(ccsd,cchbar)
+cclambda = HelperCCLambda(ccsd,cchbar)
 cclambda.compute_lambda()
 omega = 0.0
 
@@ -53,12 +53,12 @@ polar_AB = {}
 for i in range(0,3):
     string = "MU_" + cart[i]
     mu[string] = np.einsum('uj,vi,uv', ccsd.npC, ccsd.npC, np.asarray(ccsd.mints.ao_dipole()[i]))
-    ccpert[string] = helper_ccpert(string, mu[string], ccsd, cchbar, cclambda, omega)
+    ccpert[string] = HelperCCPert(string, mu[string], ccsd, cchbar, cclambda, omega)
     print('\nsolving right hand perturbed amplitudes for %s\n' % string)
     ccpert[string].solve('right')
     print('\nsolving left hand perturbed amplitudes for %s\n'% string)
     ccpert[string].solve('left')
-    
+
 print('\n Calculating Polarizability tensor:\n')
 
 for a in range(0,3):
@@ -66,7 +66,7 @@ for a in range(0,3):
     for b in range(0,3):
         str_b = "MU_" + cart[b]
         str_ab = "<<" + str_a + ";" + str_b + ">>"
-        polar_AB[str_ab]= helper_cclinresp(cclambda, ccpert[str_a], ccpert[str_b]).linresp()    
+        polar_AB[str_ab]= HelperCCLinresp(cclambda, ccpert[str_a], ccpert[str_b]).linresp()
 
 print('\nPolarizability tensor (symmetrized):\n')
 
@@ -80,7 +80,3 @@ for a in range(0,3):
         polar_AB[str_ab] = value
         polar_AB[str_ba] = value
         print(str_ab + ":" + str(value))
-    
-    
-    
-

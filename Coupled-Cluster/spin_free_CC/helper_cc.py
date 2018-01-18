@@ -115,7 +115,7 @@ def ndot(input_string, op1, op2, prefactor=None):
         return np.einsum(tdot_result + '->' + output_ind, new_view)
 
 
-class helper_ccenergy(object):
+class HelperCCEnergy(object):
 
     def __init__(self, mol, freeze_core=False, memory=2):
 
@@ -555,9 +555,9 @@ class helper_ccenergy(object):
                     self.t2 += ci[num] * diis_vals_t2[num + 1]
 
             # End DIIS amplitude update
-            # End helper_ccenergy class
+            # End HelperCCEnergy class
 
-class helper_cchbar(object):
+class HelperCCHbar(object):
 
     def __init__(self, ccsd, memory=2):
 
@@ -764,7 +764,7 @@ class helper_cchbar(object):
         self.Hovoo -= ndot('mbef,ijef->mbij', tmp2, tmp1)
         return self.Hovoo
 
-class helper_cclambda(object):
+class HelperCCLambda(object):
 
     def __init__(self, ccsd, hbar):
 
@@ -983,7 +983,7 @@ class helper_cclambda(object):
 
 # End cclambda class
 
-class helper_ccpert(object):
+class HelperCCPert(object):
 
     def __init__(self, name, pert, ccsd, hbar, cclambda, memory=2):
 
@@ -1510,7 +1510,7 @@ class helper_ccpert(object):
                     z2 += ci[num] * diis_vals_z2[num + 1]
 
 # End ccpert class
-class helper_cclinresp(object):
+class HelperCCLinresp(object):
 
     def __init__(self, cclambda, ccpert_x, ccpert_y):
 
@@ -1581,7 +1581,7 @@ class helper_cclinresp(object):
 # End cclinresp class
 
 
-class helper_cceom(object):
+class HelperCCEom(object):
     """
     EOMCCSD helper class for spin adapted EOMCCSD
 
@@ -1589,20 +1589,20 @@ class helper_cceom(object):
 
     def __init__(self, ccsd, cchbar):
         """
-        Initializes the helper_cceom object
+        Initializes the HelperCCEom object
 
         Parameters
         ----------
-        ccsd: helper_ccsd object
+        ccsd: HelperCCSd object
             Energy should already be computed
 
-        cchbar: helper_cchbar object
+        cchbar: HelperCCHbar object
 
 
         Returns
         -------
-        ret : helper_cceom
-            An initialized helper_cceom object
+        ret : HelperCCEom
+            An initialized HelperCCEom object
 
         """
         # Steal dimensions
