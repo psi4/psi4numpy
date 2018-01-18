@@ -1,5 +1,5 @@
 
-class helper_cchbar(object):
+class HelperCCHbar(object):
 
     def __init__(self, ccsd, memory=2):
 
@@ -187,3 +187,5 @@ class helper_cchbar(object):
         tmp2 =   ndot('mnef,nb->mbef', self.get_MO('oovv'), self.t1)
         self.Hovoo -= ndot('mbef,ijef->mbij', tmp2, tmp1)
         return self.Hovoo
+
+# End HelperCCHbar class

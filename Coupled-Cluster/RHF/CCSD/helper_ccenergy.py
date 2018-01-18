@@ -22,7 +22,7 @@ import psi4
 from utils import ndot
 from utils import helper_diis
 
-class helper_ccenergy(object):
+class HelperCCEnergy(object):
 
     def __init__(self, mol, rhf_e, rhf_wfn, memory=2):
 
@@ -355,4 +355,4 @@ class helper_ccenergy(object):
             if CCSD_iter >= start_diis:
                 self.t1, self.t2 = diis_object.extrapolate(self.t1, self.t2)
 
-# End helper_ccenergy class
+# End HelperCCEnergy class

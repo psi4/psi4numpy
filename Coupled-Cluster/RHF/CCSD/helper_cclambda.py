@@ -1,4 +1,4 @@
-class helper_cclambda(object):
+class HelperCCLambda(object):
 
     def __init__(self, ccsd, hbar):
 
@@ -208,3 +208,4 @@ class helper_cclambda(object):
                     self.l1 += ci[num] * diis_vals_l1[num + 1]
                     self.l2 += ci[num] * diis_vals_l2[num + 1]
 
+# End HelperCCLambda class
