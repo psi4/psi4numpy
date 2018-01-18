@@ -1,3 +1,25 @@
+"""
+A simple python script to calculate RHF-CCSD lambda amplitudes. 
+Equations were spin-adapted using the unitary group approach. 
+
+References: 
+1. Chapter 13, "Molecular Electronic-Structure Theory", Trygve Helgaker, 
+   Poul Jørgensen and Jeppe Olsen, John Wiley & Sons Ltd.
+"""
+
+__authors__ = "Ashutosh Kumar"
+__credits__ = ["Ashutosh Kumar", "Daniel G. A. Smith", "Lori A. Burns", "T. D. Crawford"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-05-17"
+
+import time
+import numpy as np
+import psi4
+from utils import ndot
+from utils import helper_diis
+
 class HelperCCLambda(object):
 
     def __init__(self, ccsd, hbar):
@@ -60,7 +82,6 @@ class HelperCCLambda(object):
             raise Exception('get_F: string %s must have 4 elements.' % string)
         return self.F[self.slice_dict[string[0]], self.slice_dict[string[1]]]
 
-
     def build_Goo(self):
         self.Goo = 0
         self.Goo += ndot('mjab,ijab->mi', self.t2, self.l2)
@@ -72,6 +93,7 @@ class HelperCCLambda(object):
         return self.Gvv
 
     def update(self):
+
         r_l1  = 2.0 * self.Hov.copy()
         r_l1 += ndot('ie,ea->ia', self.l1, self.Hvv)
         r_l1 -= ndot('im,ma->ia', self.Hoo, self.l1)
@@ -113,23 +135,13 @@ class HelperCCLambda(object):
         rms = 2.0 * np.einsum('ia,ia->', r_l1/self.Dia, r_l1/self.Dia) 
         rms += np.einsum('ijab,ijab->', old_l2 - self.l2, old_l2 - self.l2) 
         return np.sqrt(rms)
-   
-
-
 
     def pseudoenergy(self):
         pseudoenergy = 0
         pseudoenergy += ndot('ijab,ijab->', self.get_MO('oovv'), self.l2, prefactor=0.5)
         return pseudoenergy
 
-
-
-    def compute_lambda(self, r_conv=1e-7, maxiter=100, max_diis=8):
-        print('\n Solving lambda equations ...\n')
-        ### Setup DIIS
-        diis_vals_l1 = [self.l1.copy()]
-        diis_vals_l2 = [self.l2.copy()]
-        diis_errors = []
+    def compute_lambda(self, r_conv=1e-7, maxiter=100, max_diis=8, start_diis=1):
 
         ### Start Iterations
         cclambda_tstart = time.time()
@@ -137,75 +149,32 @@ class HelperCCLambda(object):
         pseudoenergy_old = self.pseudoenergy()
         print("CCLAMBDA Iteration %3d: pseudoenergy = %.15f   dE = % .5E   MP2" % (0, pseudoenergy_old, -pseudoenergy_old))
 
-        # Iterate!
-        diis_size = 0
-        for CCLAMBDA_iter in range(1, maxiter + 1):
+        # Set up DIIS before iterations begin
+        diis_object = helper_diis(self.l1, self.l2, max_diis)    
 
-            # Save new amplitudes
-            oldl1 = self.l1.copy()
-            oldl2 = self.l2.copy()
+        # Iterate!
+        for CCLAMBDA_iter in range(1, maxiter + 1):
 
             rms = self.update()
 
-            # Compute lambda 
+            # Compute pseudoenergy 
             pseudoenergy = self.pseudoenergy()
 
             # Print CCLAMBDA iteration information
-            print('CCLAMBDA Iteration %3d: pseudoenergy = %.15f   dE = % .5E   DIIS = %d' % (CCLAMBDA_iter, pseudoenergy, (pseudoenergy - pseudoenergy_old), diis_size))
+            print('CCLAMBDA Iteration %3d: pseudoenergy = %.15f   dE = % .5E   DIIS = %d' % (CCLAMBDA_iter, pseudoenergy, (pseudoenergy - pseudoenergy_old), diis_object.diis_size))
 
             # Check convergence
-            #if (abs(pseudoenergy - pseudoenergy_old) < r_conv):
             if (rms < r_conv):
                 print('\nCCLAMBDA has converged in %.3f seconds!' % (time.time() - cclambda_tstart))
-                #print(self.l1)
-                #print(self.l2)
                 return pseudoenergy
 
-            # Add DIIS vectors
-            diis_vals_l1.append(self.l1.copy())
-            diis_vals_l2.append(self.l2.copy())
-
-            # Build new error vector
-            error_l1 = (diis_vals_l1[-1] - oldl1).ravel()
-            error_l2 = (diis_vals_l2[-1] - oldl2).ravel()
-            diis_errors.append(np.concatenate((error_l1, error_l2)))
-
-            # Update old energy
+            # Update old pseudoenergy
             pseudoenergy_old = pseudoenergy
 
-            if CCLAMBDA_iter >= 1:
-               # Limit size of DIIS vector
-                if (len(diis_vals_l1) > max_diis):
-                    del diis_vals_l1[0]
-                    del diis_vals_l2[0]
-                    del diis_errors[0]
+            #  Add the new error vector
+            diis_object.add_error_vector(self.l1, self.l2)
 
-                diis_size = len(diis_vals_l1) - 1
-
-                # Build error matrix B
-                B = np.ones((diis_size + 1, diis_size + 1)) * -1
-                B[-1, -1] = 0
-
-                for n1, e1 in enumerate(diis_errors):
-                    B[n1, n1] = np.dot(e1, e1)
-                    for n2, e2 in enumerate(diis_errors):
-                        if n1 >= n2: continue
-                        B[n1, n2] = np.dot(e1, e2)
-                        B[n2, n1] = B[n1, n2]
-                        B[:-1, :-1] /= np.abs(B[:-1, :-1]).max()
-
-                # Build residual vector
-                resid = np.zeros(diis_size + 1)
-                resid[-1] = -1
-
-                # Solve pulay equations
-                ci = np.linalg.solve(B, resid)
-
-                # Calculate new amplitudes
-                self.l1[:] = 0
-                self.l2[:] = 0
-                for num in range(diis_size):
-                    self.l1 += ci[num] * diis_vals_l1[num + 1]
-                    self.l2 += ci[num] * diis_vals_l2[num + 1]
+            if CCLAMBDA_iter >= start_diis:
+                self.l1, self.l2 = diis_object.extrapolate(self.l1, self.l2)
 
 # End HelperCCLambda class

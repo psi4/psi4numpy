@@ -1,18 +1,17 @@
 import time
 import numpy as np
-from helper_cc import HelperCCEnergy
-from helper_cc import HelperCCHbar
-from helper_cc import HelperCCLambda
-from helper_cc import HelperCCPert
-from helper_cc import HelperCCLinresp
+import sys
+sys.path.append("../../../../Coupled-Cluster/RHF/CCSD")
+from helper_ccenergy import *
+from helper_cchbar   import *    
+from helper_cclambda import * 
+from helper_ccpert import * 
 
 np.set_printoptions(precision=15, linewidth=200, suppress=True)
 import psi4
 
 psi4.set_memory(int(2e9), False)
 psi4.core.set_output_file('output.dat', False)
-
-numpy_memory = 2
 
 mol = psi4.geometry("""
 O
@@ -28,10 +27,7 @@ psi4.set_options({'e_convergence': 1e-13})
 rhf_e, rhf_wfn = psi4.energy('SCF', return_wfn=True)
 print('RHF Final Energy                          % 16.10f\n' % rhf_e)
 
-# For numpy
-compare_psi4 = True
-
-# Compute CCSD
+# Calculate Ground State CCSD Equations
 ccsd = HelperCCEnergy(mol, rhf_e, rhf_wfn, memory=2)
 ccsd.compute_energy(e_conv=1e-13, r_conv=1e-13)
 ccsd.compute_energy()

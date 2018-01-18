@@ -6,7 +6,7 @@ References:
 1. Chapter 13, "Molecular Electronic-Structure Theory", Trygve Helgaker, 
    Poul Jørgensen and Jeppe Olsen, John Wiley & Sons Ltd.
 2. J.F. Stanton, J. Gauss, J.D. Watts, and R.J. Bartlett, 
-   J. Chem. Phys. volume 94, pp. 4334-4345 (1991)
+   J. Chem. Phys. volume 94, pp. 4334-4345 (1991).
 """
 
 __authors__ = "Ashutosh Kumar"

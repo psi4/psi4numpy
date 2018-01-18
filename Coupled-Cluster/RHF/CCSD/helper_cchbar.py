@@ -1,3 +1,26 @@
+"""
+A simple python script to build pieces of the similarity
+transformed hamiltomian required to build the RHF-CCSD Jacobian,
+used in solving lambda equations, calculations of excitation 
+energies (EOM-CCSD), CCSD response properties etc..
+Terms were spin-adapted using the unitary group approach. 
+
+References: 
+1. Chapter 13, "Molecular Electronic-Structure Theory", Trygve Helgaker, 
+   Poul Jørgensen and Jeppe Olsen, John Wiley & Sons Ltd.
+"""
+
+__authors__ = "Ashutosh Kumar"
+__credits__ = ["Ashutosh Kumar", "Daniel G. A. Smith", "Lori A. Burns", "T. D. Crawford"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-05-17"
+
+import time
+import numpy as np
+import psi4
+from utils import ndot
 
 class HelperCCHbar(object):
 
@@ -24,7 +47,8 @@ class HelperCCHbar(object):
         self.Dijab = ccsd.Dijab
         self.t1 = ccsd.t1
         self.t2 = ccsd.t2
-        print('\nBuilding appropriate pieces of similarity transformed hamiltonian ...')
+
+        print('\nBuilding HBAR ...')
 
         self.build_Loovv() 
         self.build_Looov() 
@@ -42,7 +66,7 @@ class HelperCCHbar(object):
         self.build_Hvvvo()
         self.build_Hovoo()
 
-        print('\n..CCHBAR completed !!')
+        print('\n..HBAR Build completed !!')
 
     # occ orbitals i, j, k, l, m, n
     # virt orbitals a, b, c, d, e, f

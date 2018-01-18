@@ -1,9 +1,31 @@
+"""
+A simple python script to compute RHF-CCSD linear response function 
+for calculating properties like dipole polarizabilities, optical
+rotations etc. Equations were spin-adapted using the unitary group approach. 
+
+References: 
+1.  H. Koch and P. Jørgensen, J. Chem. Phys. volume 93, pp. 3333-3344 (1991).
+2. Chapter 13, "Molecular Electronic-Structure Theory", Trygve Helgaker, 
+   Poul Jørgensen and Jeppe Olsen, John Wiley & Sons Ltd.
+"""
+
+__authors__ = "Ashutosh Kumar"
+__credits__ = ["Ashutosh Kumar", "Daniel G. A. Smith", "Lori A. Burns", "T. D. Crawford"]
+
+__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__license__ = "BSD-3-Clause"
+__date__ = "2017-05-17"
+
+import time
+import numpy as np
+import psi4
+from utils import ndot
+from utils import helper_diis
 
 class helper_ccpert(object):
 
     def __init__(self, name, pert, ccsd, hbar, cclambda, omega):
 
-        # Integral generation from Psi4's MintsHelper
         time_init = time.time()
 
         self.pert = pert
