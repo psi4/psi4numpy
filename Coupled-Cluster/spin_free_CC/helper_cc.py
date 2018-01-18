@@ -1604,6 +1604,18 @@ class HelperCCEom(object):
         ret : HelperCCEom
             An initialized HelperCCEom object
 
+        Notes
+        -----
+        Spin orbital sigma equations for EOMCCSDT can be found in:
+            I. Shavitt and R. J. Bartlett, "Many-Body Methods in Chemistry and
+            Physics: MBPT and Coupled-Cluster Theory", Cambridge University
+            Press, 2009.
+        The relevant contributions for EOMCCSD were extracted and the equations
+        spin adapted to arrive at the equations implemented in this class.
+
+        Special thanks to Ashutosh Kumar for Hbar components and help with spin
+        adaptation.
+
         """
         # Steal dimensions
         self.ndocc = ccsd.ndocc
