@@ -1670,16 +1670,16 @@ class helper_cceom(object):
         return self.L[self.slice_dict[string[0]], self.slice_dict[string[1]],
                       self.slice_dict[string[2]], self.slice_dict[string[3]]]
 
-    def build_sigma1(self, C1, C2):
+    def build_sigma1(self, B1, B2):
         """
-        Compute the contributions to <ia|Hbar*C|0>
+        Compute the contributions to <ia|Hbar*B|0>
 
         Parameters
         ----------
-        C1: array like, shape(ndocc, nvir)
+        B1: array like, shape(ndocc, nvir)
           The first nsingles elements of a guess vector reshaped to (o,v)
 
-        C2: array like, shape(ndocc,ndocc,nvir,nvir)
+        B2: array like, shape(ndocc,ndocc,nvir,nvir)
           The last ndoubles elements of a guess vector reshaped to (o,o,v,v)
 
         Returns
@@ -1694,33 +1694,33 @@ class helper_cceom(object):
         >>> c,  = np.linalg.qr(c)
 
         >>> # Slice out the singles, doubles blocks of the first vector and reshape
-        >>> C1 = c[:,:nsingles].reshape(eom.ndocc, eom.nvir)
-        >>> C2 = c[:,nsingles:].reshape(eom.ndocc, eom.ndocc, eom.nvir, eom.nvir)
-        >>> S1 = eom.build_sigma1(C1, C2)
+        >>> B1 = c[:,:nsingles].reshape(eom.ndocc, eom.nvir)
+        >>> B2 = c[:,nsingles:].reshape(eom.ndocc, eom.ndocc, eom.nvir, eom.nvir)
+        >>> S1 = eom.build_sigma1(B1, B2)
 
         """
-        S1 = ndot('ie,ae->ia', C1, self.Hvv)
-        S1 -= ndot('mi,ma->ia', self.Hoo, C1)
-        S1 += ndot('maei,me->ia', self.Hovvo, C1, prefactor=2.0)
-        S1 += ndot('maie,me->ia', self.Hovov, C1, prefactor=-1.0)
-        S1 += ndot('miea,me->ia', C2, self.Hov, prefactor=2.0)
-        S1 += ndot('imea,me->ia', C2, self.Hov, prefactor=-1.0)
-        S1 += ndot('imef,amef->ia', C2, self.Hvovv, prefactor=2.0)
-        S1 += ndot('imef,amfe->ia', C2, self.Hvovv, prefactor=-1.0)
-        S1 -= ndot('mnie,mnae->ia', self.Hooov, C2, prefactor=2.0)
-        S1 -= ndot('nmie,mnae->ia', self.Hooov, C2, prefactor=-1.0)
+        S1 = ndot('ie,ae->ia', B1, self.Hvv)
+        S1 -= ndot('mi,ma->ia', self.Hoo, B1)
+        S1 += ndot('maei,me->ia', self.Hovvo, B1, prefactor=2.0)
+        S1 += ndot('maie,me->ia', self.Hovov, B1, prefactor=-1.0)
+        S1 += ndot('miea,me->ia', B2, self.Hov, prefactor=2.0)
+        S1 += ndot('imea,me->ia', B2, self.Hov, prefactor=-1.0)
+        S1 += ndot('imef,amef->ia', B2, self.Hvovv, prefactor=2.0)
+        S1 += ndot('imef,amfe->ia', B2, self.Hvovv, prefactor=-1.0)
+        S1 -= ndot('mnie,mnae->ia', self.Hooov, B2, prefactor=2.0)
+        S1 -= ndot('nmie,mnae->ia', self.Hooov, B2, prefactor=-1.0)
         return S1
 
-    def build_sigma2(self, C1, C2):
+    def build_sigma2(self, B1, B2):
         """
-        Compute the contributions to <ijab|Hbar*C|0>:
+        Compute the contributions to <ijab|Hbar*B|0>:
 
         Parameters
         ----------
-        C1: array like, shape(ndocc, nvir)
+        B1: array like, shape(ndocc, nvir)
           The first nsingles elements of a guess vector reshaped to (o,v)
 
-        C2: array like, shape(ndocc,ndocc,nvir,nvir)
+        B2: array like, shape(ndocc,ndocc,nvir,nvir)
           The last ndoubles elements of a guess vector reshaped to (o,o,v,v)
 
         Returns
@@ -1735,35 +1735,35 @@ class helper_cceom(object):
         >>> c,  = np.linalg.qr(c)
 
         >>> # Slice out the singles, doubles blocks of the first vector and reshape
-        >>> C1 = c[:,:nsingles].reshape(eom.ndocc, eom.nvir)
-        >>> C2 = c[:,nsingles:].reshape(eom.ndocc, eom.ndocc, eom.nvir, eom.nvir)
-        >>> S2 = eom.build_sigma2(C1, C2)
+        >>> B1 = c[:,:nsingles].reshape(eom.ndocc, eom.nvir)
+        >>> B2 = c[:,nsingles:].reshape(eom.ndocc, eom.ndocc, eom.nvir, eom.nvir)
+        >>> S2 = eom.build_sigma2(B1, B2)
 
         """
-        S_2 = ndot('ie,abej->ijab', C1, self.Hvvvo)
-        S_2 -= ndot('mbij,ma->ijab', self.Hovoo, C1)
+        S_2 = ndot('ie,abej->ijab', B1, self.Hvvvo)
+        S_2 -= ndot('mbij,ma->ijab', self.Hovoo, B1)
 
-        Zvv = ndot("amef,mf->ae", self.Hvovv, C1, prefactor=2.0)
-        Zvv += ndot("amfe,mf->ae", self.Hvovv, C1, prefactor=-1.0)
-        Zvv -= ndot('nmaf,nmef->ae', C2, self.get_L('oovv'))
+        Zvv = ndot("amef,mf->ae", self.Hvovv, B1, prefactor=2.0)
+        Zvv += ndot("amfe,mf->ae", self.Hvovv, B1, prefactor=-1.0)
+        Zvv -= ndot('nmaf,nmef->ae', B2, self.get_L('oovv'))
         S_2 += ndot('ijeb,ae->ijab', self.t2, Zvv)
 
-        Zoo = ndot('mnie,ne->mi', self.Hooov, C1, prefactor=-2.0)
-        Zoo -= ndot('nmie,ne->mi', self.Hooov, C1, prefactor=-1.0)
-        Zoo -= ndot('mnef,inef->mi', self.get_L('oovv'), C2)
+        Zoo = ndot('mnie,ne->mi', self.Hooov, B1, prefactor=-2.0)
+        Zoo -= ndot('nmie,ne->mi', self.Hooov, B1, prefactor=-1.0)
+        Zoo -= ndot('mnef,inef->mi', self.get_L('oovv'), B2)
         S_2 += ndot('mi,mjab->ijab', Zoo, self.t2)
 
-        S_2 += ndot('ijeb,ae->ijab', C2, self.Hvv)
-        S_2 -= ndot('mi,mjab->ijab', self.Hoo, C2)
+        S_2 += ndot('ijeb,ae->ijab', B2, self.Hvv)
+        S_2 -= ndot('mi,mjab->ijab', self.Hoo, B2)
 
-        S_2 += ndot('mnij,mnab->ijab', self.Hoooo, C2, prefactor=0.5)
-        S_2 += ndot('ijef,abef->ijab', C2, self.Hvvvv, prefactor=0.5)
+        S_2 += ndot('mnij,mnab->ijab', self.Hoooo, B2, prefactor=0.5)
+        S_2 += ndot('ijef,abef->ijab', B2, self.Hvvvv, prefactor=0.5)
 
-        S_2 -= ndot('imeb,maje->ijab', C2, self.Hovov)
-        S_2 -= ndot('imea,mbej->ijab', C2, self.Hovvo)
+        S_2 -= ndot('imeb,maje->ijab', B2, self.Hovov)
+        S_2 -= ndot('imea,mbej->ijab', B2, self.Hovvo)
 
-        S_2 += ndot('miea,mbej->ijab', C2, self.Hovvo, prefactor=2.0)
-        S_2 += ndot('miea,mbje->ijab', C2, self.Hovov, prefactor=-1.0)
+        S_2 += ndot('miea,mbej->ijab', B2, self.Hovvo, prefactor=2.0)
+        S_2 += ndot('miea,mbje->ijab', B2, self.Hovov, prefactor=-1.0)
         return S_2 + S_2.swapaxes(0, 1).swapaxes(2, 3)
 
 if __name__ == "__main__":
