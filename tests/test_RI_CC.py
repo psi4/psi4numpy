@@ -14,7 +14,7 @@ def test_CCSD(workspace):
 
 
 def test_CCSD_T(workspace):
-    exe_py(workspace, tdir+"/Spin_Orbitals/CCSD_T", 'CCSD_T')
+    exe_py(workspace, tdir+"/Spin_Orbitals/CCSD", 'CCSD_T')
 
 
 def test_EOM_CCSD(workspace):
