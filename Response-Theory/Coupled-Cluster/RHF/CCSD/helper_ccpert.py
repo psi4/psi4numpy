@@ -22,7 +22,7 @@ import psi4
 from utils import ndot
 from utils import helper_diis
 
-class helper_ccpert(object):
+class HelperCCPert(object):
 
     def __init__(self, name, pert, ccsd, hbar, cclambda, omega):
 
@@ -561,8 +561,9 @@ class helper_ccpert(object):
                     z1 += ci[num] * diis_vals_z1[num + 1]
                     z2 += ci[num] * diis_vals_z2[num + 1]
 
-# End ccpert class
-class helper_cclinresp(object):
+# End HelperCCPert class
+
+class HelperCCLinresp(object):
 
     def __init__(self, cclambda, ccpert_x, ccpert_y):
 
@@ -630,3 +631,4 @@ class helper_cclinresp(object):
 
         return -1.0*(self.polar1 + self.polar2)
 
+# End HelperCCLinresp class

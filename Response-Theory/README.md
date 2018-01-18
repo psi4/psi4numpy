@@ -8,3 +8,9 @@
 
 Helper programs:
 - `helper_CPHF.py`: A collection of helper classes and functions for Coupled-Perturbed Hartree-Fock. Includes both frequency-dependent direct electronic Hessian inversion and iterative solvers.
+
+## Coupled-Cluster
+
+Inside RHF/CCSD:
+- `polar.py`: A simple script for calculating CCSD dipole polarizabilities using Coupled Cluster Linear Response (CCLR) theory.
+

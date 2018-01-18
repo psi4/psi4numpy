@@ -22,9 +22,10 @@ __copyright__ = "(c) 2017, The Psi4Numpy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2018-1-17"
 
-from helper_cc import HelperCCEnergy
-from helper_cc import HelperCCHbar
-from helper_cc import HelperCCEom
+from helper_ccenergy import *
+from helper_cchbar   import *
+from helper_cclambda import *
+from helper_cceom import *
 import psi4
 import time
 import numpy as np
@@ -53,7 +54,8 @@ max_iter = 80
 psi4.set_options({'basis': 'cc-pvdz', 'roots_per_irrep': [nroot]})
 
 # Compute CCSD energy for required integrals and T-amplitudes
-ccsd = HelperCCEnergy(mol)
+rhf_e, rhf_wfn = psi4.energy('SCF', return_wfn=True)
+ccsd = HelperCCEnergy(mol, rhf_e, rhf_wfn)
 ccsd.compute_energy()
 
 ccsd_cor_e = ccsd.ccsd_corr_e

@@ -1,3 +1,4 @@
+from utils import ndot
 class HelperCCEom(object):
     """
     EOMCCSD helper class for spin adapted EOMCCSD
@@ -37,9 +38,8 @@ class HelperCCEom(object):
         # Steal dimensions
         self.ndocc = ccsd.ndocc
         self.nmo = ccsd.nmo
-        self.nfzc = 0
         self.nocc = ccsd.ndocc
-        self.nvir = ccsd.nmo - ccsd.nocc - ccsd.nfzc
+        self.nvir = ccsd.nmo - ccsd.nocc
         self.nsingles = self.ndocc * self.nvir
         self.ndoubles = self.ndocc * self.ndocc * self.nvir * self.nvir
 
@@ -50,7 +50,6 @@ class HelperCCEom(object):
         self.t2 = ccsd.t2
 
         # Steal "ova" translation
-        self.slice_nfzc = cchbar.slice_nfzc
         self.slice_o = cchbar.slice_o
         self.slice_v = cchbar.slice_v
         self.slice_a = cchbar.slice_a
@@ -68,9 +67,7 @@ class HelperCCEom(object):
         self.Hovov = cchbar.Hovov
         self.Hvvvo = cchbar.Hvvvo
         self.Hovoo = cchbar.Hovoo
-
-        # Steal L integrals (L[pqrs] = 2*MO[pqrs] - MO[pqsr])
-        self.L = cchbar.L
+        self.Loovv = cchbar.Loovv
 
         # Build Approximate Diagonal of Hbar
         self.Dia = self.Hoo.diagonal().reshape(-1, 1) - self.Hvv.diagonal()
@@ -92,12 +89,6 @@ class HelperCCEom(object):
             raise Exception('get_F: string %s must have 4 elements.' % string)
         return self.F[self.slice_dict[string[0]], self.slice_dict[string[1]]]
 
-    def get_L(self, string):
-        if len(string) != 4:
-            psi4.core.clean()
-            raise Exception('get_L: string %s must have 4 elements.' % string)
-        return self.L[self.slice_dict[string[0]], self.slice_dict[string[1]],
-                      self.slice_dict[string[2]], self.slice_dict[string[3]]]
 
     def build_sigma1(self, B1, B2):
         """
@@ -174,12 +165,12 @@ class HelperCCEom(object):
 
         Zvv = ndot("amef,mf->ae", self.Hvovv, B1, prefactor=2.0)
         Zvv += ndot("amfe,mf->ae", self.Hvovv, B1, prefactor=-1.0)
-        Zvv -= ndot('nmaf,nmef->ae', B2, self.get_L('oovv'))
+        Zvv -= ndot('nmaf,nmef->ae', B2, self.Loovv)
         S_2 += ndot('ijeb,ae->ijab', self.t2, Zvv)
 
         Zoo = ndot('mnie,ne->mi', self.Hooov, B1, prefactor=-2.0)
         Zoo -= ndot('nmie,ne->mi', self.Hooov, B1, prefactor=-1.0)
-        Zoo -= ndot('mnef,inef->mi', self.get_L('oovv'), B2)
+        Zoo -= ndot('mnef,inef->mi', self.Loovv, B2)
         S_2 += ndot('mi,mjab->ijab', Zoo, self.t2)
 
         S_2 += ndot('ijeb,ae->ijab', B2, self.Hvv)
