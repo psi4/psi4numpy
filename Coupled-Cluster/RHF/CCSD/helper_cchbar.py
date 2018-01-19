@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*- 
 """
 A simple python script to build pieces of the similarity
 transformed hamiltomian required to build the RHF-CCSD Jacobian,

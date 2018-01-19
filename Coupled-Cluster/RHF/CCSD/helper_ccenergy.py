@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*- 
 """
 A simple python script to compute RHF-CCSD energy. Equations were 
 spin-adapted using the unitary group approach. 
