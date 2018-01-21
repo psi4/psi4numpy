@@ -218,8 +218,8 @@ double_mod_eri_abrs -= 2 * np.einsum('ijkl,mj,ni->mnkl', vt_abrs, D_ab, D_ba)
 double_mod_eri_abrs -= 2 * np.einsum('ijlk,mi,nj->mnkl', vt_absr, D_aa, D_bb)
 double_mod_eri_abrs += 4 * np.einsum('ijlk,mj,ni->mnkl', vt_absr, D_ab, D_ba)
 
-G_abrs = (np.einsum('ik,jl->ijkl', T_ar, O_bs) - np.einsum('il,jk->ijkl', T_as, O_br) +
-          np.einsum('jl,ik->ijkl', T_bs, O_ar) - np.einsum('jk,il->ijkl', T_br, O_as) + double_mod_eri_abrs)
+G_abrs = ( 2 * np.einsum('ik,jl->ijkl', T_ar, O_bs) - np.einsum('il,jk->ijkl', T_as, O_br) +
+          2 * np.einsum('jl,ik->ijkl', T_bs, O_ar) - np.einsum('jk,il->ijkl', T_br, O_as) + double_mod_eri_abrs)
 
 v_rsab = sapt.v('rsab')
 e_rsab = 1 / (-sapt.eps('r', dim=4) - sapt.eps('s', dim=3) + sapt.eps('a', dim=2) + sapt.eps('b'))
