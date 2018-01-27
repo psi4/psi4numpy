@@ -1,7 +1,7 @@
 import time
 import numpy as np
 import sys
-sys.path.append("../../../../Coupled-Cluster/RHF/CCSD")
+sys.path.append("../../../Coupled-Cluster/RHF")
 from helper_ccenergy import *
 from helper_cchbar   import *    
 from helper_cclambda import * 
