@@ -62,9 +62,9 @@ class HelperCCLambda(object):
         self.Hvvvo =  hbar.Hvvvo
         self.Hovoo =  hbar.Hovoo
 
-        self.l1 = 2.0 * self.t1
-        tmp = self.t2
-        self.l2 = 2.0 * (2.0 * tmp - tmp.swapaxes(2,3))
+        self.l1  = 2.0 * self.t1.copy()
+        self.l2  = 4.0 * self.t2.copy()
+        self.l2 -= 2.0 * self.t2.swapaxes(2,3)
 
     # occ orbitals i, j, k, l, m, n
     # virt orbitals a, b, c, d, e, f
@@ -130,8 +130,8 @@ class HelperCCLambda(object):
 
         old_l2 = self.l2.copy()
 
-        self.l2 += r_l2/self.Dijab 
-        self.l2 += (r_l2/self.Dijab).swapaxes(0,1).swapaxes(2,3) 
+        tmp = r_l2/self.Dijab 
+        self.l2 += tmp + tmp.swapaxes(0,1).swapaxes(2,3)
 
         rms = 2.0 * np.einsum('ia,ia->', r_l1/self.Dia, r_l1/self.Dia) 
         rms += np.einsum('ijab,ijab->', old_l2 - self.l2, old_l2 - self.l2) 
@@ -148,7 +148,7 @@ class HelperCCLambda(object):
         cclambda_tstart = time.time()
 
         pseudoenergy_old = self.pseudoenergy()
-        print("CCLAMBDA Iteration %3d: pseudoenergy = %.15f   dE = % .5E   MP2" % (0, pseudoenergy_old, -pseudoenergy_old))
+        print("CCLAMBDA Iteration %3d: pseudoenergy = %.15f   dE = % .5E" % (0, pseudoenergy_old, -pseudoenergy_old))
 
         # Set up DIIS before iterations begin
         diis_object = helper_diis(self.l1, self.l2, max_diis)    
@@ -174,7 +174,7 @@ class HelperCCLambda(object):
 
             #  Add the new error vector
             diis_object.add_error_vector(self.l1, self.l2)
-
+            print(self.l1)    
             if CCLAMBDA_iter >= start_diis:
                 self.l1, self.l2 = diis_object.extrapolate(self.l1, self.l2)
 

@@ -87,7 +87,8 @@ for a in range(0,3):
 trace = polar_AB[0] + polar_AB[4] + polar_AB[8]
 Isotropic_polar = trace/3.0
         
-# PSI4's polarizability
+# Comaprison with PSI4
 psi4.set_options({'omega': [0, 'ev']})
-psi4.properties('ccsd', properties=['polarizability'])
-psi4.compare_values(Isotropic_polar, psi4.get_variable("CCSD DIPOLE POLARIZABILITY @ INF NM"),  3, "CCSD Isotropic Dipole Polarizability @ Inf nm") #TEST
+#psi4.properties('ccsd', properties=['polarizability'])
+#psi4.compare_values(Isotropic_polar, psi4.get_variable("CCSD DIPOLE POLARIZABILITY @ INF NM"),  3, "CCSD Isotropic Dipole Polarizability @ Inf nm") #TEST
+psi4.compare_values(Isotropic_polar, 3.316475830668,  6, "CCSD Isotropic Dipole Polarizability @ Inf nm") #TEST

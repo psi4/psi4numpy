@@ -19,6 +19,8 @@ __date__ = "2017-05-17"
 import time
 import numpy as np
 import psi4
+import sys
+sys.path.append("../../../Coupled-Cluster/RHF")
 from utils import ndot
 from utils import helper_diis
 
@@ -80,12 +82,14 @@ class HelperCCPert(object):
 
         self.y1 = 2.0 * self.x1.copy() 
 
-        self.x2 = self.build_Avvoo().swapaxes(0,2).swapaxes(1,3)       
-        self.x2 += self.build_Avvoo().swapaxes(0,3).swapaxes(1,2)
+        self.pertbar_ijab = self.build_Avvoo().swapaxes(0,2).swapaxes(1,3)
+        self.x2 = self.pertbar_ijab.copy()
+        self.x2 += self.pertbar_ijab.swapaxes(0,1).swapaxes(2,3)
         self.x2 = self.x2/self.Dijab
        
-        self.y1 = 2.0 * self.x1.copy() 
-        self.y2 = 2.0 * (2.0 * self.x2.copy() - self.x2.copy().swapaxes(2,3)) 
+        self.y1 =  2.0 * self.x1.copy() 
+        self.y2 =  4.0 * self.x2.copy()    
+        self.y2 -= 2.0 * self.x2.swapaxes(2,3)
 
     # occ orbitals i, j, k, l, m, n
     # virt orbitals a, b, c, d, e, f
@@ -101,14 +105,14 @@ class HelperCCPert(object):
     def get_F(self, string):
         if len(string) != 2:
             psi4.core.clean()
-            raise Exception('get_F: string %s must have 4 elements.' % string)
+            raise Exception('get_F: string %s must have 2 elements.' % string)
         return self.F[self.slice_dict[string[0]], self.slice_dict[string[1]]]
 
 
     def get_pert(self, string):
         if len(string) != 2:
             psi4.core.clean()
-            raise Exception('get_F: string %s must have 4 elements.' % string)
+            raise Exception('get_pert: string %s must have 2 elements.' % string)
         return self.pert[self.slice_dict[string[0]], self.slice_dict[string[1]]]
 
     def build_Aoo(self):
@@ -249,6 +253,7 @@ class HelperCCPert(object):
         return Hvovvx1vv
 
     def update_X(self):
+
         r_x1  = self.build_Avo().swapaxes(0,1).copy()
         r_x1 -= self.omega * self.x1.copy()
         r_x1 += ndot('ie,ae->ia', self.x1, self.Hvv)
@@ -472,94 +477,59 @@ class HelperCCPert(object):
 
         return -2.0 * (polar1 + polar2)
 
-    def solve(self, hand, r_conv=1.e-7, maxiter=100, max_diis=8):
-        ### Setup DIIS
-        if hand == 'right':
-            z1 = self.x1 ; z2 = self.x2
-        else:
-            z1 = self.y1 ; z2 = self.y2
+    def solve(self, hand, r_conv=1.e-7, maxiter=100, max_diis=8, start_diis=1):
 
-        diis_vals_z1 = [z1.copy()]
-        diis_vals_z2 = [z2.copy()]
-        diis_errors = []
-
-        ### Start Iterations
+        ### Start of the solve routine 
         ccpert_tstart = time.time()
+        
+        # calculate the pseudoresponse from guess amplitudes
         pseudoresponse_old = self.pseudoresponse(hand)
         print("CCPERT_%s Iteration %3d: pseudoresponse = %.15f   dE = % .5E " % (self.name, 0, pseudoresponse_old, -pseudoresponse_old))
 
-        # Iterate!
+        # Set up DIIS before iterations begin
+        if hand == 'right':
+            diis_object = helper_diis(self.x1, self.x2, max_diis)
+        else:
+            diis_object = helper_diis(self.y1, self.y2, max_diis)
+            # calculate the inhomogenous terms before iterations begin
+            self.im_y1 = self.inhomogenous_y1()
+            self.im_y2 = self.inhomogenous_y2()
 
-        self.im_y1 = self.inhomogenous_y1()
-        self.im_y2 = self.inhomogenous_y2()
-        diis_size = 0
+        # Iterate!
         for CCPERT_iter in range(1, maxiter + 1):
 
-            # Save new amplitudes
-            oldz1 = z1.copy()
-            oldz2 = z2.copy()
+            # Residual build and update
             if hand == 'right':
                 rms = self.update_X()
             else:
                 rms = self.update_Y()
+
+            # compute updated pseudoresponse
             pseudoresponse = self.pseudoresponse(hand)
 
             # Print CCPERT iteration information
-            print('CCPERT_%s Iteration %3d: pseudoresponse = %.15f   dE = % .5E   DIIS = %d' % (self.name, CCPERT_iter, pseudoresponse, (pseudoresponse - pseudoresponse_old), diis_size))
+            print('CCPERT_%s Iteration %3d: pseudoresponse = %.15f   dE = % .5E   DIIS = %d' % (self.name, CCPERT_iter, pseudoresponse, (pseudoresponse - pseudoresponse_old), diis_object.diis_size))
 
             # Check convergence
-            #if (abs(pseudoresponse - pseudoresponse_old) < r_conv):
             if (rms < r_conv):
                 print('\nCCPERT_%s has converged in %.3f seconds!' % (self.name, time.time() - ccpert_tstart))
                 return pseudoresponse
 
-            # Add DIIS vectors
-            diis_vals_z1.append(z1.copy())
-            diis_vals_z2.append(z2.copy())
-
-            # Build new error vector
-            error_z1 = (diis_vals_z1[-1] - oldz1).ravel()
-            error_z2 = (diis_vals_z2[-1] - oldz2).ravel()
-            diis_errors.append(np.concatenate((error_z1, error_z2)))
-
-            # Update old energy
+            # Update old pseudoresponse
             pseudoresponse_old = pseudoresponse
 
-            if CCPERT_iter >= 1:
-                # Limit size of DIIS vector
-                if (len(diis_vals_z1) > max_diis):
-                    del diis_vals_z1[0]
-                    del diis_vals_z2[0]
-                    del diis_errors[0]
+            #  Add the new error vector
+            if hand == 'right':
+                diis_object.add_error_vector(self.x1, self.x2)
+            else:
+                diis_object.add_error_vector(self.y1, self.y2)
 
-                diis_size = len(diis_vals_z1) - 1
 
-                # Build error matrix B
-                B = np.ones((diis_size + 1, diis_size + 1)) * -1
-                B[-1, -1] = 0
-
-                for n1, e1 in enumerate(diis_errors):
-                    B[n1, n1] = np.dot(e1, e1)
-                    for n2, e2 in enumerate(diis_errors):
-                        if n1 >= n2: continue
-                        B[n1, n2] = np.dot(e1, e2)
-                        B[n2, n1] = B[n1, n2]
-
-                B[:-1, :-1] /= np.abs(B[:-1, :-1]).max()
-
-                # Build residual vector
-                resid = np.zeros(diis_size + 1)
-                resid[-1] = -1
-
-                # Solve pulay equations
-                ci = np.linalg.solve(B, resid)
-
-                # Calculate new amplitudes
-                z1[:] = 0
-                z2[:] = 0
-                for num in range(diis_size):
-                    z1 += ci[num] * diis_vals_z1[num + 1]
-                    z2 += ci[num] * diis_vals_z2[num + 1]
+            if CCPERT_iter >= start_diis:
+                if hand == 'right':    
+                    self.x1, self.x2 = diis_object.extrapolate(self.x1, self.x2)
+                else:    
+                    self.y1, self.y2 = diis_object.extrapolate(self.y1, self.y2)
 
 # End HelperCCPert class
 
