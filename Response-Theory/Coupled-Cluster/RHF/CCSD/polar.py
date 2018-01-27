@@ -20,16 +20,17 @@ H 1 1.1 2 104
 symmetry c1
 """)
 
-psi4.set_options({'basis': 'aug-cc-pVDZ'})
+psi4.set_options({'basis': 'sto-3g'})
 psi4.set_options({'scf_type': 'PK'})
-psi4.set_options({'d_convergence': 1e-13})
-psi4.set_options({'e_convergence': 1e-13})
+psi4.set_options({'d_convergence': 1e-10})
+psi4.set_options({'e_convergence': 1e-10})
+psi4.set_options({'r_convergence': 1e-10})
 rhf_e, rhf_wfn = psi4.energy('SCF', return_wfn=True)
 print('RHF Final Energy                          % 16.10f\n' % rhf_e)
 
 # Calculate Ground State CCSD Equations
 ccsd = HelperCCEnergy(mol, rhf_e, rhf_wfn, memory=2)
-ccsd.compute_energy(e_conv=1e-13, r_conv=1e-13)
+ccsd.compute_energy(e_conv=1e-10, r_conv=1e-10)
 ccsd.compute_energy()
 
 CCSDcorr_E = ccsd.ccsd_corr_e
@@ -41,8 +42,10 @@ print('Total CCSD energy:                      % 16.15f' % CCSD_E)
 cchbar = HelperCCHbar(ccsd)
 
 cclambda = HelperCCLambda(ccsd,cchbar)
-cclambda.compute_lambda(r_conv=1e-13)
-omega = 0.0
+cclambda.compute_lambda(r_conv=1e-10)
+
+# static polarizability
+omega = 0
 
 cart = ['X', 'Y', 'Z']
 mu = {}
@@ -55,28 +58,36 @@ for i in range(0,3):
     mu[string] = np.einsum('uj,vi,uv', ccsd.npC, ccsd.npC, np.asarray(ccsd.mints.ao_dipole()[i]))
     ccpert[string] = HelperCCPert(string, mu[string], ccsd, cchbar, cclambda, omega)
     print('\nsolving right hand perturbed amplitudes for %s\n' % string)
-    ccpert[string].solve('right', r_conv=1e-13)
+    ccpert[string].solve('right', r_conv=1e-10)
     print('\nsolving left hand perturbed amplitudes for %s\n'% string)
-    ccpert[string].solve('left', r_conv=1e-13)
-    
-print('\n Calculating Polarizability tensor:\n')
+    ccpert[string].solve('left', r_conv=1e-10)
+
+print("\nComputing <<Mu;Mu>_(%1.5lf) tensor." % omega)
 
 for a in range(0,3):
     str_a = "MU_" + cart[a]
     for b in range(0,3):
         str_b = "MU_" + cart[b]
-        str_ab = "<<" + str_a + ";" + str_b + ">>"
-        polar_AB[str_ab]= HelperCCLinresp(cclambda, ccpert[str_a], ccpert[str_b]).linresp()
+        polar_AB[3*a+b]  = HelperCCLinresp(cclambda, ccpert[str_a], ccpert[str_b]).linresp()
 
-print('\nPolarizability tensor (symmetrized):\n')
-
+# Symmetrizing the tensor
 for a in range(0,3):
-    str_a = "MU_" + cart[a]
     for b in range(0,a+1):
-        str_b = "MU_" + cart[b]
-        str_ab = "<<" + str_a + ";" + str_b + ">>"
-        str_ba = "<<" + str_b + ";" + str_a + ">>"
-        value = 0.5*(polar_AB[str_ab] + polar_AB[str_ba])
-        polar_AB[str_ab] = value
-        polar_AB[str_ba] = value
-        print(str_ab + ":" + str(value))
+        ab = 3*a+b
+        ba = 3*b+a
+        if a != b:    
+            polar_AB[ab] = 0.5*(polar_AB[ab] + polar_AB[ba])
+            polar_AB[ba] = polar_AB[ab]    
+
+print('\n CCSD Dipole Polarizability Tensor (Symmetrized) at omega = %8.6lf a.u \n'% omega)
+print("\t\t%s\t             %s\t                  %s\n" % (cart[0], cart[1], cart[2]))    
+for a in range(0,3):
+    print(" %s %20.10lf %20.10lf %20.10lf\n" % ( cart[a], polar_AB[3*a+0], polar_AB[3*a+1], polar_AB[3*a+2]))    
+
+trace = polar_AB[0] + polar_AB[4] + polar_AB[8]
+Isotropic_polar = trace/3.0
+        
+# PSI4's polarizability
+psi4.set_options({'omega': [0, 'ev']})
+psi4.properties('ccsd', properties=['polarizability'])
+psi4.compare_values(Isotropic_polar, psi4.get_variable("CCSD DIPOLE POLARIZABILITY @ INF NM"),  3, "CCSD Isotropic Dipole Polarizability @ Inf nm") #TEST

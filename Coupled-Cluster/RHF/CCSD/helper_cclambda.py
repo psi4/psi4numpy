@@ -128,7 +128,7 @@ class HelperCCLambda(object):
 
         self.l1 += r_l1/self.Dia
 
-        old_l2 = self.l2
+        old_l2 = self.l2.copy()
 
         self.l2 += r_l2/self.Dijab 
         self.l2 += (r_l2/self.Dijab).swapaxes(0,1).swapaxes(2,3) 
