@@ -20,7 +20,7 @@ H 1 1.1 2 104
 symmetry c1
 """)
 
-psi4.set_options({'basis': 'sto-3g'})
+psi4.set_options({'basis': 'cc-pvdz'})
 psi4.set_options({'scf_type': 'PK'})
 psi4.set_options({'d_convergence': 1e-10})
 psi4.set_options({'e_convergence': 1e-10})
@@ -88,7 +88,7 @@ trace = polar_AB[0] + polar_AB[4] + polar_AB[8]
 Isotropic_polar = trace/3.0
         
 # Comaprison with PSI4
-psi4.set_options({'omega': [0, 'ev']})
+#psi4.set_options({'omega': [0, 'ev']})
 #psi4.properties('ccsd', properties=['polarizability'])
 #psi4.compare_values(Isotropic_polar, psi4.get_variable("CCSD DIPOLE POLARIZABILITY @ INF NM"),  3, "CCSD Isotropic Dipole Polarizability @ Inf nm") #TEST
-psi4.compare_values(Isotropic_polar, 3.316475830668,  6, "CCSD Isotropic Dipole Polarizability @ Inf nm") #TEST
+psi4.compare_values(Isotropic_polar, 6.756049543545,  9, "CCSD Isotropic Dipole Polarizability @ Inf nm") #TEST
