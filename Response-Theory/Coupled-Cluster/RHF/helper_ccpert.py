@@ -459,7 +459,7 @@ class HelperCCLinresp(object):
 
     def __init__(self, cclambda, ccpert_x, ccpert_y):
 
-        # Integral generation from Psi4's MintsHelper
+        # start of the cclinresp class 
         time_init = time.time()
 
         self.ccpert_x = ccpert_x

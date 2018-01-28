@@ -18,7 +18,7 @@ def test_CCSD_T(workspace):
 
 
 def test_EOM_CCSD(workspace):
-    exe_py(workspace, tdir+'/RHF/CCSD','EOM_CCSD')
+    exe_py(workspace, tdir+'/RHF','EOM_CCSD')
 
 
 #def test_TD_CCSD(workspace):
