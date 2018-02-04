@@ -31,7 +31,6 @@ print('RHF Final Energy                          % 16.10f\n' % rhf_e)
 # Calculate Ground State CCSD Equations
 ccsd = HelperCCEnergy(mol, rhf_e, rhf_wfn, memory=2)
 ccsd.compute_energy(e_conv=1e-10, r_conv=1e-10)
-ccsd.compute_energy()
 
 CCSDcorr_E = ccsd.ccsd_corr_e
 CCSD_E = ccsd.ccsd_e

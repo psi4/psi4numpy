@@ -1,17 +1,14 @@
-# -*- coding: utf-8 -*- 
 """
-A simple python script to compute RHF-CCSD energy. Equations were 
-spin-adapted using the unitary group approach. 
+A simple python script to compute RHF-CCSD energy. Equations (Spin orbitals) from reference 1
+have been spin-factored. However, explicit building of Wabef intermediates are avoided here.
 
 References: 
-1. Chapter 13, "Molecular Electronic-Structure Theory", Trygve Helgaker, 
-   Poul Jørgensen and Jeppe Olsen, John Wiley & Sons Ltd.
-2. J.F. Stanton, J. Gauss, J.D. Watts, and R.J. Bartlett, 
+1. J.F. Stanton, J. Gauss, J.D. Watts, and R.J. Bartlett, 
    J. Chem. Phys. volume 94, pp. 4334-4345 (1991).
 """
 
 __authors__ = "Ashutosh Kumar"
-__credits__ = ["Ashutosh Kumar", "Daniel G. A. Smith", "Lori A. Burns", "T. D. Crawford"]
+__credits__ = ["T. D. Crawford", "Daniel G. A. Smith", "Lori A. Burns", "Ashutosh Kumar"]
 
 __copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
@@ -116,9 +113,9 @@ class HelperCCEnergy(object):
         return self.F[self.slice_dict[string[0]], self.slice_dict[string[1]]]
 
 
-    #Equations from Reference 2 (Stanton's paper)
+    #Equations from Reference 1 (Stanton's paper)
 
-    #Bulid Eqn 9: tilde{\Tau})
+    #Bulid Eqn 9: 
     def build_tilde_tau(self):
         ttau = self.t2.copy()
         tmp = 0.5 * np.einsum('ia,jb->ijab', self.t1, self.t1)
@@ -126,7 +123,7 @@ class HelperCCEnergy(object):
         return ttau
 
 
-    #Build Eqn 10: \Tau)
+    #Build Eqn 10: 
     def build_tau(self):
         ttau = self.t2.copy()
         tmp = np.einsum('ia,jb->ijab', self.t1, self.t1)
@@ -169,6 +166,8 @@ class HelperCCEnergy(object):
         Wmnij = self.get_MO('oooo').copy()
         Wmnij += ndot('je,mnie->mnij', self.t1, self.get_MO('ooov'))
         Wmnij += ndot('ie,mnej->mnij', self.t1, self.get_MO('oovo'))
+        # prefactor of 1 instead of 0.5 below to fold the last term of 
+        # 0.5 * tau_ijef Wabef in Wmnij contraction: 0.5 * tau_mnab Wmnij_mnij
         Wmnij += ndot('ijef,mnef->mnij', self.build_tau(), self.get_MO('oovv'), prefactor=1.0)
         return Wmnij
 
@@ -185,6 +184,7 @@ class HelperCCEnergy(object):
         Wmbej += ndot('njfb,mnfe->mbej', self.t2, self.get_MO('oovv'), prefactor=-0.5)
         return Wmbej
 
+    # This intermediate appaears in the spin factorization of Wmbej terms.
     def build_Wmbje(self):
         Wmbje = -1.0 * (self.get_MO('ovov').copy())
         Wmbje -= ndot('jf,mbfe->mbje', self.t1, self.get_MO('ovvv'))
@@ -194,6 +194,8 @@ class HelperCCEnergy(object):
         Wmbje += ndot('jnfb,mnfe->mbje', tmp, self.get_MO('oovv'))
         return Wmbje
 
+    # This intermediate is required to build second term of 0.5 * tau_ijef * Wabef,
+    # as explicit construction of Wabef is avoided here.    
     def build_Zmbij(self):
         Zmbij = 0
         Zmbij += ndot('mbef,ijef->mbij', self.get_MO('ovvv'), self.build_tau())	
@@ -206,7 +208,7 @@ class HelperCCEnergy(object):
         Fmi = self.build_Fmi()
         Fme = self.build_Fme()
 
-        #### Build residual of T1 equations
+        #### Build residual of T1 equations by spin adaption of  Eqn 1:
         r_T1 = self.get_F('ov').copy()
         r_T1 += ndot('ie,ae->ia', self.t1, Fae)
         r_T1 -= ndot('ma,mi->ia', self.t1, Fmi)
@@ -219,26 +221,33 @@ class HelperCCEnergy(object):
         r_T1 -= ndot('mnae,nmei->ia', self.t2, self.get_MO('oovo'), prefactor=2.0)
         r_T1 -= ndot('mnae,nmie->ia', self.t2, self.get_MO('ooov'), prefactor=-1.0)
 
-        ### Build residual of T2 equations
+        ### Build residual of T2 equations by spin adaptation of Eqn 2:
+        # <ij||ab> ->  <ij|ab>
+        #   spin   ->  spin-adapted (<alpha beta| alpha beta>)     
         r_T2 = self.get_MO('oovv').copy()
 
-        # P^(ab)_(ij) {t_ijae Fae_be} 
+        # Conventions used:
+        #   P(ab) f(a,b) = f(a,b) - f(b,a)    
+        #   P(ij) f(i,j) = f(i,j) - f(j,i)    
+        #   P^(ab)_(ij) f(a,b,i,j) = f(a,b,i,j) + f(b,a,j,i)
+
+        # P(ab) {t_ijae Fae_be}  ->  P^(ab)_(ij) {t_ijae Fae_be}
         tmp = ndot('ijae,be->ijab', self.t2, Fae)
         r_T2 += tmp
         r_T2 += tmp.swapaxes(0,1).swapaxes(2,3)
 
-        # P^(ab)_(ij) {-0.5 * t_ijae t_mb Fme_me}
+        # P(ab) {-0.5 * t_ijae t_mb Fme_me} -> P^(ab)_(ij) {-0.5 * t_ijae t_mb Fme_me}
         tmp = ndot('mb,me->be', self.t1, Fme) 
         first = ndot('ijae,be->ijab', self.t2, tmp, prefactor=0.5)	
         r_T2 -= first
         r_T2 -= first.swapaxes(0,1).swapaxes(2,3)
 
-        # P^(ab)_(ij) {-t_imab Fmi_mj}
+        # P(ij) {-t_imab Fmi_mj}  ->  P^(ab)_(ij) {-t_imab Fmi_mj}
         tmp = ndot('imab,mj->ijab', self.t2, Fmi, prefactor=1.0) 
         r_T2 -= tmp
         r_T2 -= tmp.swapaxes(0,1).swapaxes(2,3)
 
-	    # P^(ab)_(ij) {-0.5 * t_imab t_je Fme_me}
+	    # P(ij) {-0.5 * t_imab t_je Fme_me}  -> P^(ab)_(ij) {-0.5 * t_imab t_je Fme_me}
         tmp = ndot('je,me->jm', self.t1, Fme)
         first = ndot('imab,jm->ijab', self.t2, tmp, prefactor=0.5)      
         r_T2 -= first
@@ -251,51 +260,61 @@ class HelperCCEnergy(object):
         Wmbje = self.build_Wmbje()
         Zmbij = self.build_Zmbij()
 
-	    # tau_mnab Wmnij_mnij + tau_ijef <ab|ef> 
+	    # 0.5 * tau_mnab Wmnij_mnij  -> tau_mnab Wmnij_mnij
+        # This also includes the last term in 0.5 * tau_ijef Wabef
+        # as Wmnij is modified to include this contribution.
         r_T2 += ndot('mnab,mnij->ijab', tmp_tau, Wmnij, prefactor=1.0)
+
+        # Wabef used in eqn 2 of reference 1 is very expensive to build and store, so we have 
+        # broken down the term , 0.5 * tau_ijef * Wabef (eqn. 7) into different components
+        # The last term in the contraction 0.5 * tau_ijef * Wabef is already accounted 
+        # for in the contraction just above.
+
+	    # First term: 0.5 * tau_ijef <ab||ef> -> tau_ijef <ab|ef>
         r_T2 += ndot('ijef,abef->ijab', tmp_tau, self.get_MO('vvvv'), prefactor=1.0)
 
-        # P^(ab)_(ij) {t_ie <ab|ej>}
-        tmp = ndot('ie,abej->ijab', self.t1, self.get_MO('vvvo'), prefactor=1.0)
-        r_T2 += tmp
-        r_T2 += tmp.swapaxes(0,1).swapaxes(2,3)
-        
-        # P^(ab)_(ij) {-t_ma <mb|ij>}
-        tmp = ndot('ma,mbij->ijab', self.t1, self.get_MO('ovoo'), prefactor=1.0)
+	    # Second term: 0.5 * tau_ijef (-P(ab) t_mb <am||ef>)  -> -P^(ab)_(ij) {t_ma * Zmbij_mbij}
+        # where Zmbij_mbij = <mb|ef> * tau_ijef  
+        tmp = ndot('ma,mbij->ijab', self.t1, Zmbij)	
         r_T2 -= tmp
         r_T2 -= tmp.swapaxes(0,1).swapaxes(2,3)
-	
-	    # P^(ab)_(ij) {(t_imae - t_imea) * Wmbej_mbej}   
-        tmp = ndot('imae,mbej->ijab', self.t2, Wmbej, prefactor=1.0)
-        tmp += ndot('imea,mbej->ijab', self.t2, Wmbej, prefactor=-1.0)
+
+        # P(ij)P(ab) t_imae Wmbej -> Broken down into three terms below 
+        # First term: P^(ab)_(ij) {(t_imae - t_imea)* Wmbej_mbej}   
+        tmp  =  ndot('imae,mbej->ijab', self.t2, Wmbej, prefactor=1.0)
+        tmp  += ndot('imea,mbej->ijab', self.t2, Wmbej, prefactor=-1.0)
         r_T2 += tmp    
         r_T2 += tmp.swapaxes(0,1).swapaxes(2,3)
 
-	    # P^(ab)_(ij) t_imae * (Wmbej_mbej + Wmbje_mbje)  
+	    # Second term: P^(ab)_(ij) t_imae * (Wmbej_mbej + Wmbje_mbje)
         tmp = ndot('imae,mbej->ijab', self.t2, Wmbej, prefactor=1.0)
         tmp += ndot('imae,mbje->ijab', self.t2, Wmbje, prefactor=1.0)
         r_T2 += tmp    
         r_T2 += tmp.swapaxes(0,1).swapaxes(2,3)
 
-	    # P^(ab)_(ij) t_mjae * Wmbje_mbie  
+	    # Third term: P^(ab)_(ij) t_mjae * Wmbje_mbie 
         tmp = ndot('mjae,mbie->ijab', self.t2, Wmbje, prefactor=1.0)
         r_T2 += tmp    
         r_T2 += tmp.swapaxes(0,1).swapaxes(2,3)
-	
-	    # P^(ab)_(ij) {t_ie * t_ma * <mb|ej>} 
+
+	    # -P(ij)P(ab) {-t_ie * t_ma * <mb||ej>} -> P^(ab)_(ij) {-t_ie * t_ma * <mb|ej> 
+        #                                                      + t_ie * t_mb * <ma|je>} 
         tmp = ndot('ie,ma->imea', self.t1, self.t1)
         tmp1 = ndot('imea,mbej->ijab', tmp, self.get_MO('ovvo'))
         r_T2 -= tmp1 
         r_T2 -= tmp1.swapaxes(0,1).swapaxes(2,3)
-
-	    # P^(ab)_(ij) {t_ie * t_mb * <ma|je>} 
         tmp = ndot('ie,mb->imeb', self.t1, self.t1)
         tmp1 = ndot('imeb,maje->ijab', tmp, self.get_MO('ovov'))
         r_T2 -= tmp1 
         r_T2 -= tmp1.swapaxes(0,1).swapaxes(2,3)
 
-	    # P^(ab)_(ij) {t_ma * Zmbij_mbij} 
-        tmp = ndot('ma,mbij->ijab', self.t1, Zmbij)	
+        # P(ij) {t_ie <ab||ej>} -> P^(ab)_(ij) {t_ie <ab|ej>} 
+        tmp   = ndot('ie,abej->ijab', self.t1, self.get_MO('vvvo'), prefactor=1.0)
+        r_T2 += tmp
+        r_T2 += tmp.swapaxes(0,1).swapaxes(2,3)
+        
+        # P(ab) {-t_ma <mb||ij>} -> P^(ab)_(ij) {-t_ma <mb|ij>}
+        tmp   = ndot('ma,mbij->ijab', self.t1, self.get_MO('ovoo'), prefactor=1.0)
         r_T2 -= tmp
         r_T2 -= tmp.swapaxes(0,1).swapaxes(2,3)
 
