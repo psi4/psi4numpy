@@ -4,8 +4,8 @@ Hbar = e^(-T)He^(T) = H + [H,T] + 1/2![[H,T],T] + 1/3![[[H,T],T],T] + 1/4![[[[H,
 which can be used quite conveniently to solve lambda equations, calculate  excitation energies 
 (EOM-CC sigma equations) , CC response properties etc..
 
-References: 
-1. Stanton's 1993 eom-cc paper - eqns are wrong in this ref.
+References:  
+1. J. Gauss and J.F. Stanton, J. Chem. Phys., volume 103, pp. 3561-3577 (1995). 
 """
 
 __authors__ = "Ashutosh Kumar"
@@ -104,18 +104,19 @@ class HelperCCHbar(object):
         self.ttau += tmp
         return self.ttau
 
+    # F and W are the one and two body intermediates which appear in the CCSD
+    # T1 and T2 equations. Please refer to helper_ccenergy file for more details.
     # Spin orbitals expression of all Hbar components are written in einstein notation in the 
     # comments below. Ofcourse we are constructing <p * alpha | Hbar |q * alpha> (or beta) 
     # and <p * alpha * q * beta | Hbar | r * alpha * s * beta> components here.
 
-
-    # <m|Hbar|e> = F_me + t_nf <mn||ef>
+    # <m|Hbar|e> = F_me = f_me + t_nf <mn||ef>
     def build_Hov(self):
         self.Hov = self.get_F('ov').copy()
         self.Hov += ndot('nf,mnef->me', self.t1, self.Loovv)
         return self.Hov
 
-    # <m|Hbar|i> = F_mi + t_ie F_me + t_ne <mn||ie> + tau_inef <mn||ef> 
+    # <m|Hbar|i> = F_mi + 0.5 * t_ie F_me = f_mi + t_ie f_me + t_ne <mn||ie> + tau_inef <mn||ef> 
     def build_Hoo(self):
         self.Hoo = self.get_F('oo').copy()
         self.Hoo += ndot('ie,me->mi', self.t1, self.get_F('ov'))
@@ -123,7 +124,7 @@ class HelperCCHbar(object):
         self.Hoo += ndot('inef,mnef->mi', self.build_tau(), self.Loovv)
         return self.Hoo
 
-    # <a|Hbar|e> = F_ae - t_ma F_me + t_mf <am||ef> - tau_mnfa <mn||fe> 
+    # <a|Hbar|e> = F_ae - 0.5 * t_ma F_me = f_ae - t_ma f_me + t_mf <am||ef> - tau_mnfa <mn||fe> 
     def build_Hvv(self):
         self.Hvv = self.get_F('vv').copy()
         self.Hvv -= ndot('ma,me->ae', self.t1, self.get_F('ov'))
@@ -131,7 +132,7 @@ class HelperCCHbar(object):
         self.Hvv -= ndot('mnfa,mnfe->ae', self.build_tau(), self.Loovv)
         return self.Hvv
 
-    # <mn|Hbar|ij> = <mn||ij> + P(ij) t_je <mn||ie> + 0.5 * tau_ijef <mn||ef> 
+    # <mn|Hbar|ij> = W_mnij + 0.25 * tau_ijef <mn||ef> = <mn||ij> + P(ij) t_je <mn||ie> + 0.5 * tau_ijef <mn||ef> 
     def build_Hoooo(self):
         self.Hoooo = self.get_MO('oooo').copy()
         self.Hoooo += ndot('je,mnie->mnij', self.t1, self.get_MO('ooov'))
@@ -139,7 +140,7 @@ class HelperCCHbar(object):
         self.Hoooo += ndot('ijef,mnef->mnij', self.build_tau(), self.get_MO('oovv'))
         return self.Hoooo
 
-    # <ab|Hbar|ef> = <ab||ef> - P(ab) t_mb <am||ef> + 0.5 * tau_mnab <mn||ef> 
+    # <ab|Hbar|ef> = W_abef + 0.25 * tau_mnab <mn||ef> = <ab||ef> - P(ab) t_mb <am||ef> + 0.5 * tau_mnab <mn||ef> 
     def build_Hvvvv(self):
         self.Hvvvv = self.get_MO('vvvv').copy()
         self.Hvvvv -= ndot('mb,amef->abef', self.t1, self.get_MO('vovv'))
@@ -153,13 +154,13 @@ class HelperCCHbar(object):
         self.Hvovv -= ndot('na,nmef->amef', self.t1, self.get_MO('oovv'))
         return self.Hvovv
 
-    # <mn|Hbar|ie> = <mn||ie> + t_if <nm||ef> 
+    # <mn|Hbar|ie> = <mn||ie> + t_if <mn||fe> 
     def build_Hooov(self):
         self.Hooov = self.get_MO('ooov').copy()
-        self.Hooov += ndot('if,nmef->mnie', self.t1, self.get_MO('oovv'))
+        self.Hooov += ndot('if,mnfe->mnie', self.t1, self.get_MO('oovv'))
         return self.Hooov
 
-    # <mb|Hbar|ej> = <mb||ej> + t_jf <mb||ef> - t_nb <mn||ej> - (t_jnfb + t_jf t_nb) <nm||fe>   
+    # <mb|Hbar|ej> = W_mbej - 0.5 * t_jnfb <mn||ef> = <mb||ej> + t_jf <mb||ef> - t_nb <mn||ej> - (t_jnfb + t_jf t_nb) <nm||fe>   
     def build_Hovvo(self):
         self.Hovvo = self.get_MO('ovvo').copy()
         self.Hovvo += ndot('jf,mbef->mbej', self.t1, self.get_MO('ovvv'))
@@ -176,21 +177,12 @@ class HelperCCHbar(object):
         self.Hovov -= ndot('jnfb,nmef->mbje', self.build_tau(), self.get_MO('oovv'))
         return self.Hovov
 
-    # <ab|Hbar|ei> = <ab||ei> - P(ab) t_mb <am||ei> - P(ab) t_imfa <mb||ef> + 0.5 * tau_mnab <mn||ei> 
-    #                 - t_miab Fme - t_if Wabef + P(ab) t_ma * t_infb <mn||ef>                  
+    # <ab|Hbar|ei> = <ab||ei> - F_me t_miab + t_if Wabef + 0.5 * tau_mnab <mn||ei> - P(ab) t_miaf <mb||ef> 
+    #                - P(ab) t_ma {<mb||ei> - t_nibf <mn||ef>} 
     def build_Hvvvo(self):
         # <ab||ei>
         self.Hvvvo =  self.get_MO('vvvo').copy()
-        # - P(ab) t_mb <am||ei> 
-        self.Hvvvo -= ndot('mb,amei->abei', self.t1, self.get_MO('vovo'))
-        self.Hvvvo -= ndot('ma,bmie->abei', self.t1, self.get_MO('voov'))
-        # - P(ab) t_imfa <mb||ef>
-        self.Hvvvo -= ndot('imfa,mbef->abei', self.t2, self.get_MO('ovvv'))
-        self.Hvvvo -= ndot('imfb,amef->abei', self.t2, self.get_MO('vovv'))
-        self.Hvvvo += ndot('mifb,amef->abei', self.t2, self.Lvovv)
-        # 0.5 * tau_mnab <mn||ei>
-        self.Hvvvo += ndot('mnab,mnei->abei', self.build_tau(), self.get_MO('oovo'))
-        # - t_miab Fme
+        # - Fme t_miab
         self.Hvvvo -= ndot('me,miab->abei', self.get_F('ov'), self.t2)
         tmp = ndot('mnfe,mf->ne', self.Loovv, self.t1)
         self.Hvvvo -= ndot('niab,ne->abei', self.t2, tmp)
@@ -204,7 +196,16 @@ class HelperCCHbar(object):
         tmp  = ndot('if,ma->imfa', self.t1, self.t1)
         tmp1 = ndot('mnef,nb->mbef', self.get_MO('oovv'), self.t1)
         self.Hvvvo += ndot('imfa,mbef->abei', tmp, tmp1)
-        # P(ab) t_ma * t_infb <mn||ef> 
+        # 0.5 * tau_mnab <mn||ei>
+        self.Hvvvo += ndot('mnab,mnei->abei', self.build_tau(), self.get_MO('oovo'))
+        # - P(ab) t_miaf <mb||ef>
+        self.Hvvvo -= ndot('imfa,mbef->abei', self.t2, self.get_MO('ovvv'))
+        self.Hvvvo -= ndot('imfb,amef->abei', self.t2, self.get_MO('vovv'))
+        self.Hvvvo += ndot('mifb,amef->abei', self.t2, self.Lvovv)
+        # - P(ab) t_ma <mb||ei> 
+        self.Hvvvo -= ndot('mb,amei->abei', self.t1, self.get_MO('vovo'))
+        self.Hvvvo -= ndot('ma,bmie->abei', self.t1, self.get_MO('voov'))
+        # P(ab) t_ma * t_nibf <mn||ef> 
         tmp = ndot('mnef,ma->anef', self.get_MO('oovv'), self.t1)
         self.Hvvvo += ndot('infb,anef->abei', self.t2, tmp)
         tmp = ndot('mnef,ma->nafe', self.Loovv, self.t1)
@@ -213,21 +214,12 @@ class HelperCCHbar(object):
         self.Hvvvo += ndot('niaf,nefb->abei', self.t2, tmp)
         return self.Hvvvo
     
-    # <mb|Hbar|ij> = <mb||ij> + P(ij) t_ie <mb||ej> + P(ij) t_jnbe <mn||ie> + 0.5 * tau_ijef <mb||ef> 
-    #                + t_ijbe Fme - t_nb Wmnij - P(ij) t_ie * t_jnfb <mn||ef>
+    # <mb|Hbar|ij> = <mb||ij> - Fme t_ijbe - t_nb Wmnij + 0.5 * tau_ijef <mb||ef> + P(ij) t_jnbe <mn||ie>
+    #                + P(ij) t_ie {<mb||ej> - t_njbf <mn||ef>}
     def build_Hovoo(self):
         # <mb||ij>
         self.Hovoo =  self.get_MO('ovoo').copy()
-        # P(ij) t_ie <mb||ej>
-        self.Hovoo += ndot('je,mbie->mbij', self.t1, self.get_MO('ovov'))
-        self.Hovoo += ndot('ie,mbej->mbij', self.t1, self.get_MO('ovvo')) 
-        # P(ij) t_jnbe <mn||ie> 
-        self.Hovoo -= ndot('ineb,mnej->mbij', self.t2, self.get_MO('oovo'))
-        self.Hovoo -= ndot('jneb,mnie->mbij', self.t2, self.get_MO('ooov'))
-        self.Hovoo += ndot('jnbe,mnie->mbij', self.t2, self.Looov)
-        # 0.5 * tau_ijef <mb||ef>
-        self.Hovoo += ndot('ijef,mbef->mbij', self.build_tau(), self.get_MO('ovvv'))
-        # t_ijbe Fme
+        # - Fme t_ijbe
         self.Hovoo += ndot('me,ijeb->mbij', self.get_F('ov'), self.t2)
         tmp = ndot('mnef,nf->me', self.Loovv, self.t1)
         self.Hovoo += ndot('me,ijeb->mbij', tmp, self.t2)
@@ -241,7 +233,16 @@ class HelperCCHbar(object):
         tmp  = ndot('ie,jf->ijef', self.t1, self.t1)
         tmp1 = ndot('nb,mnef->mbef', self.t1, self.get_MO('oovv'))
         self.Hovoo -= ndot('mbef,ijef->mbij', tmp1, tmp)
-        # - P(ij) t_ie * t_jnfb <mn||ef>
+        # 0.5 * tau_ijef <mb||ef>
+        self.Hovoo += ndot('ijef,mbef->mbij', self.build_tau(), self.get_MO('ovvv'))
+        # P(ij) t_jnbe <mn||ie> 
+        self.Hovoo -= ndot('ineb,mnej->mbij', self.t2, self.get_MO('oovo'))
+        self.Hovoo -= ndot('jneb,mnie->mbij', self.t2, self.get_MO('ooov'))
+        self.Hovoo += ndot('jnbe,mnie->mbij', self.t2, self.Looov)
+        # P(ij) t_ie <mb||ej>
+        self.Hovoo += ndot('je,mbie->mbij', self.t1, self.get_MO('ovov'))
+        self.Hovoo += ndot('ie,mbej->mbij', self.t1, self.get_MO('ovvo')) 
+        # - P(ij) t_ie * t_njbf <mn||ef>
         tmp = ndot('ie,mnef->mnif', self.t1, self.get_MO('oovv'))
         self.Hovoo -= ndot('jnfb,mnif->mbij', self.t2, tmp)
         tmp = ndot('mnef,njfb->mejb', self.Loovv, self.t2)
