@@ -1,12 +1,17 @@
+# -*- coding: utf-8 -*-
 """
 A simple python script to compute RHF-CCSD linear response function 
 for calculating properties like dipole polarizabilities, optical
-rotations etc. Equations were spin-adapted using the unitary group approach. 
+rotations etc. 
 
 References: 
-1.  H. Koch and P. Jørgensen, J. Chem. Phys. volume 93, pp. 3333-3344 (1991).
-2. Chapter 13, "Molecular Electronic-Structure Theory", Trygve Helgaker, 
+1. A Whirlwind Introduction to Coupled Cluster Response Theory, T.D. Crawford, Private Notes,
+   (pdf in the current directory).
+2. H. Koch and P. Jørgensen, J. Chem. Phys. Volume 93, pp. 3333-3344 (1991).
+3. S. R. Gwaltney, M. Nooijen and R.J. Bartlett, Chemical Physics Letters, 248, pp. 189-198 (1996).
+4. Chapter 13, "Molecular Electronic-Structure Theory", Trygve Helgaker, 
    Poul Jørgensen and Jeppe Olsen, John Wiley & Sons Ltd.
+
 """
 
 __authors__ = "Ashutosh Kumar"
@@ -73,14 +78,14 @@ class HelperCCPert(object):
         self.Dia += omega
         self.Dijab += omega
         
-        # Guesses for X1 and X2 amplitudes
+        # Guesses for X1 and X2 amplitudes (First order perturbed T amplitudes)
         self.x1 = self.build_Avo().swapaxes(0,1)/self.Dia
         self.pertbar_ijab = self.build_Avvoo().swapaxes(0,2).swapaxes(1,3)
         self.x2 = self.pertbar_ijab.copy()
         self.x2 += self.pertbar_ijab.swapaxes(0,1).swapaxes(2,3)
         self.x2 = self.x2/self.Dijab
        
-        # Guesses for Y1 and Y2 amplitudes
+        # Guesses for Y1 and Y2 amplitudes (First order perturbed Lambda amplitudes)
         self.y1 =  2.0 * self.x1.copy() 
         self.y2 =  4.0 * self.x2.copy()    
         self.y2 -= 2.0 * self.x2.swapaxes(2,3)
@@ -109,6 +114,11 @@ class HelperCCPert(object):
             psi4.core.clean()
             raise Exception('get_pert: string %s must have 2 elements.' % string)
         return self.pert[self.slice_dict[string[0]], self.slice_dict[string[1]]]
+
+    # Build different pieces of the similarity transformed perturbation operator
+    # using ground state T amplitudes i.e T(0).
+    # A_bar = e^{-T(0)} A e^{T(0)} = A + [A,T(0)] + 1/2! [[A,T(0)],T(0)] 
+    # since A is a one body operator, the expansion truncates at double commutators.
 
     def build_Aoo(self):
         Aoo = self.get_pert('oo').copy()
@@ -150,16 +160,8 @@ class HelperCCPert(object):
         Avvoo -= ndot('mjab,mi->abij', self.t2, self.build_Aoo())
         return Avvoo
 
-    def build_Goo(self, t2, y2):
-        Goo = 0
-        Goo += ndot('mjab,ijab->mi', t2, y2)
-        return Goo
-
-    def build_Gvv(self, y2, t2):
-        Gvv = 0
-        Gvv -= ndot('ijab,ijeb->ae', y2, t2)
-        return Gvv
-
+    # Intermediates to avoid construction of 3 body Hbar terms
+    # in solving X amplitude equations.
     def build_Zvv(self):
         Zvv = 0
         Zvv += ndot('amef,mf->ae', self.Hvovv, self.x1, prefactor=2.0)
@@ -174,10 +176,53 @@ class HelperCCPert(object):
         Zoo -= ndot('mnef,inef->mi', self.Loovv, self.x2)
         return Zoo
 
+    # Intermediates to avoid construction of 3 body Hbar terms
+    # in solving Y amplitude equations (just like in lambda equations).
+    def build_Goo(self, t2, y2):
+        Goo = 0
+        Goo += ndot('mjab,ijab->mi', t2, y2)
+        return Goo
+
+    def build_Gvv(self, y2, t2):
+        Gvv = 0
+        Gvv -= ndot('ijab,ijeb->ae', y2, t2)
+        return Gvv
 
     def update_X(self):
         
-        # X1 equations
+        # X1 and X2 amplitudes are the Fourier analogues of first order perturbed T1 and T2 amplitudes, 
+        # (eq. 65, reference 1). For a given perturbation, these amplitudes are frequency dependent and 
+        # can be obtained by solving a linear system of equations, (Hbar(0) - omgea * I)X = Hbar(1)
+        # Refer to eq 70 of reference 1. Writing t_mu^(1)(omega) as X_mu and Hbar^(1)(omega) as A_bar,
+        # X1 equations:
+        # omega * X_ia = <phi^a_i|A_bar|O> + <phi^a_i|Hbar^(0)|phi^c_k> * X_kc + <phi^a_i|Hbar^(0)|phi^cd_kl> * X_klcd
+        # X2 equations:
+        # omega * X_ijab = <phi^ab_ij|A_bar|O> + <phi^ab_ij|Hbar^(0)|phi^c_k> * X_kc + <phi^ab_ij|Hbar^(0)|phi^cd_kl> * X_klcd
+        # Note that the RHS terms have exactly the same structure as EOM-CCSD sigma equations.
+        # Spin Orbital expressions (Einstein summation):
+
+        # X1 equations: 
+        # -omega * X_ia + A_bar_ai + X_ie * Hvv_ae - X_ma * Hoo_mi + X_me * Hovvo_maei + X_miea * Hov_me 
+        # + 0.5 * X_imef * Hvovv_amef - 0.5 * X_mnae * Hooov_mnie = 0
+
+        # X2 equations:
+        # -omega * X_ijab + A_bar_abij + P(ij) X_ie * Hvvvo_abej - P(ab) X_ma * Hovoo_mbij 
+        # + P(ab) X_mf * Hvovv_amef * t_ijeb - P(ij) X_ne * Hooov_mnie * t_mjab 
+        # + P(ab) X_ijeb * Hvv_ae  - P(ij) X_mjab * Hov_mi + 0.5 * X_mnab * Hoooo_mnij + 0.5 * X_ijef * Hvvvv_abef 
+        # + P(ij) P(ab) X_miea * Hovvo_mbej - 0.5 * P(ab) X_mnaf * Hoovv_mnef * t_ijeb
+        # - 0.5 * P(ij) X_inef * Hoovv_mnef * t_mjab    
+
+        # It should be noted that in order to avoid construction of 3-body Hbar terms appearing in X2 equations like,
+        # Hvvooov_bamjif = Hvovv_amef * t_ijeb, 
+        # Hvvooov_banjie = Hooov_mnie * t_mjab,
+        # Hvoooov_bmnjif = Hoovv_mnef * t_ijeb, 
+        # Hvvoovv_banjef = Hoovv_mnef * t_mjab,  
+        # we make use of Z intermediates: 
+        # Zvv_ae = - Hooov_amef * X_mf - 0.5 * X_mnaf * Hoovv_mnef,  
+        # Zoo_mi = - X_ne * Hooov_mnie - 0.5 * Hoovv_mnef * X_inef,  
+        # And then contract Z with T2 amplitudes.
+           
+        # X1 equations 
         r_x1  = self.build_Avo().swapaxes(0,1).copy()
         r_x1 -= self.omega * self.x1.copy()
         r_x1 += ndot('ie,ae->ia', self.x1, self.Hvv)
@@ -190,48 +235,58 @@ class HelperCCPert(object):
         r_x1 += ndot('imef,amfe->ia', self.x2, self.Hvovv, prefactor=-1.0)
         r_x1 -= ndot('mnie,mnae->ia', self.Hooov, self.x2, prefactor=2.0)
         r_x1 -= ndot('nmie,mnae->ia', self.Hooov, self.x2, prefactor=-1.0)
+        # X1 equations over!    
 
-        # X2 equations
+        # X2 equations 
+        # Final r_x2_ijab = r_x2_ijab + r_x2_jiba
         r_x2 = self.build_Avvoo().swapaxes(0,2).swapaxes(1,3).copy()
+        # a factor of 0.5 because of the comment just above
+        # and due to the fact that X2_ijab = X2_jiba  
         r_x2 -= 0.5 * self.omega * self.x2
         r_x2 += ndot('ie,abej->ijab', self.x1, self.Hvvvo)
         r_x2 -= ndot('mbij,ma->ijab', self.Hovoo, self.x1)
-        r_x2 += ndot('mi,mjab->ijab', self.build_Zoo(), self.t2)
-        r_x2 += ndot('ijeb,ae->ijab', self.t2, self.build_Zvv())
         r_x2 += ndot('ijeb,ae->ijab', self.x2, self.Hvv)
         r_x2 -= ndot('mi,mjab->ijab', self.Hoo, self.x2)
         r_x2 += ndot('mnij,mnab->ijab', self.Hoooo, self.x2, prefactor=0.5)
         r_x2 += ndot('ijef,abef->ijab', self.x2, self.Hvvvv, prefactor=0.5)
-        r_x2 -= ndot('imeb,maje->ijab', self.x2, self.Hovov)
-        r_x2 -= ndot('imea,mbej->ijab', self.x2, self.Hovvo)
         r_x2 += ndot('miea,mbej->ijab', self.x2, self.Hovvo, prefactor=2.0)
         r_x2 += ndot('miea,mbje->ijab', self.x2, self.Hovov, prefactor=-1.0)
+        r_x2 -= ndot('imeb,maje->ijab', self.x2, self.Hovov)
+        r_x2 -= ndot('imea,mbej->ijab', self.x2, self.Hovvo)
+        r_x2 += ndot('mi,mjab->ijab', self.build_Zoo(), self.t2)
+        r_x2 += ndot('ijeb,ae->ijab', self.t2, self.build_Zvv())
+        # X2 equations over!    
 
         old_x2 = self.x2.copy()
+        old_x1 = self.x1.copy()
 
         # update X1 and X2
         self.x1 += r_x1/self.Dia
+        # Final r_x2_ijab = r_x2_ijab + r_x2_jiba
         tmp = r_x2/self.Dijab
         self.x2 += tmp + tmp.swapaxes(0,1).swapaxes(2,3)
 
         # Calcuate rms with the residual 
-        rms = np.einsum('ia,ia->', r_x1/self.Dia, r_x1/self.Dia)
+        rms = 0
+        rms += np.einsum('ia,ia->', old_x1 - self.x1, old_x1 - self.x1)
         rms += np.einsum('ijab,ijab->', old_x2 - self.x2, old_x2 - self.x2)
         return np.sqrt(rms)
 
     def inhomogenous_y2(self):
 
         # Inhomogenous terms appearing in Y2 equations
+        # <O|L1(0)|A_bar|phi^ab_ij>
         r_y2  = ndot('ia,jb->ijab', self.l1, self.build_Aov(), prefactor=2.0)
         r_y2 -= ndot('ja,ib->ijab', self.l1, self.build_Aov()) 
+        # <O|L2(0)|A_bar|phi^ab_ij>
         r_y2 += ndot('ijeb,ea->ijab', self.l2, self.build_Avv())
         r_y2 -= ndot('im,mjab->ijab', self.build_Aoo(), self.l2)
-
+        # <O|L1(0)|[Hbar(0), X1]|phi^ab_ij>
         r_y2 -= np.einsum('mieb,me,ja->ijab', self.Loovv, self.x1, self.l1) 
         r_y2 -= np.einsum('ijae,me,mb->ijab', self.Loovv, self.x1, self.l1)
         r_y2 -= np.einsum('me,ie,jmba->ijab', self.x1, self.l1, self.Loovv)
         r_y2 += 2.0 * np.einsum('imae,me,jb->ijab', self.Loovv, self.x1, self.l1)
-
+        # <O|L2(0)|[Hbar(0), X1]|phi^ab_ij>
         r_y2 -=  np.einsum('me,ijeb,ma->ijab', self.x1, self.l2, self.Hov)                             
         r_y2 -=  np.einsum('ie,me,jmba->ijab', self.Hov, self.x1, self.l2)
         r_y2 -=  np.einsum('me,ijef,fmba->ijab', self.x1, self.l2, self.Hvovv) 
@@ -248,7 +303,7 @@ class HelperCCPert(object):
         r_y2 -= -1.0 * np.einsum('imna,me,njeb->ijab', self.Hooov, self.x1, self.l2)
         r_y2 -=  2.0 * np.einsum('imne,me,jnba->ijab', self.Hooov, self.x1, self.l2)
         r_y2 -= -1.0 * np.einsum('mine,me,jnba->ijab', self.Hooov, self.x1, self.l2)
-
+        # <O|L2(0)|[Hbar(0), X2]|phi^ab_ij>
         r_y2 +=  0.5 * np.einsum('ijef,mnef,mnab->ijab', self.l2, self.x2, self.get_MO('oovv')) 
         r_y2 +=  np.einsum('mifb,mnef,jnae->ijab', self.l2, self.x2, self.get_MO('oovv'))
         r_y2 +=  np.einsum('imfb,mnef,njae->ijab', self.l2, self.x2, self.get_MO('oovv'))
@@ -267,13 +322,18 @@ class HelperCCPert(object):
     def inhomogenous_y1(self):
         
         # Inhomogenous terms appearing in Y1 equations
-        r_y1 =  ndot('imae,me->ia', self.Loovv, self.x1, prefactor=2.0)
+        # <O|A_bar|phi^a_i>
+        r_y1 = 2.0 * self.build_Aov().copy()
+        # <O|L1(0)|A_bar|phi^a_i>
         r_y1 -= ndot('im,ma->ia', self.build_Aoo(), self.l1)
         r_y1 += ndot('ie,ea->ia', self.l1, self.build_Avv())
+        # <O|L2(0)|A_bar|phi^a_i>
         r_y1 += ndot('imfe,feam->ia', self.l2, self.build_Avvvo())
         r_y1 -= ndot('ienm,mnea->ia', self.build_Aovoo(), self.l2, prefactor=0.5)
         r_y1 -= ndot('iemn,mnae->ia', self.build_Aovoo(), self.l2, prefactor=0.5)
-
+        # <O|[Hbar(0), X1]|phi^a_i>
+        r_y1 +=  ndot('imae,me->ia', self.Loovv, self.x1, prefactor=2.0)
+        # <O|L1(0)|[Hbar(0), X1]|phi^a_i>
         r_y1 -=  np.einsum('me,ie,ma->ia', self.x1, self.l1, self.Hov) 
         r_y1 -=  np.einsum('ie,me,ma->ia', self.Hov, self.x1, self.l1)
         r_y1 -=  2.0 * np.einsum('me,ne,mina->ia', self.x1,self.l1, self.Hooov)     
@@ -284,12 +344,12 @@ class HelperCCPert(object):
         r_y1 += -1.0 * np.einsum('me,if,fmea->ia', self.x1,self.l1, self.Hvovv)
         r_y1 +=  2.0 * np.einsum('me,mf,fiea->ia', self.x1,self.l1, self.Hvovv)     
         r_y1 += -1.0 * np.einsum('me,mf,fiae->ia', self.x1,self.l1, self.Hvovv)    
-
+        # <O|L1(0)|[Hbar(0), X2]|phi^a_i>
         r_y1 +=  2.0 * np.einsum('imae,mnef,nf->ia', self.Loovv, self.x2, self.l1)  
         r_y1 += -1.0 * np.einsum('imae,mnfe,nf->ia', self.Loovv, self.x2, self.l1)  
         r_y1 -= ndot('ni,na->ia', self.build_Goo(self.x2, self.Loovv), self.l1)
         r_y1 += ndot('ie,ea->ia', self.l1, self.build_Gvv(self.x2, self.Loovv))
-
+        # <O|L2(0)|[Hbar(0), X1]|phi^a_i>
         r_y1 -=  np.einsum('me,nief,mfna->ia', self.x1, self.l2, self.Hovov)
         r_y1 -=  np.einsum('ifne,me,nmaf->ia', self.Hovov, self.x1, self.l2)
         r_y1 -=  np.einsum('me,inef,mfan->ia', self.x1, self.l2, self.Hovvo)
@@ -298,8 +358,7 @@ class HelperCCPert(object):
         r_y1 +=  0.5 * np.einsum('fgea,me,imgf->ia', self.Hvvvv, self.x1, self.l2)
         r_y1 +=  0.5 * np.einsum('imno,me,onea->ia', self.Hoooo, self.x1, self.l2)
         r_y1 +=  0.5 * np.einsum('mino,me,noea->ia', self.Hoooo, self.x1, self.l2)
-
-        ### 3-body terms
+        # 3-body terms
         tmp  =  ndot('nb,fb->nf', self.x1, self.build_Gvv(self.t2, self.l2))
         r_y1 += ndot('inaf,nf->ia', self.Loovv, tmp) 
         tmp  =  ndot('me,fa->mefa', self.x1, self.build_Gvv(self.t2, self.l2))
@@ -308,28 +367,22 @@ class HelperCCPert(object):
         r_y1 -= ndot('meni,mnea->ia', tmp, self.Loovv)
         tmp  =  ndot('jf,nj->fn', self.x1, self.build_Goo(self.t2, self.l2))
         r_y1 -= ndot('inaf,fn->ia', self.Loovv, tmp)
-        ### 3-body terms over
-
-        ### X2 * L2 terms 
+        # 3-body terms over!
+        # <O|L2(0)|[Hbar(0), X2]|phi^a_i>
         r_y1  -=  ndot('mi,ma->ia', self.build_Goo(self.x2, self.l2), self.Hov)  
         r_y1  +=  ndot('ie,ea->ia', self.Hov, self.build_Gvv(self.x2, self.l2)) 
-
         r_y1  -=  np.einsum('imfg,mnef,gnea->ia', self.l2, self.x2, self.Hvovv) 
         r_y1  -=  np.einsum('mifg,mnef,gnae->ia', self.l2, self.x2, self.Hvovv) 
         r_y1  -=  np.einsum('gief,mnga,mnef->ia', self.Hvovv, self.l2, self.x2) 
         r_y1  +=  2.0 * np.einsum('nifg,mnef,gmae->ia', self.l2, self.x2, self.Hvovv)
         r_y1  += -1.0 * np.einsum('nifg,mnef,gmea->ia', self.l2, self.x2, self.Hvovv)
-
         r_y1  -=  ndot('giea,ge->ia', self.Hvovv, self.build_Gvv(self.l2, self.x2), prefactor=2.0) 
         r_y1  -=  ndot('giae,ge->ia', self.Hvovv, self.build_Gvv(self.l2, self.x2), prefactor=-1.0)
-
         r_y1  +=  np.einsum('oief,mnef,mnoa->ia', self.l2, self.x2, self.Hooov)  
         r_y1  +=  np.einsum('inoe,mofa,mnef->ia', self.Hooov, self.l2, self.x2)
         r_y1  +=  np.einsum('miof,onea,nmfe->ia', self.Hooov, self.l2, self.x2)
-
         r_y1  -=  ndot('mioa,mo->ia', self.Hooov, self.build_Goo(self.x2, self.l2), prefactor=2.0) 
         r_y1  -=  ndot('imoa,mo->ia', self.Hooov, self.build_Goo(self.x2, self.l2), prefactor=-1.0) 
-
         r_y1  -=  2.0 * np.einsum('imoe,nofa,mnef->ia', self.Hooov, self.l2, self.x2)
         r_y1  -= -1.0 * np.einsum('mioe,nofa,mnef->ia', self.Hooov, self.l2, self.x2)
 
@@ -337,9 +390,26 @@ class HelperCCPert(object):
 
     def update_Y(self):
 
-        # Homogenous terms Y1 (identical in structure to lambda1 equations)
+        # Y1 and Y2 amplitudes are the Fourier analogues of first order perturbed L1 and L2 amplitudes, 
+        # While X amplitudes are referred to as right hand perturbed amplitudes, Y amplitudes are the
+        # left hand perturbed amplitudes. Just like X1 and X2, they can be obtained by solving a linear 
+        # sytem of equations. Refer to eq 73 of reference 1. for Writing l_mu^(1)(omega) as Y_mu, 
+        # Y1 equations:
+        # omega * Y_ia + Y_kc * <phi^c_k|Hbar(0)|phi^a_i>  + Y_klcd * <phi^cd_kl|Hbar(0)|phi^a_i> 
+        # + <O|(1 + L(0))|Hbar_bar(1)(omega)|phi^a_i> = 0
+        # Y2 equations: 
+        # omega * Y_ijab + Y_kc * <phi^c_k|Hbar(0)|phi^ab_ij>  + Y_klcd * <phi^cd_kl|Hbar(0)|phi^ab_ij> 
+        # + <O|(1 + L(0))|Hbar_bar(1)(omega)|phi^ab_ij> = 0
+        # where Hbar_bar(1)(omega) = Hbar(1) + [Hbar(0), T(1)] = A_bar + [Hbar(0), X]
+        # Note that the homogenous terms of Y1 and Y2 equations except the omega term are exactly identical in 
+        # structure to the L1 and L2 equations and just like lambdas, the equations for these Y amplitudes have 
+        # been derived using the unitray group approach. Please refer to helper_cclambda file for a complete  
+        # decsription.
+
+        # Y1 equations
+        # Inhomogenous terms
         r_y1 = self.im_y1.copy()
-        r_y1  += 2.0 * self.build_Aov().copy()
+        # Homogenous terms now!
         r_y1 += self.omega * self.y1
         r_y1 += ndot('ie,ea->ia', self.y1, self.Hvv)
         r_y1 -= ndot('im,ma->ia', self.Hoo, self.y1)
@@ -351,9 +421,15 @@ class HelperCCPert(object):
         r_y1 -= ndot('eiaf,ef->ia', self.Hvovv, self.build_Gvv(self.y2, self.t2), prefactor=-1.0)
         r_y1 -= ndot('mina,mn->ia', self.Hooov, self.build_Goo(self.t2, self.y2), prefactor=2.0)
         r_y1 -= ndot('imna,mn->ia', self.Hooov, self.build_Goo(self.t2, self.y2), prefactor=-1.0)
+        # Y1 equations over!
 
-        # Homogenous terms Y2 (identical in structure to lambda2 equations)
+        # Y2 equations
+        # Final r_y2_ijab = r_y2_ijab + r_y2_jiba
+        # Inhomogenous terms
         r_y2 = self.im_y2.copy()
+        # Homogenous terms now!
+        # a factor of 0.5 because of the relation/comment just above
+        # and due to the fact that Y2_ijab = Y2_jiba  
         r_y2 += 0.5 * self.omega * self.y2.copy()
         r_y2 += ndot('ia,jb->ijab', self.y1, self.Hov, prefactor=2.0)
         r_y2 -= ndot('ja,ib->ijab', self.y1, self.Hov)
@@ -371,10 +447,14 @@ class HelperCCPert(object):
         r_y2 -= ndot('mieb,jeam->ijab', self.y2, self.Hovvo)
         r_y2 += ndot('ijeb,ae->ijab', self.Loovv, self.build_Gvv(self.y2, self.t2))
         r_y2 -= ndot('mi,mjab->ijab', self.build_Goo(self.t2, self.y2), self.Loovv)
+        # Y2 equations over!
+
+        old_y1 = self.y1.copy()
+        old_y2 = self.y2.copy()
 
         # update Y1 and Y2
         self.y1 += r_y1/self.Dia
-        old_y2 = self.y2.copy()
+        # Final r_y2_ijab = r_y2_ijab + r_y2_jiba
         tmp = r_y2/self.Dijab    
         self.y2 += tmp + tmp.swapaxes(0,1).swapaxes(2,3) 
 
@@ -391,7 +471,7 @@ class HelperCCPert(object):
         else:
             z1 = self.y1 ; z2 = self.y2
 
-        # To match the pseudoresponse with PSI4
+        # To match the pseudoresponse values with PSI4
         polar1 += ndot('ia,ai->', z1, self.build_Avo(), prefactor=2.0)
         tmp = self.pertbar_ijab + self.pertbar_ijab.swapaxes(0,1).swapaxes(2,3) 
         polar2 += ndot('ijab,ijab->', z2, tmp, prefactor=2.0)
@@ -457,69 +537,78 @@ class HelperCCPert(object):
 
 class HelperCCLinresp(object):
 
-    def __init__(self, cclambda, ccpert_x, ccpert_y):
+    def __init__(self, cclambda, ccpert_A, ccpert_B):
 
         # start of the cclinresp class 
         time_init = time.time()
-
-        self.ccpert_x = ccpert_x
-        self.ccpert_y = ccpert_y
-
-        self.pert_x = ccpert_x.pert
-        self.pert_y = ccpert_y.pert
-
+        # Grab all the info from ccpert obejct, a and b here are the two 
+        # perturbations Ex. for dipole polarizabilities, A = mu, B = mu (dipole operator) 
+        self.ccpert_A = ccpert_B
+        self.ccpert_A = ccpert_B
+        self.pert_A = ccpert_A.pert
+        self.pert_B = ccpert_B.pert
         self.l1 = cclambda.l1
         self.l2 = cclambda.l2
-
-        self.x1_x = ccpert_x.x1
-        self.x2_x = ccpert_x.x2
-        self.y1_x = ccpert_x.y1
-        self.y2_x = ccpert_x.y2
-
-        self.x1_y = ccpert_y.x1
-        self.x2_y = ccpert_y.x2
-        self.y1_y = ccpert_y.y1
-        self.y2_y = ccpert_y.y2
+        # Grab X and Y amplitudes corresponding to perturbation A
+        self.x1_A = ccpert_A.x1
+        self.x2_A = ccpert_A.x2
+        self.y1_A = ccpert_A.y1
+        self.y2_A = ccpert_A.y2
+        # Grab X and Y amplitudes corresponding to perturbation B
+        self.x1_B = ccpert_B.x1
+        self.x2_B = ccpert_B.x2
+        self.y1_B = ccpert_B.y1
+        self.y2_B = ccpert_B.y2
 
 
     def linresp(self):
+
+        # Please refer to equation 78 of reference 1. 
+        # Writing H(1)(omega) = B, T(1)(omega) = X, L(1)(omega) = Y
+        # <<A;B>> =  <0|Y(B) * A_bar|0> + <0|(1+L(0))[A_bar, X(B)]|0> 
+        #                polar1             polar2
         self.polar1 = 0
         self.polar2 = 0
-        self.polar1 += ndot("ai,ia->", self.ccpert_x.build_Avo(), self.y1_y)
-        self.polar1 += ndot("abij,ijab->", self.ccpert_x.build_Avvoo(), self.y2_y, prefactor=0.5)
-        self.polar1 += ndot("baji,ijab->", self.ccpert_x.build_Avvoo(), self.y2_y, prefactor=0.5)
+        # <0|Y1(B) * A_bar|0>
+        self.polar1 += ndot("ai,ia->", self.ccpert_A.build_Avo(), self.y1_B)
+        # <0|Y1(B) * A_bar|0>
+        self.polar1 += ndot("abij,ijab->", self.ccpert_A.build_Avvoo(), self.y2_B, prefactor=0.5)
+        self.polar1 += ndot("baji,ijab->", self.ccpert_A.build_Avvoo(), self.y2_B, prefactor=0.5)
+        # <0|[A_bar, X(B)]|0>
+        self.polar2 += ndot("ia,ia->", self.ccpert_A.build_Aov(), self.x1_B, prefactor=2.0)
+        # <0|L1(0)[A_bar, X2(B)]|0>
+        tmp = ndot('ia,jb->ijab', self.l1, self.ccpert_A.build_Aov())
+        self.polar2 += ndot('ijab,ijab->', tmp, self.x2_B, prefactor=2.0)
+        self.polar2 += ndot('ijab,ijba->', tmp, self.x2_B, prefactor=-1.0)
 
-        tmp = ndot('ia,jb->ijab', self.l1, self.ccpert_x.build_Aov())
-        self.polar2 += ndot('ijab,ijab->', tmp, self.x2_y, prefactor=2.0)
-        self.polar2 += ndot('ijab,ijba->', tmp, self.x2_y, prefactor=-1.0)
+        # <0|L1(0)[A_bar, X1(B)]|0>
+        tmp = ndot('ia,ic->ac', self.l1, self.x1_B)
+        self.polar2 += ndot('ac,ac->', tmp, self.ccpert_A.build_Avv())
+        tmp = ndot('ia,ka->ik', self.l1, self.x1_B)
+        self.polar2 -= ndot('ik,ki->', tmp, self.ccpert_A.build_Aoo())
 
-        tmp = ndot('ia,ic->ac', self.l1, self.x1_y)
-        self.polar2 += ndot('ac,ac->', tmp, self.ccpert_x.build_Avv())
-        tmp = ndot('ia,ka->ik', self.l1, self.x1_y)
-        self.polar2 -= ndot('ik,ki->', tmp, self.ccpert_x.build_Aoo())
+        # <0|L2(0)[A_bar, X1(B)]|0>
+        tmp = ndot('ijbc,bcaj->ia', self.l2, self.ccpert_A.build_Avvvo())
+        self.polar2 += ndot('ia,ia->', tmp, self.x1_B)
 
-        tmp = ndot('ijbc,bcaj->ia', self.l2, self.ccpert_x.build_Avvvo())
-        self.polar2 += ndot('ia,ia->', tmp, self.x1_y)
+        tmp = ndot('ijab,kbij->ak', self.l2, self.ccpert_A.build_Aovoo())
+        self.polar2 -= ndot('ak,ka->', tmp, self.x1_B, prefactor=0.5)
 
-        tmp = ndot('ijab,kbij->ak', self.l2, self.ccpert_x.build_Aovoo())
-        self.polar2 -= ndot('ak,ka->', tmp, self.x1_y, prefactor=0.5)
+        tmp = ndot('ijab,kaji->bk', self.l2, self.ccpert_A.build_Aovoo())
+        self.polar2 -= ndot('bk,kb->', tmp, self.x1_B, prefactor=0.5)
 
-        tmp = ndot('ijab,kaji->bk', self.l2, self.ccpert_x.build_Aovoo())
-        self.polar2 -= ndot('bk,kb->', tmp, self.x1_y, prefactor=0.5)
+        tmp = ndot('ijab,kjab->ik', self.l2, self.x2_B)
+        self.polar2 -= ndot('ik,ki->', tmp, self.ccpert_A.build_Aoo(), prefactor=0.5)
 
-        tmp = ndot('ijab,kjab->ik', self.l2, self.x2_y)
-        self.polar2 -= ndot('ik,ki->', tmp, self.ccpert_x.build_Aoo(), prefactor=0.5)
+        tmp = ndot('ijab,kiba->jk', self.l2, self.x2_B,)
+        self.polar2 -= ndot('jk,kj->', tmp, self.ccpert_A.build_Aoo(), prefactor=0.5)
 
-        tmp = ndot('ijab,kiba->jk', self.l2, self.x2_y,)
-        self.polar2 -= ndot('jk,kj->', tmp, self.ccpert_x.build_Aoo(), prefactor=0.5)
+        tmp = ndot('ijab,ijac->bc', self.l2, self.x2_B,)
+        self.polar2 += ndot('bc,bc->', tmp, self.ccpert_A.build_Avv(), prefactor=0.5)
 
-        tmp = ndot('ijab,ijac->bc', self.l2, self.x2_y,)
-        self.polar2 += ndot('bc,bc->', tmp, self.ccpert_x.build_Avv(), prefactor=0.5)
+        tmp = ndot('ijab,ijcb->ac', self.l2, self.x2_B,)
+        self.polar2 += ndot('ac,ac->', tmp, self.ccpert_A.build_Avv(), prefactor=0.5)
 
-        tmp = ndot('ijab,ijcb->ac', self.l2, self.x2_y,)
-        self.polar2 += ndot('ac,ac->', tmp, self.ccpert_x.build_Avv(), prefactor=0.5)
-
-        self.polar2 += ndot("ia,ia->", self.ccpert_x.build_Aov(), self.x1_y, prefactor=2.0)
 
         return -1.0*(self.polar1 + self.polar2)
 

@@ -110,22 +110,22 @@ class HelperCCLambda(object):
         # In Spin orbitals:
         # l1: 
         # Hov_ia + l_ie * Hvv_ae - l_ma * Hoo_im + l_me * Hovvo_ieam + 0.5 * l_imef * Hvvvo_efam
-        # - 0.5 * l_mnae Hovoo_iemn - Gvv_ef * Hvovv_eifa - Goo__mn * Hooov_mina = 0
+        # - 0.5 * l_mnae Hovoo_iemn - Gvv_ef * Hvovv_eifa - Goo_mn * Hooov_mina = 0
+        #
+        # where, Goo_mn = 0.5 * t_mjab * l_njab,  Gvv_ef = - 0.5 * l_ijeb * t_ijfb
+        # Intermediates Goo and Gvv have been built to bypass the construction of 
+        # 3-body Hbar terms like, l1  <-- Hvvooov_beilka * l_lkbe  
+        #                         l1  <-- Hvvooov_cbijna * l_jncb 
         #
         #l2:
         # <ij||ab> + P(ab) l_ijae * Hov_eb - P(ij) l_imab * Hoo_jm + 0.5 * l_mnab * Hoooo_ijmn 
         # + 0.5 * Hvvvv_efab l_ijef + P(ij) l_ie * Hvovv_ejab - P(ab) l_ma * Hooov_ijmb
         # + P(ij)P(ab) l_imae * Hovvo_jebm + P(ij)P(ab) l_ia * Hov_jb + P(ab) <ij||ae> * Gvv_be 
         # - P(ij) <im||ab> * Goo_mj
-        #
-        # where, Goo_mn =   t_mjab * l_njab,  Gvv_ef = - l_ijeb * t_ijfb
-        # Intermediates Goo and Gvv have been built to bypass the construction of 
-        # 3 body Hbar terms, l1  <-- Hvvooov_beilka * l_lkbe  (Gvv)
-        #                    l1  <-- Hvvooov_cbijna * l_jncb  (Goo)
         # 
         # Here we are using the unitary group approach (UGA) to derive spin adapted equations, please refer to chapter
-        # 13 of reference 2 and notes for more details. Lambda equations derived using UGA differ from the regular spin 
-        # factorizd equations (PSI4) as follows: 
+        # 13 of reference 2 and notes in the current folder for more details. Lambda equations derived using UGA differ 
+        # from the regular spin factorizd equations (PSI4) as follows: 
         # l_ia(UGA) = 2.0 * l_ia(PSI4)
         # l_ijab(UGA) = 2.0 * (2.0 * l_ijab - l_ijba)
         # The residual equations (without the preconditioner) follow the same relations as above.
@@ -146,6 +146,7 @@ class HelperCCLambda(object):
         r_l1 -= ndot('imna,mn->ia', self.Hooov, self.build_Goo(), prefactor=-1.0)
 
         # l2 equations
+        # Final r_l2_ijab = r_l2_ijab + r_l2_jiba
         r_l2 = self.Loovv.copy()
         r_l2 += ndot('ia,jb->ijab', self.l1, self.Hov, prefactor=2.0)
         r_l2 -= ndot('ja,ib->ijab', self.l1, self.Hov)
@@ -169,6 +170,7 @@ class HelperCCLambda(object):
         
         # update l1 and l2 amplitudes
         self.l1 += r_l1/self.Dia
+        # Final r_l2_ijab = r_l2_ijab + r_l2_jiba
         tmp = r_l2/self.Dijab 
         self.l2 += tmp + tmp.swapaxes(0,1).swapaxes(2,3)
         
