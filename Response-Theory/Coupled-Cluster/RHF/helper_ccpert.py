@@ -575,8 +575,8 @@ class HelperCCLinresp(object):
         time_init = time.time()
         # Grab all the info from ccpert obejct, a and b here are the two 
         # perturbations Ex. for dipole polarizabilities, A = mu, B = mu (dipole operator) 
-        self.ccpert_A = ccpert_B
-        self.ccpert_A = ccpert_B
+        self.ccpert_A = ccpert_A
+        self.ccpert_B = ccpert_B
         self.pert_A = ccpert_A.pert
         self.pert_B = ccpert_B.pert
         self.l1 = cclambda.l1

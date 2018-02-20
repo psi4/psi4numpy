@@ -20,8 +20,7 @@ H 1 1.1
 H 1 1.1 2 104
 symmetry c1
 """)
-
-psi4.set_options({'basis': 'cc-pvdz'})
+psi4.set_options({'basis': 'aug-cc-pvdz'})
 psi4.set_options({'scf_type': 'PK'})
 psi4.set_options({'d_convergence': 1e-10})
 psi4.set_options({'e_convergence': 1e-10})
@@ -43,7 +42,7 @@ cchbar = HelperCCHbar(ccsd)
 cclambda = HelperCCLambda(ccsd,cchbar)
 cclambda.compute_lambda(r_conv=1e-10)
 
-# nm into a.u    
+# nm into hartree
 omega_nm = 589
 omega = (pc.c * pc.h * 1e9)/(pc.hartree2J * omega_nm)
 
@@ -89,6 +88,9 @@ trace = polar_AB[0] + polar_AB[4] + polar_AB[8]
 Isotropic_polar = trace/3.0
         
 # Comaprison with PSI4
+psi4.set_options({'d_convergence': 1e-10})
+psi4.set_options({'e_convergence': 1e-10})
+psi4.set_options({'r_convergence': 1e-10})
 psi4.set_options({'omega': [589, 'nm']})
 psi4.properties('ccsd', properties=['polarizability'])
-psi4.compare_values(Isotropic_polar, psi4.get_variable("CCSD DIPOLE POLARIZABILITY @ 589NM"),  8, "CCSD Isotropic Dipole Polarizability @ 589 nm") #TEST
+psi4.compare_values(Isotropic_polar, psi4.get_variable("CCSD DIPOLE POLARIZABILITY @ 589NM"),  6, "CCSD Isotropic Dipole Polarizability @ 589 nm") #TEST
