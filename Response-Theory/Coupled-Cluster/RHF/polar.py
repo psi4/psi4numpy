@@ -20,7 +20,7 @@ H 1 1.1
 H 1 1.1 2 104
 symmetry c1
 """)
-psi4.set_options({'basis': 'aug-cc-pvdz'})
+psi4.set_options({'basis': 'sto-3g'})
 psi4.set_options({'scf_type': 'PK'})
 psi4.set_options({'d_convergence': 1e-10})
 psi4.set_options({'e_convergence': 1e-10})
@@ -62,7 +62,7 @@ for i in range(0,3):
     print('\nsolving left hand perturbed amplitudes for %s\n'% string)
     ccpert[string].solve('left', r_conv=1e-10)
 
-print("\nComputing <<Mu;Mu>_(%8.6lf au, %d nm) tensor." % (omega, omega_nm))
+print("\nComputing <<Mu;Mu> tensor @ %d nm" % omega_nm)
 
 for a in range(0,3):
     str_a = "MU_" + cart[a]
@@ -79,13 +79,15 @@ for a in range(0,3):
             polar_AB[ab] = 0.5*(polar_AB[ab] + polar_AB[ba])
             polar_AB[ba] = polar_AB[ab]    
 
-print('\n CCSD Dipole Polarizability Tensor (Symmetrized) at omega = %8.6lf au, %d nm\n'% (omega, omega_nm))
+print('\nCCSD Dipole Polarizability Tensor (Length Gauge) at omega = %8.6lf au, %d nm\n'% (omega, omega_nm))
 print("\t\t%s\t             %s\t                  %s\n" % (cart[0], cart[1], cart[2]))    
 for a in range(0,3):
     print(" %s %20.10lf %20.10lf %20.10lf\n" % ( cart[a], polar_AB[3*a+0], polar_AB[3*a+1], polar_AB[3*a+2]))    
 
 trace = polar_AB[0] + polar_AB[4] + polar_AB[8]
 Isotropic_polar = trace/3.0
+print(" Isotropic CCSD Dipole Polarizability @ %d nm (Length Gauge): %20.10lf a.u."% (omega_nm, Isotropic_polar))
+
         
 # Comaprison with PSI4
 psi4.set_options({'d_convergence': 1e-10})
@@ -93,4 +95,4 @@ psi4.set_options({'e_convergence': 1e-10})
 psi4.set_options({'r_convergence': 1e-10})
 psi4.set_options({'omega': [589, 'nm']})
 psi4.properties('ccsd', properties=['polarizability'])
-psi4.compare_values(Isotropic_polar, psi4.get_variable("CCSD DIPOLE POLARIZABILITY @ 589NM"),  6, "CCSD Isotropic Dipole Polarizability @ 589 nm") #TEST
+psi4.compare_values(Isotropic_polar, psi4.get_variable("CCSD DIPOLE POLARIZABILITY @ 589NM"),  6, "CCSD Isotropic Dipole Polarizability @ 589 nm (Length Gauge)") #TEST
