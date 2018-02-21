@@ -1,4 +1,6 @@
 from utils import ndot
+
+
 class HelperCCEom(object):
     """
     EOMCCSD helper class for spin adapted EOMCCSD
@@ -88,7 +90,6 @@ class HelperCCEom(object):
             psi4.core.clean()
             raise Exception('get_F: string %s must have 4 elements.' % string)
         return self.F[self.slice_dict[string[0]], self.slice_dict[string[1]]]
-
 
     def build_sigma1(self, B1, B2):
         """

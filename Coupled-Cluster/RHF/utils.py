@@ -2,6 +2,7 @@ import time
 import numpy as np
 import psi4
 
+
 # N dimensional dot
 # Like a mini DPD library
 def ndot(input_string, op1, op2, prefactor=None):
@@ -30,8 +31,8 @@ def ndot(input_string, op1, op2, prefactor=None):
     # Tensordot axes
     left_pos, right_pos = (), ()
     for s in idx_removed:
-        left_pos += (input_left.find(s),)
-        right_pos += (input_right.find(s),)
+        left_pos += (input_left.find(s), )
+        right_pos += (input_right.find(s), )
     tdot_axes = (left_pos, right_pos)
 
     # Get result ordering
@@ -55,23 +56,27 @@ def ndot(input_string, op1, op2, prefactor=None):
     # Matrix multiply
     # No transpose needed
     if input_left[-rs:] == input_right[:rs]:
-        new_view = np.dot(op1.reshape(dim_left, dim_removed),
-                          op2.reshape(dim_removed, dim_right))
+        new_view = np.dot(
+            op1.reshape(dim_left, dim_removed),
+            op2.reshape(dim_removed, dim_right))
 
     # Transpose both
     elif input_left[:rs] == input_right[-rs:]:
-        new_view = np.dot(op1.reshape(dim_removed, dim_left).T,
-                          op2.reshape(dim_right, dim_removed).T)
+        new_view = np.dot(
+            op1.reshape(dim_removed, dim_left).T,
+            op2.reshape(dim_right, dim_removed).T)
 
     # Transpose right
     elif input_left[-rs:] == input_right[-rs:]:
-        new_view = np.dot(op1.reshape(dim_left, dim_removed),
-                          op2.reshape(dim_right, dim_removed).T)
+        new_view = np.dot(
+            op1.reshape(dim_left, dim_removed),
+            op2.reshape(dim_right, dim_removed).T)
 
     # Tranpose left
     elif input_left[:rs] == input_right[:rs]:
-        new_view = np.dot(op1.reshape(dim_removed, dim_left).T,
-                          op2.reshape(dim_removed, dim_right))
+        new_view = np.dot(
+            op1.reshape(dim_removed, dim_left).T,
+            op2.reshape(dim_removed, dim_right))
 
     # If we have to transpose vector-matrix, einsum is faster
     elif (len(keep_left) == 0) or (len(keep_right) == 0):
@@ -100,8 +105,8 @@ def ndot(input_string, op1, op2, prefactor=None):
     else:
         return np.einsum(tdot_result + '->' + output_ind, new_view)
 
-class helper_diis(object):
 
+class helper_diis(object):
     def __init__(self, t1, t2, max_diis):
 
         self.oldt1 = t1.copy()
@@ -164,5 +169,5 @@ class helper_diis(object):
         # Save extrapolated amplitudes to old_t amplitudes
         self.oldt1 = t1.copy()
         self.oldt2 = t2.copy()
-       
-        return t1, t2 
+
+        return t1, t2
