@@ -15,9 +15,10 @@ __credits__ = ["Ashutosh Kumar", "Daniel G. A. Smith", "Lori A. Burns", "T. D. C
 __copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2018-02-20"
-
+import os.path
 import sys
-sys.path.append("../../../Coupled-Cluster/RHF")
+dirname = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(dirname, '../../../Coupled-Cluster/RHF'))
 import numpy as np
 np.set_printoptions(precision=15, linewidth=200, suppress=True)
 # Import all the coupled cluster utilities
