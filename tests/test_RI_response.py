@@ -19,3 +19,11 @@ def test_helper_CPHF(workspace):
 
 def test_TDHF(workspace):
     exe_py(workspace, tdir, 'Self-Consistent-Field/TDHF')
+
+
+def test_polar_cc(workspace):
+    exe_py(workspace, tdir, 'Coupled-Cluster/RHF/polar')
+
+
+def test_optrot_cc(workspace):
+    exe_py(workspace, tdir, 'Coupled-Cluster/RHF/optrot')

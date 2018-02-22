@@ -22,14 +22,14 @@ __copyright__ = "(c) 2017, The Psi4Numpy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2018-1-17"
 
-from helper_cc import HelperCCEnergy
-from helper_cc import HelperCCHbar
-from helper_cc import HelperCCEom
+from helper_ccenergy import *
+from helper_cchbar import *
+from helper_cclambda import *
+from helper_cceom import *
 import psi4
 import time
 import numpy as np
 np.set_printoptions(precision=5, linewidth=200, threshold=200, suppress=True)
-
 
 # Psi4 setup
 psi4.set_memory('2 GB')
@@ -53,7 +53,8 @@ max_iter = 80
 psi4.set_options({'basis': 'cc-pvdz', 'roots_per_irrep': [nroot]})
 
 # Compute CCSD energy for required integrals and T-amplitudes
-ccsd = HelperCCEnergy(mol)
+rhf_e, rhf_wfn = psi4.energy('SCF', return_wfn=True)
+ccsd = HelperCCEnergy(mol, rhf_e, rhf_wfn)
 ccsd.compute_energy()
 
 ccsd_cor_e = ccsd.ccsd_corr_e
@@ -141,9 +142,8 @@ for EOMCCSD_iter in range(0, max_iter + 1):
         # iteration
         add_B.append(q)
         de = abs(theta[j] - theta_old[j])
-        print(
-            "    Root {}: e = {:>20.12f} de = {:>20.12f} "
-            "|r| = {:>20.12f}".format(j, theta[j], de, np.linalg.norm(w)))
+        print("    Root {}: e = {:>20.12f} de = {:>20.12f} "
+              "|r| = {:>20.12f}".format(j, theta[j], de, np.linalg.norm(w)))
 
     # check convergence
     e_norm = np.linalg.norm(theta[:nroot] - theta_old)
@@ -176,8 +176,8 @@ if conv:
     print("{:>6}  {:^20}  {:^20}".format("Root #", "Hartree", "eV"))
     print("{:>6}  {:^20}  {:^20}".format("-" * 6, "-" * 20, "-" * 20))
     for i in range(nroot):
-        print("{:>6}  {:>20.12f}  {:>20.12f}".format(i, theta[i], theta[i]
-                                                     * 22.211))
+        print("{:>6}  {:>20.12f}  {:>20.12f}".format(i, theta[i],
+                                                     theta[i] * 22.211))
 else:
     psi4.core.clean()
     raise Exception("EOMCCSD Failed -- Iterations exceeded")
