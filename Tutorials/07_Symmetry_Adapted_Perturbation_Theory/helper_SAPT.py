@@ -219,7 +219,7 @@ class helper_SAPT(object):
 
         shape = (-1,) + tuple([1] * (dim - 1))
 
-        if (string == 'b') or (string == 's'):
+        if (string == 'j') or (string == 'b') or (string == 's'):
             return self.eps_B[self.slices[string]].reshape(shape)
         else:
             return self.eps_A[self.slices[string]].reshape(shape)
