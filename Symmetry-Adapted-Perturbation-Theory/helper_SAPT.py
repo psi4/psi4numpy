@@ -219,10 +219,13 @@ class helper_SAPT(object):
 
         shape = (-1,) + tuple([1] * (dim - 1))
 
-        if (string == 'b') or (string == 's'):
+        if (string == 'i') or (string == 'a') or (string == 'r'):
+            return self.eps_A[self.slices[string]].reshape(shape)
+        elif (string == 'j') or (string == 'b') or (string == 's'):
             return self.eps_B[self.slices[string]].reshape(shape)
         else:
-            return self.eps_A[self.slices[string]].reshape(shape)
+            psi4.core.clean()
+            raise Exception('Unknown orbital type in eps: %s.' % string)
 
     # Grab MO potential matrices
     def potential(self, string, side):
