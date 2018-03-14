@@ -9,6 +9,7 @@ ontop of this result.
 ### Included Reference Implementations
  - `MP2.py`: Second-order Moller-Plesset perturbation theory
  - `DF-MP2.py`: MP2 utilizing density-fitting to reduce its overall cost.
+ - `sDF-MP2.py`: Stochastic orbital MP2 utilizing density-fitting (sDF-MP2) to further reduce the computational cost of DF-MP2.
  - `MP3.py`: Third-order Moller-Plesset perturbation theory
  - `MP3-SO.py`: MP3 in spin-orbital formalism that simplifies the equations and provides contrast to the spin-summed version above.
  - `MPn.py`: An example on how to automate the contraction of higher order MP theory.
@@ -20,3 +21,5 @@ ontop of this result.
     - [[Takasuka:2008:044112](http://aip.scitation.org/doi/10.1063/1.2958921)] A. Takatsuka, T. Siichiro, and W. Hackbusch, *J. Phys. Chem.*, **129**, 044112 (2008)
  3) Equations used in reference implementations:
     - [[Szabo:1996](https://books.google.com/books?id=KQ3DAgAAQBAJ&printsec=frontcover&dq=szabo+%26+ostlund&hl=en&sa=X&ved=0ahUKEwiYhv6A8YjUAhXLSCYKHdH5AJ4Q6AEIJjAA#v=onepage&q=szabo%20%26%20ostlund&f=false)] A. Szabo and N. S. Ostlund, *Modern Quantum Chemistry: Introduction to Advanced Electronic Structure Theory.* Courier Corporation, 1996.
+ 4) sDF-MP2 reference:
+   - [[Takeshita:2017:4605](https://pubs.acs.org/doi/abs/10.1021/acs.jctc.7b00343)] T.Y. Takeshita, W.A. de Jong, D. Neuhauser, R. Baer and E. Rabani

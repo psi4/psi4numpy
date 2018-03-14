@@ -13,6 +13,10 @@ def test_MP2(workspace):
     exe_py(workspace, tdir, 'MP2')
 
 
+def test_sDF_MP2(workspace):
+    exe_py(workspace, tdir, 'sDF-MP2')
+
+
 def test_MP3(workspace):
     exe_py(workspace, tdir, 'MP3')
 
