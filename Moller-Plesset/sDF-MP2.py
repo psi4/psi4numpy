@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
+u"""
 A reference implementation of stochastic orbital resolution of identity
 (or density-fitted) MP2 (sRI-MP2) from a RHF reference.
 
