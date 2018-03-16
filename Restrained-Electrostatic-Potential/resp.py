@@ -189,7 +189,6 @@ def resp(molecules, options_list=[], intermol_constraints={}):
         f.write("     Number of grid points:            %d\n" %len(options['esp_values']))
 
         f.write("\n Quantum electrostatic potential (see %i_%s_grid_esp.dat)\n" %(mol+1,molecules[0].name()))
-        f.write("     QM package                        %s\n" %options['QM_PACKAGE'])
         f.write("     ESP method:                       %s\n" %options['METHOD_ESP'])
         f.write("     ESP basis set:                    %s\n" %options['BASIS_ESP'])
 
