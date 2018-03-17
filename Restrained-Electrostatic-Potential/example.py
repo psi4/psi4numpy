@@ -11,6 +11,8 @@ mol = psi4.geometry(""" C   1.45051389  -0.06628932   0.00000000
  O  -0.67064817  -1.07620915   0.00000000
  H  -1.60837259  -0.91016601   0.00000000
  O  -0.62675864   1.13160510   0.00000000""")
+mol.update_geometry()
+
 # Specify options
 options = {'N_VDW_LAYERS'       : 4,
            'VDW_SCALE_FACTOR'   : 1.4,
