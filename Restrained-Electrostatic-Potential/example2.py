@@ -15,6 +15,7 @@ H   -0.54635470  0.68178278  0.65174288
 H   -0.09873888  0.32890585 -1.03449097
 """
 mol1 = psi4.geometry(geometry)
+mol1.update_geometry()
 mol1.set_name('conformer1')
 
 geometry = """C    0.00000000  0.00000000  0.00000000
@@ -28,6 +29,7 @@ H   -0.18892141 -0.68463906 -0.85893815
 H   -0.64257065 -0.32709111  0.84987482
 """
 mol2 = psi4.geometry(geometry)
+mol2.update_geometry()
 mol2.set_name('conformer2')
 
 molecules = [mol1, mol2]
