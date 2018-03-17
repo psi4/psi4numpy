@@ -1,3 +1,4 @@
+import sys
 import pytest
 
 
@@ -51,3 +52,6 @@ using_matplotlib = pytest.mark.skipif(_plugin_import('matplotlib') is False,
 
 using_pylibefp = pytest.mark.skipif(_plugin_import('pylibefp') is False,
                                 reason='Not detecting module pylibefp. Install package if necessary and add to envvar PYTHONPATH')
+
+using_py3 = pytest.mark.skipif(sys.version_info < (3, 0),
+                                reason='Python does not use Py3 features, hurrah!')
