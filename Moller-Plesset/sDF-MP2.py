@@ -40,7 +40,7 @@ import time
 
 # Set numpy defaults
 np.set_printoptions(precision=5, linewidth=200, suppress=True)
-psi4.set_output_file("output.dat")
+# psi4.set_output_file("output.dat")
 
 # ==> Geometry <==
 # Note: Symmetry was turned off
