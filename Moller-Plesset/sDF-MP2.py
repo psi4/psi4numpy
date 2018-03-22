@@ -1,11 +1,11 @@
-u"""
+"""
 A reference implementation of stochastic orbital resolution of identity
 (or density-fitted) MP2 (sRI-MP2) from a RHF reference.
 
 Reference: 
 Stochastic Formulation of the Resolution of Identity: Application to
 Second Order Moller-Plesset Perturbation Theory
-J. Chem. Theory Comput., 2017, 13 (10), pp 4605–4610
+J. Chem. Theory Comput., 2017, 13 (10), pp 4605-4610
 DOI: 10.1021/acs.jctc.7b00343
 
 Tyler Y. Takeshita 
