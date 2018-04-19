@@ -3,7 +3,7 @@ import resp
 import molecule
 import numpy as np
 
-# Initialize three different conformations of ethanol
+# Initialize two different conformations of ethanol
 geometry = """C    0.00000000  0.00000000  0.00000000
 C    1.48805540 -0.00728176  0.39653260
 O    2.04971655  1.37648153  0.25604810
@@ -47,7 +47,6 @@ options1 = {'N_VDW_LAYERS'       : 4,
            'restraint'          : True,
            'ihfree'             : False,
            'WEIGHT'             : 1,
-           'optimize'           : False
            }
 options2 = {'WEIGHT': 1}
 options = [options1, options2]

@@ -268,7 +268,6 @@ def fit(options, inter_constraint):
     notes : list
         list of strings of notes on the fitting
     """
-
     rest = options[0]['RESTRAINT'] 
     n_mols = len(options)
     qf = []
@@ -307,7 +306,6 @@ def fit(options, inter_constraint):
     # to the charge in the first molecule
     # Also, Total charges = molecular charge
     ndim += n_sys_constraint
-
     a = np.zeros((ndim, ndim))
     b = np.zeros(ndim)
     
