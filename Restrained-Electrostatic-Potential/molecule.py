@@ -2,15 +2,22 @@ import numpy as np
 bohr_to_angstrom = 0.52917721092
 
 def get_stage2_atoms(molecule, cutoff=1.2):
-    """Function to determine atoms for second stage fit. The atoms
+    """Determines atoms for second stage fit. The atoms
        are identified as C-H bonded groups based and a cutoff distance.
-    input:
-          molecule: an instance of psi4 Molecule class
-          cutoff: a cutoff distance in Angstroms, exclusive
-    output:
-          groups: a dictionary whose keys are the indecies+1 of carbon
-                  atoms and whose elements are the indecies+1 of the
-                  connected hydrogen atoms.
+
+    Parameters
+    ----------
+    molecule : psi4.Molecule instance 
+
+    cutoff : float, optional
+        a cutoff distance in Angstroms, exclusive
+
+    Return
+    ------
+    groups : dict
+        a dictionary whose keys are the indecies+1 of carbon
+        atoms and whose elements are the indecies+1 of the
+        connected hydrogen atoms.
     """
     coordinates = molecule.geometry()
     coordinates = coordinates.np.astype('float')*bohr_to_angstrom
@@ -39,19 +46,28 @@ def get_stage2_atoms(molecule, cutoff=1.2):
 
 
 def set_stage2_constraint(molecule, charges, options, cutoff=1.2):
-    """Function to set default constraints for the second stage fit.
+    """Sets default constraints for the second stage fit.
        The default constraints are the following:
        Atoms that are excluded from the second stage fit are constrained
        to their charges from the first stage fit. C-H groups that have
        bonds shorter than the cutoff distance are refitted and the
        hydrogen atoms connected to the same carbon are constrained to
        have identical charges. This calls get_stage2_atoms.
-    input:
-        molecule: an instance of Psi4 Molecule class
-        options: Dictionary for the fitting options. To be modified in place.
-        cutoff: a cutoff distance in Angstroms, exclusive
-    output:
-        None. options modified in place
+
+    Parameters
+    ----------
+    molecule : psi4.Molecule instance
+
+    charges : np.array
+        array containing the charges from the first stage fit
+    options : dict
+        dictionary of the fitting options. To be modified in place.
+    cutoff : float, optional
+        cutoff distance in Angstroms, exclusive
+
+    Return
+    ------
+    None
     """
     second_stage = get_stage2_atoms(molecule, cutoff=cutoff)
     atoms = list(range(1, molecule.natom()+1))
@@ -71,18 +87,25 @@ def set_stage2_constraint(molecule, charges, options, cutoff=1.2):
 
 
 def stage2_intermolecular_constraint(molecules, cutoff=1.2):
-    """Function to determine the default intermolecular constraint
+    """Determines the default intermolecular constraint
        for multi-molecular fit, in the second stage fit.
        The default is that the equivalent carbon atoms in the different
        molecules are made equivalent, and only one of the hydrogens
        in a group is made equivalent with the corresponding hydrogen
        in the other molecule. This calls self.get_stage2_atoms and use
-       the given cutoff distance
-    input:
-       molecules: list of molecule instances.
-       cutoff: a cutoff distance in Angstroms, exclusive
-    output:
-       intermolecular_constraint: A dictionary of intermolecular constraint   
+       the given cutoff distance.
+
+    Parameters
+    ----------
+    molecules : list
+        list of psi4.Molecule instances.
+    cutoff : float, optional
+        cutoff distance in Angstroms, exclusive
+
+    Return
+    ------
+    intermolecular_constraint : dict
+        a dictionary of intermolecular constraint   
     """
     inter_constraint = []
     for mol in range(len(molecules)):

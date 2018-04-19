@@ -8,18 +8,27 @@ from molecule import *
 bohr_to_angstrom = 0.52917721092
 
 def resp(molecules, options_list=[], intermol_constraints={}):
-    """ Main resp function
-        input: 
-               molecule: Molecule instance
-               options: dictionary of user's defined options
-        output: 
-               molecule.esp_charges: dictionary of fitted 
-                                     esp charges. Modified
-                                     in place
-        return: None
-        output files: mol_results.dat: fitting results
-                      mol_grid.dat: grid points in molecule.units
-                      mol_grid_esp.dat: QM esp valuese in a.u. 
+    """ RESP code driver.
+
+    Parameters
+    ---------- 
+    molecules : list
+        list of psi4.Molecule instances
+    options_list : list, optional
+        list of dictionaries of user's defined options
+    intermol_constraints : dict, optional
+        dictionary of options for multi-molecules fitting
+
+    Return
+    ------ 
+    charges : list
+        list of charges
+
+    Note
+    ----
+    output files : mol_results.dat: fitting results
+                   mol_grid.dat: grid points in molecule.units
+                   mol_grid_esp.dat: QM esp valuese in a.u. 
     """
     # Check options
     # Large case keys: resp options

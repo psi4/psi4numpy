@@ -2,10 +2,19 @@ import numpy as np
 import copy
 
 def esp_solve(a, b):
-    """Function to solve for point charges: A*q = B
-       input:  a: array of matrix A
-               b: array of matrix B
-       output: q: array of charges
+    """Solves for point charges: A*q = B
+
+    Parameters
+    ----------
+    a : np.array
+        array of matrix A
+    b : np.array
+        array of matrix B
+    
+    Return
+    ------
+    q : np.array
+        array of charges
     """
     q = np.linalg.solve(a, b)
     # Warning for near singular matrix
@@ -16,18 +25,31 @@ def esp_solve(a, b):
     return q, note
 
 def restraint(q, akeep, resp_a, resp_b, ihfree, symbols, n_atoms, n_constraints):
-    """Function to add hyperbolic restraint to matrix A
-       input: 
-            q: array of charges
-            akeep: array of unrestrained A matrix
-            resp_a: float; restraint scale a
-            resp_b: float; restraint parabola tightness b
-            ihfree: bool: hydrogen excluded or included in restraint
-            symbols: string array of element symbols
-            n_atoms: list of the number of atoms in each molecule
-            n_constraints: list of the number of constraints for each molecule
-       output:
-            a: restrained A array
+    """Adds hyperbolic restraint to matrix A
+
+    Parameters
+    ---------- 
+    q : np.array
+        array of charges
+    akeep : np.array
+        array of unrestrained A matrix
+    resp_a : list
+        list of floats of restraint scale a for each molecule
+    resp_b : list
+        list of floats of restraint parabola tightness b for each molecule
+    ihfree : list
+        list of bools on whether hydrogen excluded or included in restraint for each molecule
+    symbols : list
+        list of arrays of element symbols for each molecule
+    n_atoms : list
+        list of the number of atoms in each molecule
+    n_constraints : list
+        list of the number of constraints for each molecule
+
+    Return
+    ------
+    a : np.array
+        restrained A array
     """
 
     # hyperbolic Restraint
@@ -45,37 +67,52 @@ def restraint(q, akeep, resp_a, resp_b, ihfree, symbols, n_atoms, n_constraints)
     return a
 
 def iterate(q, akeep, b, resp_a, resp_b, ihfree, symbols, toler,\
-            maxit, n_atoms, n_constraints, indecies):
-    """Function to iterate the RESP fitting procedure
-       input:
-                q: array of initial charges
-                akeep: array of unrestrained A matrix
-                b: array of matrix B
-                resp_a: float; restraint scale a
-                resp_b: float; restraint parabola tightness b
-                ihfree: bool: hydrogen excluded or included in restraint
-                symbols: array of element symbols
-                toler: float; tolerance for charges in the fitting
-                maxit: int; maximum number of iterations
-                n_atoms: list of the number of atoms in each molecule
-                n_constraints: list of the number of constraints for
-                                each molecule
-                indecies: an array of the indecies for the atoms in the
-                          A and B matrices
-        output:
-                q: array of fitted charges
+            maxit, n_atoms, n_constraints, indices):
+    """Iterates the RESP fitting procedure
+
+    Parameters
+    ----------
+    q : np.array
+        array of initial charges 
+    akeep : np.array
+        array of unrestrained A matrix
+    b : np.array
+        array of matrix B
+    resp_a : list
+        list of floats of restraint scale a for each molecule
+    resp_b : list
+        list of floats of restraint parabola tightness b for each molecule
+    ihfree : list
+        list of bools on whether hydrogen excluded or included in restraint for each molecule
+    symbols : list
+        list of arrays of element symbols for each molecule
+    toler : float
+        tolerance for charges in the fitting
+    maxit : int
+        maximum number of iterations
+    n_atoms : list
+        list of the number of atoms in each molecule
+    n_constraints : list
+        list of the number of constraints for each molecule
+    indices : np.array
+        array of the indices for the atoms in the A and B matrices
+
+    Return
+    ------
+    q : np.array
+        array of the fitted charges
     """
     n_mols = len(n_atoms)
-    qkeep = q[indecies]
+    qkeep = q[indices]
     niter = 0
     difm = 1
     while difm > toler and niter < maxit:
         index = 0
         niter += 1
-        a = restraint(q[indecies], akeep, resp_a, resp_b, ihfree,\
+        a = restraint(q[indices], akeep, resp_a, resp_b, ihfree,\
                       symbols, n_atoms, n_constraints)
         q, note = esp_solve(a, b)
-        q_q = q[indecies]
+        q_q = q[indices]
         difm = 0
             
         for i in range(len(q_q)):
@@ -91,39 +128,50 @@ def iterate(q, akeep, b, resp_a, resp_b, ihfree, symbols, toler,\
     return q_q, note
 
 def intramolecular_constraints(constraint_charge, constraint_equal, constraint_groups):
-    """Function to extract intramolecular constraints from user constraint input
-       input:
-             constraint_charge: list of lists of charges and atom indecies list
-                               e.g. [[0, [1, 2]], [1, [3, 4]]]
-                               The sum of charges on 1 and 2 will equal 0
-                               The sum of charges on 3 and 4 will equal 1
-             constraint_equal: list of lists of two lists of indecies of atoms to 
-                               have equal charge element by element
-                               e.g. [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
-                               atoms 1 and 3 will have equal charge
-                               atoms 2 and 4 will have equal charge
-                               and similarly for 5, 6, 7 and 8
-             constraint_group: list of lists of indecies of atoms to have equal charge
-                              e.g. [[1, 2], [3, 4]]
-                              atoms 1 and 2 will have equal charge
-                              atoms 3 and 4 will have equal charge
-       output:
-             constrained_charges: list of fixed charges 
-             constrained_indecies: list of lists of indices of atoms in a constraint
-                                   negative number before an index means
-                                   the charge of that atom will be subtracted.
-       Notes: Atom indecies starts with 1 not 0.
-              Total charge constraint is added by default for the first molecule.
-    """
-                        
+    """Extracts intramolecular constraints from user constraint input
+
+    Parameters
+    ----------
+    constraint_charge : list
+        list of lists of charges and atom indices list
+        e.g. [[0, [1, 2]], [1, [3, 4]]]
+        The sum of charges on 1 and 2 will equal 0
+        The sum of charges on 3 and 4 will equal 1
+    constraint_equal : list
+        list of lists of two lists of indices of atoms to 
+        have equal charge element by element
+        e.g. [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
+        atoms 1 and 3 will have equal charge
+        atoms 2 and 4 will have equal charge
+        and similarly for 5, 6, 7 and 8
+    constraint_group : list
+        list of lists of indices of atoms to have equal charge
+        e.g. [[1, 2], [3, 4]]
+        atoms 1 and 2 will have equal charge
+        atoms 3 and 4 will have equal charge
+
+    Returns
+    -------
+    constrained_charges : list
+        list of fixed charges 
+    constrained_indices : list
+        list of lists of indices of atoms in a constraint
+        negative number before an index means
+        the charge of that atom will be subtracted.
+    
+    Notes
+    -----
+    Atom indices starts with 1 not 0.
+    Total charge constraint is added by default for the first molecule.
+    """                
     constrained_charges = []
-    constrained_indecies = []
+    constrained_indices = []
     for i in constraint_charge:
         constrained_charges.append(i[0])
         group = []
         for k in i[1]:
             group.append(k)
-        constrained_indecies.append(group)
+        constrained_indices.append(group)
 
     for i in constraint_equal:
         for j in range(len(i[0])):
@@ -131,7 +179,7 @@ def intramolecular_constraints(constraint_charge, constraint_equal, constraint_g
             constrained_charges.append(0)
             group.append(-i[0][j])
             group.append(i[1][j])
-            constrained_indecies.append(group)
+            constrained_indices.append(group)
 
     for i in constraint_groups:
         for j in range(1, len(i)):
@@ -139,32 +187,43 @@ def intramolecular_constraints(constraint_charge, constraint_equal, constraint_g
             constrained_charges.append(0)
             group.append(-i[j-1])
             group.append(i[j])
-            constrained_indecies.append(group)
-    return constrained_charges, constrained_indecies
+            constrained_indices.append(group)
+    return constrained_charges, constrained_indices
 
 def intermolecular_constraints(constraint_charge, constraint_equal):
-    """Function to extract intermolecular constraints from user constraint input
-      input:
-            constraint_charge: list of list of lists of charges and atom indecies list
-                              e.g. [[1, [[1, [1, 2]], [2, [3, 4]]]]]
-                              The sum of charges on atoms 1 and 2 of molecule 1
-                              and atoms 3 and 4 of molecule 2 will equal 1.
-            constraint_equal: list of list of list of indecies of atoms to have
-                              equal charge in two molecules.
-                              e.g. [[[1, [1, 2]], [2, [3, 4]]]]
-                              charges on atoms 1 and 2 in molecule 1 will equal
-                              charges on  atoms 3 and 4 in molecule 2, respectively.
-            output:
-            constrained_charges: list of fixed charges 
-            constrained_indecies: list of lists of indices of atoms in a constraint
-                                  negative number before an index means
-                                  the charge of that atom will be subtracted.
-            molecules: list of lists of constrained molecules.
-      Note: Atom indecies starts with 1 not 0
+    """Extracts intermolecular constraints from user constraint input
+
+    Parameters
+    ----------
+    constraint_charge : list 
+        list of list of lists of charges and atom indices list
+        e.g. [[1, [[1, [1, 2]], [2, [3, 4]]]]]
+        The sum of charges on atoms 1 and 2 of molecule 1
+        and atoms 3 and 4 of molecule 2 will equal 1.
+    constraint_equal : list
+        list of list of list of indices of atoms to have
+        equal charge in two molecules.
+        e.g. [[[1, [1, 2]], [2, [3, 4]]]]
+        charges on atoms 1 and 2 in molecule 1 will equal
+        charges on  atoms 3 and 4 in molecule 2, respectively.
+
+    Returns
+    -------
+    constrained_charges : list
+        list of fixed charges 
+    constrained_indices : list 
+        list of lists of indices of atoms in a constraint
+        negative number before an index means
+        the charge of that atom will be subtracted.
+    molecules : list
+        list of lists of constrained molecules.
+
+    Note
+    ----
+    Atom indices starts with 1 not 0
     """
-    
     constrained_charges = []
-    constrained_indecies = []
+    constrained_indices = []
     molecules = []
     for i in constraint_charge:
         constrained_charges.append(i[0])
@@ -176,7 +235,7 @@ def intermolecular_constraints(constraint_charge, constraint_equal):
             for k in j[1]:
                 group.append(k)
             group_big.append(group)
-        constrained_indecies.append(group_big)
+        constrained_indices.append(group_big)
         molecules.append(mol)
 
     for i in constraint_equal:
@@ -186,19 +245,28 @@ def intermolecular_constraints(constraint_charge, constraint_equal):
             constrained_charges.append(0)
             group.append([-i[0][1][j]])
             group.append([i[1][1][j]])
-            constrained_indecies.append(group)
-    return constrained_charges, constrained_indecies, molecules
+            constrained_indices.append(group)
+    return constrained_charges, constrained_indices, molecules
 
 
 def fit(options, inter_constraint):
-    """Function to perform ESP and RESP fits.
-       input:
-            options: dictionary of fitting options and internal data
-            inter_constraint: dictionary of user-defined intermolecular
-                              constraints.
-       output:
-            qf: list of arrays of fitted charges
-            labelf: list of strings of fitting methods i.e. ESP and RESP
+    """Performs ESP and RESP fits.
+
+    Parameters
+    ----------
+    options : list
+        list of dictionaries of fitting options and internal data
+    inter_constraint : dict
+        dictionary of user-defined intermolecular constraints.
+
+    Returns
+    -------
+    qf : list
+        list of np.arrays of fitted charges
+    labelf : list
+        list of strings of fitting methods i.e. ESP and RESP
+    notes : list
+        list of strings of notes on the fitting
     """
 
     rest = options[0]['RESTRAINT'] 
@@ -207,9 +275,9 @@ def fit(options, inter_constraint):
     labelf = []
     notes = []
     invr, coordinates, n_constraint, symbols, n_atoms = [], [], [], [], []
-    constrained_charges, constrained_indecies = [], []
+    constrained_charges, constrained_indices = [], []
     ndim = 0
-    con_charges_sys, con_indecies_sys, con_mol_sys = intermolecular_constraints(
+    con_charges_sys, con_indices_sys, con_mol_sys = intermolecular_constraints(
                                                      inter_constraint['CHARGE'],
                                                      inter_constraint['EQUAL'])
     n_sys_constraint = len(con_charges_sys)
@@ -222,11 +290,11 @@ def fit(options, inter_constraint):
         constraint_equal = options[mol]['CONSTRAINT_EQUAL']
         constraint_groups = options[mol]['CONSTRAINT_GROUP']
         # Get user-defined constraints
-        charges, indecies = intramolecular_constraints(constraint_charge,
+        charges, indices = intramolecular_constraints(constraint_charge,
                                                        constraint_equal,
                                                        constraint_groups)
         constrained_charges.append(charges)
-        constrained_indecies.append(indecies)
+        constrained_indices.append(indices)
         n_con = len(charges)
         if mol == 0:
             n_con += 1
@@ -245,9 +313,9 @@ def fit(options, inter_constraint):
     
     edges_i = 0
     edges_f = 0
-    indecies = []
+    indices = []
     for mol in range(n_mols):
-        indecies.append(range(edges_i, edges_i+n_atoms[mol]))
+        indices.append(range(edges_i, edges_i+n_atoms[mol]))
         # Construct A: A_jk = sum_i [(1/r_ij)*(1/r_ik)]
         inv = invr[mol].reshape((1, invr[mol].shape[0], invr[mol].shape[1]))
         a[edges_i:n_atoms[mol]+edges_i,
@@ -271,7 +339,7 @@ def fit(options, inter_constraint):
                 # To account for the total charge constraints in the first molecule
                 break
             b[edges_f] = constrained_charges[mol][i-1]
-            for k in constrained_indecies[mol][i-1]:
+            for k in constrained_indices[mol][i-1]:
                 if k > 0:
                     a[edges_f, edges_i+k-1] = 1
                     a[edges_i+k-1, edges_f] = 1
@@ -280,15 +348,15 @@ def fit(options, inter_constraint):
                     a[edges_i-k-1, edges_f] = -1
             edges_f += 1
         edges_i = edges_f
-    indecies = np.array(indecies).flatten()
+    indices = np.array(indices).flatten()
 
         # Add intermolecular constraints to A and B
     
     if n_mols > 1:
         for i in range(n_sys_constraint):
             b[edges_f] = con_charges_sys[i]
-            for k in range(len(con_indecies_sys[i])):
-                for l in con_indecies_sys[i][k]:
+            for k in range(len(con_indices_sys[i])):
+                for l in con_indices_sys[i][k]:
                     index = con_mol_sys[i][k]-1
                     index = int(np.sum(n_atoms[:index]) + np.sum(n_constraint[:index]))
                     if l > 0:
@@ -301,7 +369,7 @@ def fit(options, inter_constraint):
 
     labelf.append('ESP')
     q, note = esp_solve(a, b)
-    qf.append(q[indecies])
+    qf.append(q[indices])
     notes.append(note)
     if not rest:
         return qf, labelf, notes
@@ -316,7 +384,7 @@ def fit(options, inter_constraint):
         # Restrained ESP 
         labelf.append('RESP')
         q, note = iterate(q, a, b, resp_a, resp_b, ihfree, symbols, toler, maxit,
-                    n_atoms, n_constraint, indecies)
+                    n_atoms, n_constraint, indices)
         qf.append(q)
         notes.append(note)
         return qf, labelf, notes

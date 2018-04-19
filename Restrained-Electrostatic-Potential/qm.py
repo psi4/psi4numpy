@@ -1,13 +1,23 @@
 def psi4_esp(method, basis, molecule):
-    """ Computation of QM electrostatic potential with psi4
-        input:
-               method: string of QM method
-               basis: string of basis set
-               molecule: an instance of psi4 Molecule class
-        output:
-              numpy array of QM electrostatic potential
-        Note: grid is available in grid.dat
-     """
+    """ Computes QM electrostatic potential
+
+    Parameters
+    ----------
+    method : str 
+        QM method
+    basis : str
+        basis set
+    molecule : psi4.Molecule instance
+
+    Returns
+    -------
+    np.array
+        QM electrostatic potential.
+
+    Note
+    -----
+    Psi4 read grid information from grid.dat file
+    """
     import psi4
     import numpy as np
     mol = psi4.geometry(molecule.create_psi4_string_from_molecule())

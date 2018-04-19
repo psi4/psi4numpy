@@ -8,12 +8,17 @@ vdw_r = {'H': 1.20, 'HE': 1.20,
          'P': 1.80, 'S': 1.75, 'CL': 1.70}
 
 def surface(n):
-    """Compute approximately n points on unit sphere
-       Adapted from GAMESS
-    input:
-        n: integer: approximate number of requested surface points
-    output:
-        np.array(u): nupmy array of xyz coordinates of surface points
+    """Computes approximately n points on unit sphere. Code adapted from GAMESS.
+
+    Parameters
+    ----------
+    n : int
+        approximate number of requested surface points
+
+    Return
+    ------
+    np.array
+        nupmy array of xyz coordinates of surface points
     """
         
     u = []
@@ -39,24 +44,30 @@ def surface(n):
     return np.array(u) 
 
 def vdw_surface(coordinates, elements, scale_factor, density, input_radii):
-    """Compute points on the van der Wall surface of molecules
+    """Computes points outside the van der Walls' surface of molecules.
 
-    input:
-        coordinates: cartesian coordinates of the nuclei, in units of angstrom
-        elements: list
-            The symbols (e.g. C, H) for the nuceli
-        scale_factor: float
-            The points on the molecular surface are set at a distance of
-            scale_factor * vdw_radius away from each of the atoms.
-        density: float
-            The (approximate) number of points to generate per square angstrom
-            of surface area. 1.0 is the default recommended by Kollman & Singh.
-        input_radii: dictionary of user's defined VDW radii
+    Parameters
+    ----------
+    coordinates : np.array
+        cartesian coordinates of the nuclei, in units of angstrom
+    elements : list
+        The symbols (e.g. C, H) for the atoms
+    scale_factor : float
+        The points on the molecular surface are set at a distance of
+        scale_factor * vdw_radius away from each of the atoms.
+    density : float
+        The (approximate) number of points to generate per square angstrom
+        of surface area. 1.0 is the default recommended by Kollman & Singh.
+    input_radii : dict
+        dictionary of user's defined VDW radii
 
-    output:
-        radii: dictionary of scaled VDW radii
-        surface_points: numpy array
-   """
+    Returns
+    -------
+    radii : dict
+        A dictionary of scaled VDW radii
+    surface_points : np.array
+        array of the coordinates of the points on the surface
+    """
     radii = {}
     surface_points = []
     # scale radii
