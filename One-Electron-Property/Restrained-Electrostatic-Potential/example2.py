@@ -1,6 +1,6 @@
 import psi4
-import resp
-import molecule
+import resp_driver
+import resp_helper
 import numpy as np
 
 # Initialize two different conformations of ethanol
@@ -52,7 +52,7 @@ options2 = {'WEIGHT': 1}
 options = [options1, options2]
 
 # Call for first stage fit
-charges1 = resp.resp(molecules, options, intermolecular_constraint)
+charges1 = resp_driver.resp(molecules, options, intermolecular_constraint)
 
 print("Restrained Electrostatic Potential Charges")
 print(charges1[0][1])
@@ -68,19 +68,19 @@ print("Example works?")
 print(np.allclose(charges1[0][1], reference_charges1, atol=1e-5))
 
 # Add constraint for atoms fixed in second stage fit
+stage2 = resp_helper.helper_stage2()
 for mol in range(len(molecules)):
-    molecule.set_stage2_constraint(molecules[mol], charges1[mol][1], options[mol], cutoff=1.2)
+    stage2.set_stage2_constraint(molecules[mol], charges1[mol][1], options[mol], cutoff=1.2)
     options[mol]['grid'] = '%i_%s_grid.dat' %(mol+1, molecules[mol].name())
     options[mol]['esp'] = '%i_%s_grid_esp.dat' %(mol+1, molecules[mol].name())
     options[0]['resp_a'] = 0.001
     molecules[mol].set_name('conformer' + str(mol+1) + '_stage2')
 
 # Add intermolecular constraints
-intermolecular_constraint = molecule.stage2_intermolecular_constraint(
-                            molecules, cutoff=1.2)
+stage2.stage2_intermolecular_constraint(molecules, cutoff=1.2)
 
 # Call for second stage fit
-charges2 = resp.resp(molecules, options, intermolecular_constraint)
+charges2 = resp_driver.resp(molecules, options, stage2.intermolecular_constraint)
 print("\nStage Two\n")
 print("RESP Charges")
 print(charges2[0][1])

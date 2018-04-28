@@ -1,3 +1,16 @@
+"""
+Fitting procedure for RESP charges.
+
+Reference: Bayly:93:10269(https://pubs.acs.org/doi/abs/10.1021/j100142a004) C. I. Bayly *et. al.* *JPC* **97**, 10269-10280 (1993)
+"""
+
+__authors__   =  "Asim Alenaizan"
+__credits__   =  ["Asim Alenaizan"]
+
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2018-04-28"
+
 import numpy as np
 import copy
 
@@ -53,6 +66,7 @@ def restraint(q, akeep, resp_a, resp_b, ihfree, symbols, n_atoms, n_constraints)
     """
 
     # hyperbolic Restraint
+    # Bayly:93:10271 (Eqs. 10, 13)
     a = copy.deepcopy(akeep)
     n_mol = len(n_atoms)
     index = 0
@@ -312,6 +326,7 @@ def fit(options, inter_constraint):
     edges_i = 0
     edges_f = 0
     indices = []
+    # Bayly:93:10271 (Eqs. 12-14)
     for mol in range(n_mols):
         indices.append(range(edges_i, edges_i+n_atoms[mol]))
         # Construct A: A_jk = sum_i [(1/r_ij)*(1/r_ik)]

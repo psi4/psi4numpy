@@ -1,9 +1,18 @@
+"""
+Driver for the RESP code.
+"""
+
+__authors__   =  "Asim Alenaizan"
+__credits__   =  ["Asim Alenaizan"]
+
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2018-04-28"
+
 import numpy as np
 import os
-
-from vdwsurface import *
 from espfit import *
-from molecule import *
+from resp_helper import *
 
 bohr_to_angstrom = 0.52917721092
 
@@ -135,11 +144,13 @@ def resp(molecules, options_list=[], intermol_constraints={}):
         else:
             # Get the points at which we're going to calculate the ESP surface
             points = []
+            surface = helper_VDW_surface()
             for i in range(options['N_VDW_LAYERS']):
                 scale_factor = options['VDW_SCALE_FACTOR'] + i * options['VDW_INCREMENT']
-                radii, this_shell = vdw_surface(coordinates, symbols, scale_factor,
+                surface.vdw_surface(coordinates, symbols, scale_factor,
                                     options['VDW_POINT_DENSITY'], options['RADIUS'])
-                points.append(this_shell)
+                points.append(surface.shell)
+            radii = surface.radii
             points = np.concatenate(points)
             if 'Bohr' in str(molecules[mol].units):
                 points /= bohr_to_angstrom
@@ -154,7 +165,7 @@ def resp(molecules, options_list=[], intermol_constraints={}):
             options['esp_values'] = np.loadtxt(options['ESP'])
             np.savetxt('grid_esp.dat', options['esp_values'], fmt='%15.10f')
         else:
-            from qm import psi4_esp
+            from resp_helper import psi4_esp
             options['esp_values'] = psi4_esp(options['METHOD_ESP'], options['BASIS_ESP'], molecules[mol])
             
         os.system("mv grid.dat %i_%s_grid.dat" %(mol+1, molecules[mol].name()))
