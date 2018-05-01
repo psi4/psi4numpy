@@ -2,13 +2,14 @@
 A reference implementation of second-order Moller-Plesset perturbation theory.
 
 References:
-Algorithms were taken directly from Daniel Crawford's programming website:
+- Algorithms and equations were taken directly from Daniel Crawford's programming website:
 http://github.com/CrawfordGroup/ProgrammingProjects
-Special thanks to Rob Parrish for initial assistance with libmints
+
+Special thanks to Rob Parrish for initial assistance with libmints.
 """
 
 __authors__    = "Daniel G. A. Smith"
-__credits__   = ["Daniel G. A. Smith", "Dominic A. Sirianni"]
+__credits__   = ["Daniel G. A. Smith", "Dominic A. Sirianni", "Rob Parrish"]
 
 __copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__   = "BSD-3-Clause"

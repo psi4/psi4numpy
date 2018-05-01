@@ -1,7 +1,8 @@
 """
-Helper codes for the RESP program. Assists in generating van der Waals surface,
-computing the electrostatic potential with psi4, and adding constraints for
-two-stage fitting procedure.
+Helper classes and functions for the RESP program. 
+
+Assists in generating van der Waals surface, computing the electrostatic
+potential with Psi4, and adding constraints for two-stage fitting procedure.
 """
 
 __authors__   =  "Asim Alenaizan"
@@ -33,8 +34,8 @@ class helper_VDW_surface(object):
         n : int
             approximate number of requested surface points
 
-        Return
-        ------
+        Returns
+        -------
         np.array
             nupmy array of xyz coordinates of surface points
         """
@@ -136,8 +137,8 @@ class helper_stage2(object):
         cutoff : float, optional
             a cutoff distance in Angstroms, exclusive
 
-        Return
-        ------
+        Returns
+        -------
         groups : dict
             a dictionary whose keys are the indecies+1 of carbon
             atoms and whose elements are the indecies+1 of the
@@ -172,12 +173,13 @@ class helper_stage2(object):
 
     def set_stage2_constraint(self, molecule, charges, options, cutoff=1.2):
         """Sets default constraints for the second stage fit.
-           The default constraints are the following:
-           Atoms that are excluded from the second stage fit are constrained
-           to their charges from the first stage fit. C-H groups that have
-           bonds shorter than the cutoff distance are refitted and the
-           hydrogen atoms connected to the same carbon are constrained to
-           have identical charges. This calls self._get_stage2_atoms.
+
+        The default constraints are the following:
+        Atoms that are excluded from the second stage fit are constrained
+        to their charges from the first stage fit. C-H groups that have
+        bonds shorter than the cutoff distance are refitted and the
+        hydrogen atoms connected to the same carbon are constrained to
+        have identical charges. This calls self._get_stage2_atoms.
 
         Parameters
         ----------
@@ -212,17 +214,18 @@ class helper_stage2(object):
 
 
     def stage2_intermolecular_constraint(self, molecules, cutoff=1.2):
-        """Determines the default intermolecular constraint
-           for multi-molecular fit, in the second stage fit.
-           The default is that the equivalent carbon atoms in the different
-           molecules are made equivalent, and only one of the hydrogens
-           in a group is made equivalent with the corresponding hydrogen
-           in the other molecule. This calls self.get_stage2_atoms and use
-           the given cutoff distance.
+        """Determines the default intermolecular constraint for multi-molecular 
+        fit, in the second stage fit.
+
+        The default is that the equivalent carbon atoms in the different
+        molecules are made equivalent, and only one of the hydrogens
+        in a group is made equivalent with the corresponding hydrogen
+        in the other molecule. This calls self.get_stage2_atoms and use
+        the given cutoff distance.
 
         Parameters
         ----------
-        molecules : list
+        molecules : list of psi4.Molecule
             list of psi4.Molecule instances.
         cutoff : float, optional
             cutoff distance in Angstroms, exclusive

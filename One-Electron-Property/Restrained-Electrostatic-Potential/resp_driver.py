@@ -17,7 +17,7 @@ from resp_helper import *
 bohr_to_angstrom = 0.52917721092
 
 def resp(molecules, options_list=[], intermol_constraints={}):
-    """ RESP code driver.
+    """RESP code driver.
 
     Parameters
     ---------- 
@@ -28,8 +28,8 @@ def resp(molecules, options_list=[], intermol_constraints={}):
     intermol_constraints : dict, optional
         dictionary of options for multi-molecules fitting
 
-    Return
-    ------ 
+    Returns
+    -------
     charges : list
         list of charges
 

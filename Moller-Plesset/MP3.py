@@ -1,11 +1,8 @@
 """
 Reference implementation for the correlation energy of MP3 with an RHF reference.
 
-Requirements: 
-SciPy 0.13.0+, NumPy 1.7.2+
-
 References:
-Equations from [Szabo:1996]
+- Equations from [Szabo:1996]
 """
 
 __authors__    = "Daniel G. A. Smith"

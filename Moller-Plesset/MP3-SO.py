@@ -2,11 +2,8 @@
 Reference implementation of the MP3 correlation energy utilizing antisymmetrized
 spin-orbitals from an RHF reference.
 
-Requirements:
-SciPy 0.13.0+, NumPy 1.7.2+
-
 References:
-Equations from [Szabo:1996]
+- Equations from [Szabo:1996]
 """
 
 __authors__    = "Daniel G. A. Smith"

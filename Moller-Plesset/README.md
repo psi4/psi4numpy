@@ -22,4 +22,4 @@ ontop of this result.
  3) Equations used in reference implementations:
     - [[Szabo:1996](https://books.google.com/books?id=KQ3DAgAAQBAJ&printsec=frontcover&dq=szabo+%26+ostlund&hl=en&sa=X&ved=0ahUKEwiYhv6A8YjUAhXLSCYKHdH5AJ4Q6AEIJjAA#v=onepage&q=szabo%20%26%20ostlund&f=false)] A. Szabo and N. S. Ostlund, *Modern Quantum Chemistry: Introduction to Advanced Electronic Structure Theory.* Courier Corporation, 1996.
  4) sDF-MP2 reference:
-    - [[Takeshita:2017:4605](https://pubs.acs.org/doi/abs/10.1021/acs.jctc.7b00343)] T.Y. Takeshita, W.A. de Jong, D. Neuhauser, R. Baer and E. Rabani
+    - [[Takeshita:2017:4605](https://pubs.acs.org/doi/abs/10.1021/acs.jctc.7b00343)] T.Y. Takeshita, W.A. de Jong, D. Neuhauser, R. Baer and E. Rabani, *J. chem. Theory Comput.* **13**, 4605 (2017)

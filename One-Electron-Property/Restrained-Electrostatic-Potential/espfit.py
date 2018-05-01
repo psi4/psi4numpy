@@ -1,7 +1,8 @@
 """
 Fitting procedure for RESP charges.
 
-Reference: Bayly:93:10269(https://pubs.acs.org/doi/abs/10.1021/j100142a004) C. I. Bayly *et. al.* *JPC* **97**, 10269-10280 (1993)
+Reference: 
+Equations taken from [Bayly:93:10269].
 """
 
 __authors__   =  "Asim Alenaizan"
@@ -59,14 +60,14 @@ def restraint(q, akeep, resp_a, resp_b, ihfree, symbols, n_atoms, n_constraints)
     n_constraints : list
         list of the number of constraints for each molecule
 
-    Return
-    ------
+    Returns
+    -------
     a : np.array
         restrained A array
     """
 
     # hyperbolic Restraint
-    # Bayly:93:10271 (Eqs. 10, 13)
+    # [Bayly:93:10271] (Eqs. 10, 13)
     a = copy.deepcopy(akeep)
     n_mol = len(n_atoms)
     index = 0
@@ -111,8 +112,8 @@ def iterate(q, akeep, b, resp_a, resp_b, ihfree, symbols, toler,\
     indices : np.array
         array of the indices for the atoms in the A and B matrices
 
-    Return
-    ------
+    Returns
+    -------
     q : np.array
         array of the fitted charges
     """
