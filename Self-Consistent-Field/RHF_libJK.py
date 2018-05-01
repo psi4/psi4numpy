@@ -5,7 +5,7 @@ A restricted Hartree-Fock code using the Psi4 JK class for the 4-index electron 
 __authors__ = "Daniel G. A. Smith"
 __credits__ = ["Daniel G. A. Smith"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2017-9-30"
 

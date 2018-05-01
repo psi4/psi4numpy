@@ -19,7 +19,7 @@ from __future__ import print_function
 __authors__   = "Lori A. Burns"
 __credits__   = ["Andrew C. Simmonett", "A. Eugene DePrince III", "Ilya A. Kaliman", "Lori A. Burns", "Daniel G. A. Smith"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__   = "BSD-3-Clause"
 __date__      = "2017-08-28"
 

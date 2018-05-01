@@ -10,7 +10,7 @@ DOI: 10.1002/qua.560160825
 __authors__ = "Ashutosh Kumar"
 __credits__ = ["Ashutosh Kumar"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2017-12-17"
 

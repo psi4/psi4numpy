@@ -12,7 +12,7 @@ Equations from [Szabo:1996]
 __authors__    = "Daniel G. A. Smith"
 __credits__   = ["Daniel G. A. Smith", "Dominic A. Sirianni"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__   = "BSD-3-Clause"
 __date__      = "2017-05-23"
 

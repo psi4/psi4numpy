@@ -273,7 +273,7 @@ Equations taken from: [LNFA:yy:pp] and [LNFA:yy:pp]
 __authors__   =  "John and Jane Doe"
 __credits__   =  ["John Doe", "Jane Doe", "John Q. Sample"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__   = "BSD-3-Clause"
 __date__      = "2017-05-23"
 ```

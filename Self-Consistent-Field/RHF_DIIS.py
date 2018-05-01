@@ -5,7 +5,7 @@ Applies DIIS ot the RHF formalism
 __authors__ = "Daniel G. A. Smith"
 __credits__ = ["Daniel G. A. Smith"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2017-9-30"
 

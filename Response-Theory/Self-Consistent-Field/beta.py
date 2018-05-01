@@ -10,7 +10,7 @@ Equations taken from [Karna:1991:487], http://dx.doi.org/10.1002/jcc.540120409
 __authors__   =  "Eric J. Berquist"
 __credits__   = ["Eric J. Berquist"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__   = "BSD-3-Clause"
 __date__      = "2017-08-26"
 
