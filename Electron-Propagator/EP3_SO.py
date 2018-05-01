@@ -1,6 +1,9 @@
 """
-A simple Psi 4 input script to compute EP3 using spin-orbitals
-From Szabo and Ostlund page 390
+A simple Psi4 input script to compute EP3 using spin-orbitals.
+
+References:  
+- Equations for EP3 derived by the author from framework provided in [Szabo:1996], pp. 387-392.
+- See "Further Reading" in [Szabo:1996], pp. 409, for additional details.
 """
 
 __authors__ = "Daniel G. A. Smith"
