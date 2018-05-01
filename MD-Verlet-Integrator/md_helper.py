@@ -1,15 +1,16 @@
-# Helper "Library" to compute Molecular Dynamics (MD) Trajectories
-# Numpy and OS python modules are required
-#
-# MD and Velocity Verlet Algorithms were taken from: :
-# Computational Soft Matter:  From Synthetic Polymers to Proteins, Lecture Notes,
-# Norbert Attig, Kurt Binder, Helmut Grubmuller, Kurt Kremer (Eds.),
-# John von Neumann Institute for Computing, Julich,
-# NIC Series, Vol. 23, ISBN 3-00-012641-4, pp. 1-28, 2004
-#
-# Created by: Leonardo dos Anjos Cunha
-# Date: 05/16/17
-# License: GPL v3.0
+"""
+Helper functions used to compute Molecular Dynamics (MD) trajectories
+
+References:
+Algorithms & equations taken from [Attig:2004].
+"""
+
+__authors__ = "Leonardo dos Anjod Cunha"
+__credits__ = ["Leonardo dos Anjod Cunha"]
+
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2017-05-16"
 
 import psi4
 import numpy as np
