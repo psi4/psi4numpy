@@ -40,5 +40,7 @@ Helper HF methods:
 - `diis_update` - Updates orbitals using the DIIS method.
 
 ### References
- 1) libefp paper: "LIBEFP: A New Parallel Implementation of the Effective Fragment Potential Method as a Portable Software Library"
-    - [[Kaliman:2013:2284](http://dx.doi.org/10.1002/jcc.23375)] I. Kaliman and L. Slipchenko, *J. Comput. Chem.*, 34, 2284 (2013).
+ 1) [[Szabo:1996](https://books.google.com/books?id=KQ3DAgAAQBAJ&printsec=frontcover&dq=szabo+%26+ostlund&hl=en&sa=X&ved=0ahUKEwiYhv6A8YjUAhXLSCYKHdH5AJ4Q6AEIJjAA#v=onepage&q=szabo%20%26%20ostlund&f=false)] A. Szabo and N. S. Ostlund, *Modern Quantum Chemistry: Introduction to Advanced Electronic Structure Theory.* Courier Corporation, 1996.
+ 2) [[Kaliman:2013:2284](http://dx.doi.org/10.1002/jcc.23375)] I. Kaliman and L. Slipchenko, *J. Comput. Chem.*, **34**, 2284 (2013).
+    - libefp paper: "LIBEFP: A New Parallel Implementation of the Effective Fragment Potential Method as a Portable Software Library"
+
