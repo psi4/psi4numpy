@@ -10,7 +10,7 @@ Schaffer, R.; Jansen, G. Mol. Phys. 2013, 111, 2570-2584.
 __authors__ = "Jonathan M. Waldrop"
 __credits__ = ["Jonathan M. Waldrop"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2018-01-09"
 

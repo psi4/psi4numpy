@@ -6,7 +6,7 @@ solution of CPHF equations.
 __authors__   =  "Daniel G. A. Smith"
 __credits__   = ["Daniel G. A. Smith", "Eric J. Berquist"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__   = "BSD-3-Clause"
 __date__      = "2017-8-30"
 

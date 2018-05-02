@@ -1,9 +1,6 @@
 """
 Reference implementation of MP3 with focus on auto-generating einsum expressions
 
-Requirements:
-SciPy 0.13.0+ & NumPy 1.7.2+
-
 References:
 Equations & Goldstone diagram rules from [Szabo:1996]
 """
@@ -11,7 +8,7 @@ Equations & Goldstone diagram rules from [Szabo:1996]
 __authors__   = "Daniel G. A. Smith"
 __credits__   = ["Daniel G. A. Smith", "Dominic A. Sirianni"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__   = "BSD-3-Clause"
 __date__      = "2017-05-23"
 
@@ -79,22 +76,49 @@ evirt = eps[ndocc:]
 epsilon = 1/(eocc.reshape(-1, 1, 1, 1) + eocc.reshape(-1, 1, 1) - evirt.reshape(-1, 1) - evirt)
 
 def MP_term(n, h, l, factor, string):
-    """Computes the contribution of a given Goldstone diagram to the nth-order
-    Moller--Plesset correlation energy, according to the rules on pp. 363 of [Szabo:1996].
+    """Computes value of given Goldstone diagram from MBPT expansion.
 
-    Arguments:
-    n = MPn order of theory
-    h = number of holes
-    l = number of loops
-    factor = symmetry considerations
-    string = summation string MO tensor, then energy denominators
+    Computes the contribution of a given Goldstone diagram to 
+    the nth-order Moller--Plesset correlation energy, according
+    to the rules on pp. 363 of [Szabo:1996].
+
+    Parameters
+    ----------
+    n : int
+        MPn order of theory
+    h : int
+        Number of holes
+    l : int
+        Number of loops
+    factor : int or float
+        Symmetry considerations
+    string : str
+        Summation string MO tensor, then energy denominators
+
+    Returns
+    -------
+    term : float
+        Contribution to MPn correlation energy for given Goldstone diagram.
     """   
     def get_slice(char):
-        """Returns either occupied or virtual slice according to index
-        convention in [Szabo:1996].
+        """Returns slice object for MPn expansion.
 
-        Occupied indices: abcdefgh
-        Virtual indicies: rstuv
+        Occupied and/or virtual orbital slices are returned according to index
+        convention in [Szabo:1996]:
+
+            Occupied indices: abcdefgh
+            Virtual indicies: rstuv
+
+        Parameters
+        ----------
+        char : str
+            Orbital index belonging to desired slice.
+
+        Returns
+        -------
+        slice 
+            Slice object corresponding to orbital subset (occupied or virtual)
+            to which the provided orbital index belongs.
         """
         if char in 'abcdefgh':
             return slice(0, ndocc)

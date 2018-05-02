@@ -17,6 +17,7 @@ by a hyperbolic term, which requires an iterative fitting procedure to compute
 the charges.
 
 The charges (**q**) are computed by solving the following equation:
+
 **A** **q** = **B**.
 
 The left-hand side contains the information about the classical ESP while the
@@ -25,5 +26,5 @@ A hyperbolic restraint term that depends on the charges is added to the diagonal
 elements of matrix **A**. The charges and the diagonal elements of **A** are
 changed iteratively until the charges converge.
 
-Reference:
-Bayly:93:10269-10280(https://pubs.acs.org/doi/abs/10.1021/j100142a004) C. I. Bayly *et. al.* *JPC* **97**, 10269-10280 (1993)
+### References:
+- [[Bayly:93:10269-10280](https://pubs.acs.org/doi/abs/10.1021/j100142a004)] C. I. Bayly *et. al.* *J. Phys. Chem.* **97**, 10269 (1993)

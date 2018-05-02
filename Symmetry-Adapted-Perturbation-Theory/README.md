@@ -12,7 +12,7 @@ Helper programs:
 
 The most important operator in SAPT is the intermolecular interaction operator `\tilde{V}`, that is defined as follows:
 
-![TildeV](../media/SAPT_V_TILDE.png)
+![TildeV](../media/latex/SAPT_V_TILDE.png)
 
 As all SAPT quantities will make use of this expression, a SAPT helper object that can automatically build this value greatly simplifies many routine SAPT tasks. In psi4numpy this helper object can be initialized as follow:
 
