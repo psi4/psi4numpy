@@ -1,5 +1,10 @@
 """
-A second-order restricted open-shell Hartree-Fock script using the Psi4NumPy Formalism
+Restricted open-shell Hartree Fock (ROHF) using direct second-order
+convergence accelleration.
+
+References:
+- ROHF equations & algorithms adapted from Psi4
+- SO equations & algorithm from [Helgaker:2000]
 """
 
 __authors__ = "Daniel G. A. Smith"

@@ -3,8 +3,9 @@ Implementation of RHF with convergence acceleration via Direct
 Inversion of the Iteravite Subspace (DIIS).
 
 References:
-- Algorithm adapted from [Sherrill:1998] and [Pulay:1980:393]
-- Equations taken from [Sherrill:1998], [Pulay:1980:393], and [Pulay:1969:197]
+- RHF algorithm & equations from [Szabo:1996]
+- DIIS algorithm adapted from [Sherrill:1998] & [Pulay:1980:393]
+- DIIS equations taken from [Sherrill:1998], [Pulay:1980:393], & [Pulay:1969:197]
 """
 
 __authors__   = "Daniel G. A. Smith"
