@@ -157,7 +157,7 @@ for SCF_ITER in range(1, maxiter + 1):
         resid = np.zeros(diis_count + 1)
         resid[-1] = -1
 
-        # Solve pulay equations, [Pulay:1980:393], Eqn. 6
+        # Solve Pulay equations, [Pulay:1980:393], Eqn. 6
         ci = np.linalg.solve(B, resid)
 
         # Calculate new fock matrix as linear

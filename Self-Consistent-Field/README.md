@@ -21,23 +21,22 @@ Helper programs:
 
 Helper HF initialization:
 ```python
-hf = helper_HF(psi4, energy, mol, memory=2, ndocc=None, scf_type='DF', guess='core'):
+hf = helper_HF(mol, basis=None, memory=2, ndocc=None, scf_type='DF', guess='core'):
 ```
 Input parameters:
-- `psi4` - Global object.
-- `energy` - Global object.
-- `mol` - A Psi4 molecule object.
-- `ndocc` - Number of occupied orbitals. If `None` the number of occupied orbitals is guessed based on nuclear charge.
-- `scf_type` - ERI algorithm utilized to build J and K matrices.
-- `guess` - Initial orbital selection.
+- `mol`: A Psi4 molecule object.
+- `basis`: Name of basis set to be used
+- `ndocc`: Number of occupied orbitals. If `None` the number of occupied orbitals is guessed based on nuclear charge.
+- `scf_type`: ERI algorithm utilized to build J and K matrices.
+- `guess`: Initial orbital selection.
 
 Helper HF methods:
-- `set_Cleft` - Sets alpha orbital, automatically builds density matrix.
-- `diag` - Diagonalize matrix using `S^(-1/2)` orthogonalizer.
-- `build_fock` - Builds the Fock matrix using current orbitals.
-- `compute_hf_energy` - Computes the HF energy using current orbitals.
-- `diis_add` - Adds a matrix to the DIIS vector, uses FDS - SDF for error vectors.
-- `diis_update` - Updates orbitals using the DIIS method.
+- `set_Cleft`: Sets alpha orbital, automatically builds density matrix.
+- `diag`: Diagonalize matrix using `S^(-1/2)` orthogonalizer.
+- `build_fock`: Builds the Fock matrix using current orbitals.
+- `compute_hf_energy`: Computes the HF energy using current orbitals.
+- `diis_add`: Adds a matrix to the DIIS vector, uses FDS: SDF for error vectors.
+- `diis_update`: Updates orbitals using the DIIS method.
 
 ### References
 - General SCF: RHF, ROHF, UHF

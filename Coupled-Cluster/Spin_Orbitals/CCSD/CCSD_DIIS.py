@@ -1,14 +1,19 @@
-# A simple Psi 4 script to compute CCSD from a RHF reference
-# Scipy and numpy python modules are required
-#
-# Algorithms were taken directly from Daniel Crawford's programming website:
-# http://github.com/CrawfordGroup/ProgrammingProjects
-# Special thanks to Lori Burns for integral help
-#
-# Created by: Daniel G. A. Smith
-# Date: 7/29/14
-# License: GPL v3.0
-#
+"""
+Script to compute CCSD correlation energy from a RHF reference,
+utilizing DIIS convergence acceleration for CCSD amplitude iterations.
+
+References:
+- CCSD algorithms from Daniel Crawford's programming website:
+http://github.com/CrawfordGroup/ProgrammingProjects
+- DPD formulation of CCSD equations from [Stanton:1991:4334]
+- DIIS equations & algorithms from [Sherrill:1998], [Pulay:1980:393], & [Pulay:1969:197]
+"""
+__authors__   =  "Daniel G. A. Smith"
+__credits__   =  ["Daniel G. A. Smith", "Lori A. Burns"]
+
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2014-07-29"
 
 import time
 import numpy as np
@@ -93,7 +98,7 @@ for CCSD_iter in range(1, maxiter + 1):
 
         diis_size = len(diis_vals_t1) - 1
 
-        # Build error matrix B
+        # Build error matrix B, [Pulay:1980:393], Eqn. 6, LHS
         B = np.ones((diis_size + 1, diis_size + 1)) * -1
         B[-1, -1] = 0
 
@@ -104,11 +109,11 @@ for CCSD_iter in range(1, maxiter + 1):
 
         B[:-1, :-1] /= np.abs(B[:-1, :-1]).max()
 
-        # Build residual vector
+        # Build residual vector, [Pulay:1980:393], Eqn. 6, RHS
         resid = np.zeros(diis_size + 1)
         resid[-1] = -1
 
-        # Solve pulay equations
+        # Solve Pulay equations, [Pulay:1980:393], Eqn. 6
         ci = np.linalg.solve(B, resid)
 
         # Calculate new amplitudes

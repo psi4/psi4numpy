@@ -1,14 +1,19 @@
-# A simple Psi 4 script to compute CCSD from a RHF reference
-# Scipy and numpy python modules are required
-#
-# Algorithms were taken directly from Daniel Crawford's programming website:
-# http://github.com/CrawfordGroup/ProgrammingProjects
-# Special thanks to Lori Burns for integral help
-#
-# Created by: Daniel G. A. Smith
-# Date: 7/29/14
-# License: GPL v3.0
-#
+"""
+Script to compute the CCSD(T) electronic correlation energy,
+from a RHF reference wavefunction.
+
+References:
+- Algorithms & equations taken directly from Project #6 of 
+Daniel Crawford's programming website:
+http://github.com/CrawfordGroup/ProgrammingProjects
+"""
+
+__authors__   =  "Daniel G. A. Smith"
+__credits__   =  ["Daniel G. A. Smith", "Lori A. Burns"]
+
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2014-07-29"
 
 import time
 import numpy as np
