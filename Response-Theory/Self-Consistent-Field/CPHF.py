@@ -1,22 +1,16 @@
-# A simple Psi4 input script to compute the dipole polarizability from
-# an SCF reference
-#
-# Created by: Daniel G. A. Smith
-# Date: 3/31/15
-# License: GPL v3.0
-#
 """
 A reference implementation of the Hartree-Fock static dipole
 polarizability.
 
 References:
-Algorithms were taken directly from Daniel Crawford's programming website:
+- Equations and algorithms from [Szabo:1996] and Project 3 from
+Daniel Crawford's programming website:
 http://github.com/CrawfordGroup/ProgrammingProjects
-Special thanks to Rob Parrish for initial assistance with libmints
 """
 
 __authors__   =  "Daniel G. A. Smith"
-__credits__   = ["Daniel G. A. Smith", "Dominic A. Sirianni", "Eric J. Berquist"]
+__credits__   = ["Daniel G. A. Smith", "Dominic A. Sirianni", "Eric J. Berquist",
+"Robert M. Parrish"]
 
 __copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__   = "BSD-3-Clause"

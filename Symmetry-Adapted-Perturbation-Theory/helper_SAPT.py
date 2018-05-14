@@ -1,9 +1,17 @@
-# A SAPT helper object
-#
-# Created by: Daniel G. A. Smith
-# Date: 12/1/14
-# License: GPL v3.0
-#
+"""
+Helper classes and functions for the SAPT directory.
+
+References:
+- Equations and algorithms from [Szalewicz:2005:43], [Jeziorski:1994:1887],
+[Szalewicz:2012:254], and [Hohenstein:2012:304]
+"""
+
+__authors__   = "Daniel G. A. Smith"
+__credits__   = ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2015-12-01"
 
 import numpy as np
 import time
