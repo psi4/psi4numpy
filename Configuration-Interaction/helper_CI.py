@@ -1,7 +1,7 @@
 """
 Helper Classes for Configuration Interaction methods
 
-RReferences:
+References:
 - Equations from [Szabo:1996]
 """
 
