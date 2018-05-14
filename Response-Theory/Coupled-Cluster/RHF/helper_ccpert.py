@@ -5,6 +5,9 @@ for calculating properties like dipole polarizabilities, optical
 rotations etc. 
 
 References: 
+- Equations and algoriths from [Koch:1991:3333], [Gwaltney:1996:189], 
+[Helgaker:2000], and [Crawford:xxxx]
+
 1. A Whirlwind Introduction to Coupled Cluster Response Theory, T.D. Crawford, Private Notes,
    (pdf in the current directory).
 2. H. Koch and P. Jørgensen, J. Chem. Phys. Volume 93, pp. 3333-3344 (1991).
@@ -189,11 +192,10 @@ class HelperCCPert(object):
         return Gvv
 
     def update_X(self):
-        
         # X1 and X2 amplitudes are the Fourier analogues of first order perturbed T1 and T2 amplitudes, 
-        # (eq. 65, reference 1). For a given perturbation, these amplitudes are frequency dependent and 
+        # (eq. 65, [Crawford:xxxx]). For a given perturbation, these amplitudes are frequency dependent and 
         # can be obtained by solving a linear system of equations, (Hbar(0) - omgea * I)X = Hbar(1)
-        # Refer to eq 70 of reference 1. Writing t_mu^(1)(omega) as X_mu and Hbar^(1)(omega) as A_bar,
+        # Refer to eq 70 of [Crawford:xxxx]. Writing t_mu^(1)(omega) as X_mu and Hbar^(1)(omega) as A_bar,
         # X1 equations:
         # omega * X_ia = <phi^a_i|A_bar|O> + <phi^a_i|Hbar^(0)|phi^c_k> * X_kc + <phi^a_i|Hbar^(0)|phi^cd_kl> * X_klcd
         # X2 equations:
@@ -425,7 +427,7 @@ class HelperCCPert(object):
         # Y1 and Y2 amplitudes are the Fourier analogues of first order perturbed L1 and L2 amplitudes, 
         # While X amplitudes are referred to as right hand perturbed amplitudes, Y amplitudes are the
         # left hand perturbed amplitudes. Just like X1 and X2, they can be obtained by solving a linear 
-        # sytem of equations. Refer to eq 73 of reference 1. for Writing l_mu^(1)(omega) as Y_mu, 
+        # sytem of equations. Refer to eq 73 of [Crawford:xxxx]. for Writing l_mu^(1)(omega) as Y_mu, 
         # Y1 equations:
         # omega * Y_ia + Y_kc * <phi^c_k|Hbar(0)|phi^a_i>  + Y_klcd * <phi^cd_kl|Hbar(0)|phi^a_i> 
         # + <O|(1 + L(0))|Hbar_bar(1)(omega)|phi^a_i> = 0
@@ -595,7 +597,7 @@ class HelperCCLinresp(object):
 
     def linresp(self):
 
-        # Please refer to equation 78 of reference 1. 
+        # Please refer to equation 78 of [Crawford:xxxx]. 
         # Writing H(1)(omega) = B, T(1)(omega) = X, L(1)(omega) = Y
         # <<A;B>> =  <0|Y(B) * A_bar|0> + <0|(1+L(0))[A_bar, X(B)]|0> 
         #                polar1                    polar2

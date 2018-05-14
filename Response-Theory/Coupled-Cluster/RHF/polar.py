@@ -4,9 +4,7 @@ A simple python script to calculate RHF-CCSD electric dipole polarizabilities in
 gauge using coupled cluster linear response theory.
 
 References: 
-1. H. Koch and P. Jørgensen, J. Chem. Phys. Volume 93, pp. 3333-3344 (1991).
-3. A Whirlwind Introduction to Coupled Cluster Response Theory, T.D. Crawford, Private Notes,
-   (pdf in the current directory).
+- Equations and algorithms from [Koch:1991:3333] and [Crawford:xxxx]
 """
 
 __authors__ = "Ashutosh Kumar"
@@ -105,7 +103,7 @@ for i in range(0, 3):
     print('\nsolving left hand perturbed amplitudes for %s\n' % string)
     ccpert[string].solve('left', r_conv=1e-10)
 
-# Please refer to eq. 94 of reference 1 for the general form of linear response functions.
+# Please refer to eq. 94 of [Koch:1991:3333] for the general form of linear response functions.
 # For electric dipole polarizabilities, A = mu[x/y/z] and B = mu[x/y/z],
 # Ex. alpha_xy = <<mu_x;mu_y>>, where mu_x = x and mu_y = y
 

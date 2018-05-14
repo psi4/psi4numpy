@@ -95,9 +95,9 @@ optrot_vg_0 = np.zeros(9)
 
 ###############################################   Length Gauge   ###############################################################
 
-# In length gauge the representation of electric dipole operator is mu i,e. r. So, optical rotation tensor in this gauge
-# representation can be given by -Im <<mu;L>>, where L is the angular momemtum operator, refer to eq.5 of reference 3.
-# For general form of a response function, refer to eq. 94 of reference 1.
+# In length gauge the representation of electric dipole operator is mu i.e. r. So, optical rotation tensor in this gauge
+# representation can be given by -Im <<mu;L>>, where L is the angular momemtum operator, refer to Eqn. 5 of [Crawford:2006:227].
+# For general form of a response function, refer to Eqn. 94 of [Koch:1991:3333].
 
 print("\n\n Length Gauge Calculations Starting ..\n\n")
 
@@ -153,7 +153,8 @@ for A in range(0, 3):
 
         # constructing the linear response functions <<MU;L>> and <<L;MU>> @ given omega
         # The optical rotation tensor beta can be written in length gauge as:
-        # beta_pq = 0.5 * (<<MU_p;L_q>>  - <<L_q;MU_p>), Please refer to eq. 49 of reference 2.
+        # beta_pq = 0.5 * (<<MU_p;L_q>>  - <<L_q;MU_p>), Please refer to eq. 49 of 
+        # [Pedersen:1997:8059].
 
         cclinresp[str_AB] = HelperCCLinresp(cclambda, ccpert[str_A + Om],
                                             ccpert[str_B + Om])
@@ -179,7 +180,7 @@ for a in range(0, 3):
            optrot_lg[3 * a + 2]))
 
 # convert from a.u. into deg/[dm (g/cm^3)]
-# refer to eq. 4 of reference 3.
+# refer to eq. 4 of [Crawford:1996:189].
 Mass = 0
 for atom in range(mol.natom()):
     Mass += mol.mass(atom)
@@ -233,7 +234,8 @@ for A in range(0, 3):
 
         # constructing the linear response functions <<P;L>> and <<L;P>> @ given omega
         # The optical rotation tensor beta can be written in velocity gauge as:
-        # beta_pq = 0.5 * (<<MU_p;L_q>> + <<L_q;MU_p>), Please refer to eq. 49 of reference 2.
+        # beta_pq = 0.5 * (<<MU_p;L_q>> + <<L_q;MU_p>), Please refer to eq. 49 of 
+        # [Pedersen:1991:8059].
 
         cclinresp[str_AB] = HelperCCLinresp(cclambda, ccpert[str_A + Om],
                                             ccpert[str_B + Om])
@@ -263,7 +265,7 @@ print("Specific rotation @ %d nm (Velocity Gauge): %10.5lf deg/[dm (g/cm^3)]" %
 ###############################################   Modified Velocity Gauge   ######################################################
 #
 # Velocity gauge (VG) representation gives a non-zero optical rotation at zero frequency,
-# which is clearly an unphysical result. Pedersen et al. (ref. 4) proposed the modified
+# which is clearly an unphysical result. [Pedersen:319:2004] proposed the modified
 # velocity gauge (MVG) representation where the VG optical rotation at # zero frequency is subtracted from VG results at a given frequency.
 
 print("\n\nModified Velocity Gauge Calculations Starting ..\n\n")
