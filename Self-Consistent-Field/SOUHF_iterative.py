@@ -1,5 +1,11 @@
 """
-A iterative second-order unrestricted open-shell Hartree-Fock script using the Psi4NumPy Formalism
+Unrestricted Hartree--Fock script using iterative second-order
+convergence acceleration via preconditioned conjugate gradients (PCG).
+
+References:
+- UHF equations & algorithms from [Szabo:1996]
+- SO equations from [Helgaker:2000]
+- PCG equations & algorithm from [Shewchuk:1994]
 """
 
 __authors__ = "Daniel G. A. Smith"
@@ -85,7 +91,24 @@ def diag_H(H, nocc):
 
 def SCF_Hx(xa, xb, moFa, Co_a, Cv_a, moFb, Co_b, Cv_b):
     """
-    Compute a hessian vector guess where x is a ov matrix of nonredundant operators.
+    Compute the "matrix-vector" product between electronic Hessian (rank-4) and
+    matrix of nonredundant orbital rotations (rank-2).
+
+    Parameters
+    ----------
+    x : numpy.array
+        Matrix of nonredundant rotations.
+    moF : numpy.array
+        MO-basis Fock matrix
+    Co : numpy.array
+        Matrix of occupied orbital coefficients.
+    Cv : numpy.array
+        Matrix of virtual orbital coefficients.
+
+    Returns
+    -------
+    F : numpy.array
+        Hessian product tensor
     """
     Hx_a = np.dot(moFa[:nbeta, :nbeta], xa)
     Hx_a -= np.dot(xa, moFa[nbeta:, nbeta:])
@@ -94,6 +117,7 @@ def SCF_Hx(xa, xb, moFa, Co_a, Cv_a, moFb, Co_b, Cv_b):
     Hx_b -= np.dot(xb, moFb[nalpha:, nalpha:])
 
     # Build two electron part, M = -4 (4 G_{mnip} - g_{mpin} - g_{npim}) K_{ip}
+    # From [Helgaker:2000] Eqn. 10.8.65
     C_right_a = np.einsum('ia,sa->si', -xa, Cv_a)
     C_right_b = np.einsum('ia,sa->si', -xb, Cv_b)
 
@@ -185,9 +209,9 @@ for SCF_ITER in range(1, maxiter + 1):
         Cb, Db = diag_H(Fb, nalpha)
 
     else:
-
         so_diis = scf_helper.DIIS_helper()
 
+        # Initial guess & Jacobi preconditioner for alpha & beta
         eps_a = np.diag(moF_a)
         precon_a = -4 * (eps_a[:nbeta].reshape(-1, 1) - eps_a[nbeta:])
         x_a = gradient_a / precon_a
@@ -206,6 +230,7 @@ for SCF_ITER in range(1, maxiter + 1):
         z_b = r_b / precon_b
         p_b = z_b.copy()
 
+        # PCG Iterations for alpha & beta
         for rot_iter in range(max_micro):
             rz_old = np.vdot(r_a, z_a) + np.vdot(r_b, z_b)
 

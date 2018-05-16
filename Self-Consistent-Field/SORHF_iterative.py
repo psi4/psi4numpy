@@ -1,5 +1,11 @@
 """
-A iterative second-order restricted Hartree-Fock script using the Psi4NumPy Formalism
+Restricted Hartree--Fock script using iterative second-order
+convergence acceleration via preconditioned conjugate gradients (PCG).
+
+References:
+- RHF equations & algorithms from [Szabo:1996]
+- SO equations from [Helgaker:2000]
+- PCG equations & algorithm from [Shewchuk:1994]
 """
 
 __authors__ = "Daniel G. A. Smith"
@@ -56,12 +62,30 @@ iter_type = 'CORE'
 
 def SCF_Hx(x, moF, Co, Cv):
     """
-    Compute a hessian vector guess where x is a ov matrix of nonredundant operators.
+    Compute the "matrix-vector" product between electronic Hessian (rank-4) and 
+    matrix of nonredundant orbital rotations (rank-2).
+
+    Parameters
+    ----------
+    x : numpy.array
+        Matrix of nonredundant rotations.
+    moF : numpy.array
+        MO-basis Fock matrix
+    Co : numpy.array
+        Matrix of occupied orbital coefficients.
+    Cv : numpy.array
+        Matrix of virtual orbital coefficients.
+
+    Returns
+    -------
+    F : numpy.array
+        Hessian product tensor
     """
     F = np.dot(moF[:ndocc, :ndocc], x)
     F -= np.dot(x, moF[ndocc:, ndocc:])
 
     # Build two electron part, M = -4 (4 G_{mnip} - g_{mpin} - g_{npim}) K_{ip}
+    # From [Helgaker:2000] Eqn. 10.8.65
     C_right = np.einsum('ia,sa->si', -x, Cv)
     J, K = hf.build_jk(Co, C_right)
     F += (Co.T).dot(4 * J - K.T - K).dot(Cv)
@@ -88,11 +112,11 @@ for SCF_ITER in range(1, max_macro):
 
     Eold = hf.scf_e
 
-    # Build MO fock ,matrix and gradient
+    # Build MO fock matrix and gradient
     Co = hf.Ca[:, :ndocc]
     Cv = hf.Ca[:, ndocc:]
     moF = np.einsum('ui,vj,uv->ij', hf.Ca, hf.Ca, F)
-    gradient = -4 * moF[:ndocc, ndocc:]
+    gradient = -4 * moF[:ndocc, ndocc:] # [Helgaker:2000] Eqn. 10.8.34, pp. 484
     grad_dot = np.vdot(gradient, gradient)
 
     if (np.max(np.abs(gradient)) > 0.2):
@@ -101,9 +125,10 @@ for SCF_ITER in range(1, max_macro):
         hf.set_Cleft(C)
         iter_type = 'DIIS'
     else:
-
+        # Perform PCG on H*x = B to solve for rotation matrix `x`
         # Initial guess
         eps = np.diag(moF)
+        # Construct Jacobi preconditioner for H
         precon = -4 * (eps[:ndocc].reshape(-1, 1) - eps[ndocc:])
 
         x = gradient / precon
@@ -115,7 +140,7 @@ for SCF_ITER in range(1, max_macro):
         if micro_print:
             print('Micro Iteration Guess: Rel. RMS = %1.5e' % (rms))
 
-        # CG iterations
+        # PCG iterations: [Shewchuk:1994]
         for rot_iter in range(max_micro):
             rz_old = np.vdot(r, z)
 

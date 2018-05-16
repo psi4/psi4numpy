@@ -1,5 +1,10 @@
 """
-A second-order restricted Hartree-Fock script using the Psi4NumPy Formalism
+Restricted Hartree-Fock script using direct second-order convergence
+acceleration.
+
+References:
+- RHF equations & algorithms from [Szabo:1996]
+- SO equations & algorithm from [Helgaker:2000]
 """
 
 __authors__ = "Daniel G. A. Smith"
@@ -88,9 +93,9 @@ for SCF_ITER in range(1, 20):
         hf.set_Cleft(C)
         iter_type = 'DIIS'
     else:
-        # Build MO fock matrix and gradient
+        # Build MO Fock matrix & electronic gradient
         moF = np.einsum('ui,vj,uv', hf.Ca, hf.Ca, F)
-        gn = -4 * moF[:ndocc, ndocc:]
+        gn = -4 * moF[:ndocc, ndocc:] # [Helgaker:2000] Eqn. 10.8.34, pp. 484
 
         # AO -> MO ERI transform
         # Only transform occupied on first index, oN^4 <<< N^5
@@ -99,8 +104,8 @@ for SCF_ITER in range(1, 20):
         occ_npC[:] = hf.Ca[:, :ndocc]
         MO = np.asarray(mints.mo_transform(mI, occ_mC, mC, mC, mC))
 
-        # Build electronic hessian
-        # 4 * [(Fab - Fij) + 4 * (ia|jb) - (ib|ja) - (ij|ab)]
+        # Build electronic Hessian: [Helgaker:2000] Eqn. 10.9.22, pp. 494
+        # Biajb = 4 * [(Fab - Fij) + 4 * (ia|jb) - (ib|ja) - (ij|ab)]
         Biajb = np.einsum('ab,ij->iajb', moF[ndocc:, ndocc:], np.diag(np.ones(ndocc)))
         Biajb -= np.einsum('ij,ab->iajb', moF[:ndocc:, :ndocc], np.diag(np.ones(nvirt)))
         Biajb += 4 * MO[:, ndocc:, :ndocc, ndocc:]
@@ -108,10 +113,10 @@ for SCF_ITER in range(1, 20):
         Biajb -= MO[:, :ndocc, ndocc:, ndocc:].swapaxes(1, 2)
         Biajb *= 4
 
-        # Invert B, (o^3 v^3)
+        # Invert B, (o^3 v^3); solves Newton equations H*x = B
         Binv = np.linalg.inv(Biajb.reshape(ndocc * nvirt, -1)).reshape(ndocc, nvirt, ndocc, nvirt)
 
-        # Build orbital rotation matrix
+        # Build orbital rotation matrix from Hessian inverse & gradient
         x = np.einsum('iajb,ia->jb', Binv, gn)
         U = np.zeros_like(hf.Ca)
         U[:ndocc, ndocc:] = x

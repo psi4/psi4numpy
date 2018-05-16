@@ -1,11 +1,8 @@
 """
 Helper Classes for Configuration Interaction methods
 
-Requirements:
-SciPy 0.13.0+, NumPy 1.7.2+
-
 References:
-Equations from [Szabo:1996]
+- Equations from [Szabo:1996]
 """
 
 __authors__ = "Tianyuan Zhang"

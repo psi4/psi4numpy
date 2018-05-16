@@ -1,14 +1,17 @@
-# A simple Psi 4 script to compute CCSD from a RHF reference
-# Scipy and numpy python modules are required
-#
-# Algorithms were taken directly from Daniel Crawford's programming website:
-# http://github.com/CrawfordGroup/ProgrammingProjects
-# Special thanks to Lori Burns for integral help
-#
-# Created by: Daniel G. A. Smith
-# Date: 2/22/2015
-# License: GPL v3.0
-#
+"""Helper classes and functions for spin-orbital CC module.
+
+References:
+- DPD formulation of CCSD equations: [Stanton:1991:4334]
+- CC algorithms from Daniel Crawford's programming website:
+http://github.com/CrawfordGroup/ProgrammingProjects
+"""
+
+__authors__   =  "Daniel G. A. Smith"
+__credits__   =  ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2014-02-22"
 
 import time
 import numpy as np
@@ -112,6 +115,27 @@ def ndot(input_string, op1, op2, prefactor=None):
 
 class helper_CCSD(object):
     def __init__(self, mol, freeze_core=False, memory=2):
+        """
+        Initializes the helper_CCSD object.
+
+        Parameters
+        ----------
+        mol : psi4.core.Molecule
+            The molecule to be used for the given helper object.
+        freeze_core : {True, False}, optional
+            Boolean flag indicating presence of frozen core orbitals.  Default: False
+        memory : int or float, optional
+            The total memory, in GB, allotted for the given helper object. Default: 2
+
+        Examples
+        --------
+
+        # Construct the helper object
+        >>> ccsd = helper_CCSD(psi4.geometry("He\nHe 1 2.0"))
+
+        # Compute the CCSD total energy
+        >>> total_E = ccsd.compute_energy()
+        """
 
         if freeze_core:
             raise Exception("Frozen core doesnt work yet!")
@@ -207,7 +231,7 @@ class helper_CCSD(object):
         self.slice_a = slice(0, self.nso)
         self.slice_dict = {'f': self.slice_nfzc, 'o': self.slice_o, 'v': self.slice_v, 'a': self.slice_a}
 
-        #Extend eigenvalues
+        # Extend eigenvalues
         self.eps = np.repeat(self.eps, 2)
 
         # Compute Fock matrix
@@ -248,6 +272,7 @@ class helper_CCSD(object):
 
     #Bulid Eqn 9: tilde{\Tau})
     def build_tilde_tau(self):
+        """Builds [Stanton:1991:4334] Eqn. 9"""
         ttau = self.t2.copy()
         tmp = 0.5 * np.einsum('ia,jb->ijab', self.t1, self.t1)
         ttau += tmp
@@ -256,6 +281,7 @@ class helper_CCSD(object):
 
     #Build Eqn 10: \Tau)
     def build_tau(self):
+        """Builds [Stanton:1991:4334] Eqn. 10"""
         ttau = self.t2.copy()
         tmp = np.einsum('ia,jb->ijab', self.t1, self.t1)
         ttau += tmp
@@ -264,6 +290,7 @@ class helper_CCSD(object):
 
     #Build Eqn 3:
     def build_Fae(self):
+        """Builds [Stanton:1991:4334] Eqn. 10"""
         Fae = self.get_F('vv').copy()
         Fae[np.diag_indices_from(Fae)] = 0
 
@@ -275,6 +302,7 @@ class helper_CCSD(object):
 
     #Build Eqn 4:
     def build_Fmi(self):
+        """Builds [Stanton:1991:4334] Eqn. 4"""
         Fmi = self.get_F('oo').copy()
         Fmi[np.diag_indices_from(Fmi)] = 0
 
@@ -286,12 +314,14 @@ class helper_CCSD(object):
 
     #Build Eqn 5:
     def build_Fme(self):
+        """Builds [Stanton:1991:4334] Eqn. 5"""
         Fme = self.get_F('ov').copy()
         Fme += ndot('nf,mnef->me', self.t1, self.get_MO('oovv'))
         return Fme
 
     #Build Eqn 6:
     def build_Wmnij(self):
+        """Builds [Stanton:1991:4334] Eqn. 6"""
         Wmnij = self.get_MO('oooo').copy()
 
         Pij = ndot('je,mnie->mnij', self.t1, self.get_MO('ooov'))
@@ -303,7 +333,9 @@ class helper_CCSD(object):
 
     #Build Eqn 7:
     def build_Wabef(self):
-
+        """Builds [Stanton:1991:4334] Eqn. 7"""
+    # Rate limiting step written using tensordot, ~10x faster
+    # The commented out lines are consistent with the paper
         Wabef = self.get_MO('vvvv').copy()
 
         Pab = ndot('mb,amef->abef', self.t1, self.get_MO('vovv'))
@@ -315,6 +347,7 @@ class helper_CCSD(object):
 
     #Build Eqn 8:
     def build_Wmbej(self):
+        """Builds [Stanton:1991:4334] Eqn. 8"""
         Wmbej = self.get_MO('ovvo').copy()
         Wmbej += ndot('jf,mbef->mbej', self.t1, self.get_MO('ovvv'))
         Wmbej -= ndot('nb,mnej->mbej', self.t1, self.get_MO('oovo'))
@@ -326,14 +359,14 @@ class helper_CCSD(object):
         return Wmbej
 
     def update(self):
-        # Updates amplitudes
+        """Updates T1 & T2 amplitudes."""
 
-        ### Build intermediates
+        ### Build intermediates: [Stanton:1991:4334] Eqns. 3-8
         Fae = self.build_Fae()
         Fmi = self.build_Fmi()
         Fme = self.build_Fme()
 
-        #### Build RHS side of self.t1 equations
+        #### Build RHS side of self.t1 equations, [Stanton:1991:4334] Eqn. 1
         rhs_T1 = self.get_F('ov').copy()
         rhs_T1 += ndot('ie,ae->ia', self.t1, Fae)
         rhs_T1 -= ndot('ma,mi->ia', self.t1, Fmi)
@@ -342,7 +375,7 @@ class helper_CCSD(object):
         rhs_T1 -= ndot('imef,maef->ia', self.t2, self.get_MO('ovvv'), prefactor=0.5)
         rhs_T1 -= ndot('mnae,nmei->ia', self.t2, self.get_MO('oovo'), prefactor=0.5)
 
-        ### Build RHS side of self.t2 equations
+        ### Build RHS side of self.t2 equations, [Stanton:1991:4334] Eqn. 2
         rhs_T2 = self.get_MO('oovv').copy()
 
         # P_(ab) t_ijae (F_be - 0.5 t_mb F_me)
@@ -389,7 +422,7 @@ class helper_CCSD(object):
         self.t2 = rhs_T2 / self.Dijab
 
     def compute_corr_energy(self):
-        ### Compute CCSD correlation energy using current amplitudes
+        """Compute CCSD correlation energy using current amplitudes."""
         CCSDcorr_E = np.einsum('ia,ia->', self.get_F('ov'), self.t1)
         CCSDcorr_E += 0.25 * np.einsum('ijab,ijab->', self.get_MO('oovv'), self.t2)
         CCSDcorr_E += 0.5 * np.einsum('ijab,ia,jb->', self.get_MO('oovv'), self.t1, self.t1)
@@ -399,6 +432,7 @@ class helper_CCSD(object):
         return CCSDcorr_E
 
     def compute_energy(self, e_conv=1.e-8, maxiter=20, max_diis=8):
+        """Computes total CCSD energy."""
         ### Setup DIIS
         diis_vals_t1 = [self.t1.copy()]
         diis_vals_t2 = [self.t2.copy()]
@@ -454,7 +488,7 @@ class helper_CCSD(object):
 
                 diis_size = len(diis_vals_t1) - 1
 
-                # Build error matrix B
+                # Build error matrix B, [Pulay:1980:393], Eqn. 6, LHS
                 B = np.ones((diis_size + 1, diis_size + 1)) * -1
                 B[-1, -1] = 0
 
@@ -467,11 +501,11 @@ class helper_CCSD(object):
 
                 B[:-1, :-1] /= np.abs(B[:-1, :-1]).max()
 
-                # Build residual vector
+                # Build residual vector, [Pulay:1980:393], Eqn. 6, RHS
                 resid = np.zeros(diis_size + 1)
                 resid[-1] = -1
 
-                # Solve pulay equations
+                # Solve pulay equations, [Pulay:1980:393], Eqn. 6
                 ci = np.linalg.solve(B, resid)
 
                 # Calculate new amplitudes

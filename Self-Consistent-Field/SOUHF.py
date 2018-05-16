@@ -1,5 +1,10 @@
 """
-A second-order unrestricted open-shell Hartree-Fock script using the Psi4NumPy Formalism
+Unrestricted open-shell Hartree-Fock using direct second-order
+convergence acceleration.
+
+References:
+- UHF equations & algorithm from [Szabo:1996]
+- SO equations & algorithm from [Helgaker:2000]
 """
 
 __authors__ = "Daniel G. A. Smith"
@@ -112,7 +117,7 @@ def rotate_orbs(C, x, nocc):
 
 for SCF_ITER in range(1, maxiter + 1):
 
-    # Build the fock matrices
+    # Build the alpha & beta Fock matrices
     Ja = np.einsum('pqrs,rs->pq', I, Da)
     Ka = np.einsum('prqs,rs->pq', I, Da)
     Jb = np.einsum('pqrs,rs->pq', I, Db)
@@ -125,7 +130,7 @@ for SCF_ITER in range(1, maxiter + 1):
     diisa_e = A.dot(Fa.dot(Da).dot(S) - S.dot(Da).dot(Fa)).dot(A)
     diisb_e = A.dot(Fb.dot(Db).dot(S) - S.dot(Db).dot(Fb)).dot(A)
 
-    # SCF energy and update
+    # SCF energy and update: [Szabo:1996], exercise 3.40, pp. 215
     SCF_E = np.einsum('pq,pq->', Da + Db, H)
     SCF_E += np.einsum('pq,pq->', Da, Fa)
     SCF_E += np.einsum('pq,pq->', Db, Fb)
@@ -146,13 +151,13 @@ for SCF_ITER in range(1, maxiter + 1):
     Coccb = Cb[:, :nbeta]
     Cvirb = Cb[:, nbeta:]
 
-    # Form gradients
+    # Form gradients from MO Fock matrices: [Helgaker:2000] Eqn. 10.8.34, pp. 484
     moFa = (Ca.T).dot(Fa).dot(Ca)
     moFb = (Cb.T).dot(Fb).dot(Cb)
     grada = -4 * moFa[:nalpha, nalpha:]
     gradb = -4 * moFb[:nbeta, nbeta:]
 
-    # Form off diagonal contributions
+    # Form off diagonal contributions to Hessian
     Jab = 8 * transform(I, Cocca, Cvira, Coccb, Cvirb)
 
     # Form diagonal alpha contributions

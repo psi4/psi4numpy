@@ -2,9 +2,8 @@
 This script calculates nuclear gradients of RHF Wavefunction using
 gradients of one and two electron integrals obtained from PSI4. 
 
-Reference: "Derivative studies in hartree-fock and møller-plesset theories",
-J. A. Pople, R. Krishnan, H. B. Schlegel and J. S. Binkley
-DOI: 10.1002/qua.560160825
+Reference: 
+- Equations and algorithms from [Pople:1979:225]
 """
 
 __authors__ = "Ashutosh Kumar"

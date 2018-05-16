@@ -1,14 +1,20 @@
-# A simple Psi 4 script to compute CCSD from a RHF reference
-# Scipy and numpy python modules are required
-#
-# Algorithms were taken directly from Daniel Crawford's programming website:
-# http://github.com/CrawfordGroup/ProgrammingProjects
-# Special thanks to Lori Burns for integral help
-#
-# Created by: Daniel G. A. Smith
-# Date: 7/29/14
-# License: GPL v3.0
-#
+"""
+Script to compute the electronic correlation energy using
+coupled-cluster theory through single and double excitations,
+from a RHF reference wavefunction.
+
+References:
+- Algorithms from Daniel Crawford's programming website:
+http://github.com/CrawfordGroup/ProgrammingProjects
+- DPD Formulation of CC Equations: [Stanton:1991:4334]
+"""
+
+__authors__   =  "Daniel G. A. Smith"
+__credits__   =  ["Daniel G. A. Smith", "Lori A. Burns"]
+
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2014-07-29"
 
 import time
 import numpy as np
@@ -67,7 +73,7 @@ H = np.asarray(mints.ao_kinetic()) + np.asarray(mints.ao_potential())
 
 print('\nTotal time taken for ERI integrals: %.3f seconds.\n' % (time.time() - t))
 
-#Make spin-orbital MO
+# Make spin-orbital MO antisymmetrized integrals
 print('Starting AO -> spin-orbital MO transformation...')
 t = time.time()
 MO = np.asarray(mints.mo_spin_eri(C, C))
@@ -88,8 +94,7 @@ Evirt = eps[v]
 
 print('..finished transformation in %.3f seconds.\n' % (time.time() - t))
 
-# DPD approach to CCSD equations
-# See: http://github.com/CrawfordGroup/ProgrammingProjects
+# DPD approach to CCSD equations from [Stanton:1991:4334]
 
 # occ orbitals i, j, k, l, m, n
 # virt orbitals a, b, c, d, e, f
@@ -98,6 +103,7 @@ print('..finished transformation in %.3f seconds.\n' % (time.time() - t))
 
 #Bulid Eqn 9: tilde{\Tau})
 def build_tilde_tau(t1, t2):
+    """Builds [Stanton:1991:4334] Eqn. 9"""
     ttau = t2.copy()
     tmp = 0.5 * np.einsum('ia,jb->ijab', t1, t1)
     ttau += tmp
@@ -107,6 +113,7 @@ def build_tilde_tau(t1, t2):
 
 #Build Eqn 10: \Tau)
 def build_tau(t1, t2):
+    """Builds [Stanton:1991:4334] Eqn. 10"""
     ttau = t2.copy()
     tmp = np.einsum('ia,jb->ijab', t1, t1)
     ttau += tmp
@@ -116,6 +123,7 @@ def build_tau(t1, t2):
 
 #Build Eqn 3:
 def build_Fae(t1, t2):
+    """Builds [Stanton:1991:4334] Eqn. 3"""
     Fae = F[v, v].copy()
     Fae[np.diag_indices_from(Fae)] = 0
 
@@ -129,6 +137,7 @@ def build_Fae(t1, t2):
 
 #Build Eqn 4:
 def build_Fmi(t1, t2):
+    """Builds [Stanton:1991:4334] Eqn. 4"""
     Fmi = F[o, o].copy()
     Fmi[np.diag_indices_from(Fmi)] = 0
 
@@ -142,6 +151,7 @@ def build_Fmi(t1, t2):
 
 #Build Eqn 5:
 def build_Fme(t1, t2):
+    """Builds [Stanton:1991:4334] Eqn. 5"""
     Fme = F[o, v].copy()
     Fme += np.einsum('nf,mnef->me', t1, MO[o, o, v, v])
     return Fme
@@ -149,6 +159,7 @@ def build_Fme(t1, t2):
 
 #Build Eqn 6:
 def build_Wmnij(t1, t2):
+    """Builds [Stanton:1991:4334] Eqn. 6"""
     Wmnij = MO[o, o, o, o].copy()
 
     Pij = np.einsum('je,mnie->mnij', t1, MO[o, o, o, v])
@@ -162,6 +173,7 @@ def build_Wmnij(t1, t2):
 
 #Build Eqn 7:
 def build_Wabef(t1, t2):
+    """Builds [Stanton:1991:4334] Eqn. 7"""
     # Rate limiting step written using tensordot, ~10x faster
     # The commented out lines are consistent with the paper
 
@@ -182,6 +194,7 @@ def build_Wabef(t1, t2):
 
 #Build Eqn 8:
 def build_Wmbej(t1, t2):
+    """Builds [Stanton:1991:4334] Eqn. 8"""
     Wmbej = MO[o, v, v, o].copy()
     Wmbej += np.einsum('jf,mbef->mbej', t1, MO[o, v, v, v])
     Wmbej -= np.einsum('nb,mnej->mbej', t1, MO[o, o, v, o])
@@ -207,7 +220,7 @@ H *= (spin_ind.reshape(-1, 1) == spin_ind)
 # Compute Fock matrix
 F = H + np.einsum('pmqm->pq', MO[:, o, :, o])
 
-### Build D matrices
+### Build D matrices: [Stanton:1991:4334] Eqns. 12 & 13
 Focc = F[np.arange(nocc), np.arange(nocc)].flatten()
 Fvirt = F[np.arange(nocc, nvirt + nocc), np.arange(nocc, nvirt + nocc)].flatten()
 
@@ -235,7 +248,7 @@ print('\nStarting CCSD iterations')
 ccsd_tstart = time.time()
 CCSDcorr_E_old = 0.0
 for CCSD_iter in range(1, maxiter + 1):
-    ### Build intermediates
+    ### Build intermediates: [Stanton:1991:4334] Eqns. 3-8
     Fae = build_Fae(t1, t2)
     Fmi = build_Fmi(t1, t2)
     Fme = build_Fme(t1, t2)
@@ -244,7 +257,7 @@ for CCSD_iter in range(1, maxiter + 1):
     Wabef = build_Wabef(t1, t2)
     Wmbej = build_Wmbej(t1, t2)
 
-    #### Build RHS side of t1 equations
+    #### Build RHS side of t1 equations, [Stanton:1991:4334] Eqn. 1
     rhs_T1  = F[o, v].copy()
     rhs_T1 += np.einsum('ie,ae->ia', t1, Fae)
     rhs_T1 -= np.einsum('ma,mi->ia', t1, Fmi)
@@ -253,7 +266,7 @@ for CCSD_iter in range(1, maxiter + 1):
     rhs_T1 -= 0.5 * np.einsum('imef,maef->ia', t2, MO[o, v, v, v])
     rhs_T1 -= 0.5 * np.einsum('mnae,nmei->ia', t2, MO[o, o, v, o])
 
-    ### Build RHS side of t2 equations
+    ### Build RHS side of t2 equations, [Stanton:1991:4334] Eqn. 2
     rhs_T2 = MO[o, o, v, v].copy()
 
     # P_(ab) t_ijae (F_be - 0.5 t_mb F_me)

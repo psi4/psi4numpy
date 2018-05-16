@@ -1,13 +1,19 @@
 """
-Applies DIIS ot the RHF formalism
+Implementation of RHF with convergence acceleration via Direct
+Inversion of the Iteravite Subspace (DIIS).
+
+References:
+- RHF algorithm & equations from [Szabo:1996]
+- DIIS algorithm adapted from [Sherrill:1998] & [Pulay:1980:393]
+- DIIS equations taken from [Sherrill:1998], [Pulay:1980:393], & [Pulay:1969:197]
 """
 
-__authors__ = "Daniel G. A. Smith"
-__credits__ = ["Daniel G. A. Smith"]
+__authors__   = "Daniel G. A. Smith"
+__credits__   = ["Daniel G. A. Smith"]
 
 __copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
-__license__ = "BSD-3-Clause"
-__date__ = "2017-9-30"
+__license__   = "BSD-3-Clause"
+__date__      = "2017-9-30"
 
 import time
 import numpy as np
@@ -79,12 +85,13 @@ A = mints.ao_overlap()
 A.power(-0.5, 1.e-16)
 A = np.asarray(A)
 
-# Calculate initial core guess
-Hp = A.dot(H).dot(A)
-e, C2 = np.linalg.eigh(Hp)
-C = A.dot(C2)
+# Calculate initial core guess: [Szabo:1996] pp. 145
+Hp = A.dot(H).dot(A)            # Eqn. 3.177
+e, C2 = np.linalg.eigh(Hp)      # Solving Eqn. 1.178
+C = A.dot(C2)                   # Back transform, Eqn. 3.174
 Cocc = C[:, :ndocc]
-D = np.einsum('pi,qi->pq', Cocc, Cocc)
+
+D = np.einsum('pi,qi->pq', Cocc, Cocc) # [Szabo:1996] Eqn. 3.145, pp. 139
 
 print('\nTotal time taken for setup: %.3f seconds' % (time.time() - t))
 
@@ -104,15 +111,15 @@ for SCF_ITER in range(1, maxiter + 1):
     K = np.einsum('prqs,rs->pq', I, D)
     F = H + J * 2 - K
 
-    # DIIS error build
+    # DIIS error build w/ HF analytic gradient ([Pulay:1969:197])
     diis_e = np.einsum('ij,jk,kl->il', F, D, S) - np.einsum('ij,jk,kl->il', S, D, F)
     diis_e = A.dot(diis_e).dot(A)
     Fock_list.append(F)
     DIIS_error.append(diis_e)
-
-    # SCF energy and update
-    SCF_E = np.einsum('pq,pq->', F + H, D) + Enuc
     dRMS = np.mean(diis_e**2)**0.5
+
+    # SCF energy and update: [Szabo:1996], Eqn. 3.184, pp. 150
+    SCF_E = np.einsum('pq,pq->', F + H, D) + Enuc
 
     print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E'
           % (SCF_ITER, SCF_E, (SCF_E - Eold), dRMS))
@@ -131,7 +138,7 @@ for SCF_ITER in range(1, maxiter + 1):
             del DIIS_error[0]
             diis_count -= 1
 
-        # Build error matrix B
+        # Build error matrix B, [Pulay:1980:393], Eqn. 6, LHS
         B = np.empty((diis_count + 1, diis_count + 1))
         B[-1, :] = -1
         B[:, -1] = -1
@@ -146,11 +153,11 @@ for SCF_ITER in range(1, maxiter + 1):
         # normalize
         B[:-1, :-1] /= np.abs(B[:-1, :-1]).max()
 
-        # Build residual vector
+        # Build residual vector, [Pulay:1980:393], Eqn. 6, RHS
         resid = np.zeros(diis_count + 1)
         resid[-1] = -1
 
-        # Solve pulay equations
+        # Solve Pulay equations, [Pulay:1980:393], Eqn. 6
         ci = np.linalg.solve(B, resid)
 
         # Calculate new fock matrix as linear

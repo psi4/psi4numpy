@@ -1,13 +1,21 @@
-# A simple Psi4 script to compute TD-CCSD from a CCSD reference
-# Scipy and numpy python modules are required
-# This script runs a post-CCSD computation, using the ERI
-# tensor, the T1 and T2 amplitudes as well as the F and W 
-# intermediates.
-#
-# TD-CCSD
-# Created by: Daniel R. Nascimento
-# Date: 4/22/17
-# License: GPL v3.0
+"""
+Script to compute TD-CCSD from a CCSD reference.
+
+This script runs a post-CCSD computation, using the ERI
+tensor, the T1 and T2 amplitudes as well as the F and W 
+intermediates.
+
+References:
+- DPD formulation of CC: [Stanton:1991:4334]
+- TD-CCSD equations & algorithms: [Nascimento:2016]
+"""
+
+__authors__   =  "Daniel R. Nascimento"
+__credits__   =  ["Daniel R. Nascimento"]
+
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2017-04-22"
 
 import time
 import numpy as np
@@ -60,28 +68,31 @@ o = ccsd.slice_o
 v = ccsd.slice_v
 
 #Step 1: Build one and two-particle elements of the similarity-transformed Hamiltonian
-#Equations from J. Gauss and J.F. Stanton, JCP, 103, 9, 1995. Table III (b)
+#Equations from [Gauss:1995:3561], Table III (b) & (c)
 
-#### Note that Eqs. 1 - 6 only modifies some intermediates that were already defined during 
-#### the ground-state CCSD computation!
+#### Note that Eqs. 1 - 6 of Table III (b) only modifies some intermediates that were 
+#### already defined during the ground-state CCSD computation!
 
 # 3rd equation
 Fme   = ccsd.build_Fme()
 
 # 1st equation
 def update_Fae():
+    """Eqn 1 from [Gauss:1995:3561], Table III (b)"""
     Fae  = ccsd.build_Fae()
     Fae -= 0.5 * np.einsum('me,ma->ae', Fme, t1)
     return Fae
 
 # 2nd equation
 def update_Fmi():
+    """Eqn 2 from [Gauss:1995:3561], Table III (b)"""
     Fmi  = ccsd.build_Fmi()
     Fmi += 0.5 * np.einsum('me,ie->mi', Fme, t1)
     return Fmi
 
 # 4th equation
 def update_Wmnij():
+    """Eqn 4 from [Gauss:1995:3561], Table III (b)"""
     tmp_tau = ccsd.build_tau()
 
     Wmnij  = ccsd.build_Wmnij()
@@ -90,6 +101,7 @@ def update_Wmnij():
 
 # 5th equation
 def update_Wabef():
+    """Eqn 5 from [Gauss:1995:3561], Table III (b)"""
     tmp_tau = ccsd.build_tau()
 
     Wabef  = ccsd.build_Wabef()
@@ -98,6 +110,7 @@ def update_Wabef():
 
 # 6th equation
 def update_Wmbej():
+    """Eqn 6 from [Gauss:1995:3561], Table III (b)"""
     Wmbej  = ccsd.build_Wmbej()
     Wmbej -= 0.5 * np.einsum('jnfb,mnef->mbej', t2, ccsd.get_MO('oovv'))
     return Wmbej
@@ -106,18 +119,21 @@ def update_Wmbej():
 
 # 7th equation
 def build_Wmnie():
+    """Eqn 7 from [Gauss:1995:3561], Table III (b)"""
     Wmnie = ccsd.get_MO('ooov').copy()
     Wmnie += np.einsum('if,mnfe->mnie', t1, ccsd.get_MO('oovv'))
     return Wmnie
 
 # 8th equation
 def build_Wamef():
+    """Eqn 8 from [Gauss:1995:3561], Table III (b)"""
     Wamef = ccsd.get_MO('vovv').copy()
     Wamef -= np.einsum('na,nmef->amef', t1, ccsd.get_MO('oovv'))
     return Wamef
 
 # 9th equation
 def build_Wmbij():
+    """Eqn 9 from [Gauss:1995:3561], Table III (b)"""
     Wmbij = ccsd.get_MO('ovoo').copy()
     
     Wmbij -= np.einsum('me,ijbe->mbij', Fme, t2)
@@ -139,6 +155,7 @@ def build_Wmbij():
 
 # 10th equation
 def build_Wabei():
+    """Eqn 10 from [Gauss:1995:3561], Table III (b)"""
     Wabei = ccsd.get_MO('vvvo').copy()
 
     Wabei -= np.einsum('me,miab->abei', Fme, t2)
@@ -158,15 +175,17 @@ def build_Wabei():
     Wabei += Pab.swapaxes(0, 1)
     return Wabei    
  
-### Build three-body intermediates: Table III (c)
+### Build three-body intermediates: [Gauss:1995:3561] Table III (c)
 
 # 1st equation
 def build_Gae(t2, l2):
+    """Eqn 1 from [Gauss:1995:3561], Table III (c)"""
     Gae = -0.5 * np.einsum('mnef,mnaf->ae', t2, l2)
     return Gae
 
 # 2nd equation
 def build_Gmi(t2, l2):
+    """Eqn 2 from [Gauss:1995:3561], Table III (c)"""
     Gmi = 0.5 * np.einsum('mnef,inef->mi', t2, l2)
     return Gmi
 
@@ -186,7 +205,7 @@ Wamef = build_Wamef()
 Wmbij = build_Wmbij()
 Wabei = build_Wabei()
 
-### begin LCCSD iterations: The lambda equations are in Table II. 
+### begin LCCSD iterations: Lambda equations from [Gauss:1995:3561] Table II, (a) & (b). 
 print('\nStarting LCCSD iterations')
 lccsd_tstart = time.time()
 LCCSDcorr_E_old = 0.0
@@ -285,7 +304,7 @@ print('\nFinal LCCSD correlation energy:     % 16.10f' % LCCSDcorr_E)
 print('Total LCCSD energy:                 % 16.10f' % LCCSD_E)
 
 # Step 2: Build left and right dipole functions for t = 0 
-# Equations from D. R. Nascimento and A. E. DePrince III, JCTC, 12, 5834 (2016)
+# Equations from [Nascimento:2016:5834]
 
 print('\nBuilding dipole functions')
 
@@ -305,7 +324,7 @@ mu *= (spin_ind.reshape(-1, 1) == spin_ind)
 dipole_build_tstart = time.time()
 
 # Right dipole function
-# In the text below Eq. 18
+# [Nascimento:2016:5834], in the text below Eqn. 18
 trace = np.trace(mu[o , o])
 mr0 = trace
 mr1 = mu[o, v].copy()
@@ -313,18 +332,18 @@ mr2 = l2*0.0
 
 # Left dipole function
 
-# Eq. 19
+# [Nascimento:2016:5834], Eqn. 19
 ml0  = trace
 ml0 += np.einsum('ia,ia->', mu[o, v], l1)
 
-# Eq. 20
+# [Nascimento:2016:5834], Eqn. 20
 ml1  = mu[o, v].copy()
 ml1 += trace * l1 
 ml1 += np.einsum('ea,ie->ia', mu[v, v], l1)
 ml1 -= np.einsum('im,ma->ia', mu[o, o], l1)
 ml1 += np.einsum('imae,em->ia', l2, mu[v, o])
 
-# Eq. 21
+# [Nascimento:2016:5834], Eqn. 21
 ml2  = np.einsum('ia,jb->ijab', l1, mu[o, v])
 ml2 -= np.einsum('ib,ja->ijab', l1, mu[o, v])
 ml2 += np.einsum('jb,ia->ijab', l1, mu[o, v])
@@ -343,7 +362,7 @@ ml2 += Pij.swapaxes(0, 1)
 print('Dipole function build took %.2f seconds.\n' % (time.time() - dipole_build_tstart))
 
 # Step 3: Build the time evolution of the dipole function (right only!)
-# Equations from D. R. Nascimento and A. E. DePrince III, JCTC, 12, 5834 (2016)
+# Equations from [Nascimento:2016:5834]
 
 #### Important: Update Fae and Fmi so that they contain the diagonals of the
 #### Fock matrix.
@@ -351,14 +370,16 @@ print('Dipole function build took %.2f seconds.\n' % (time.time() - dipole_build
 Fae += ccsd.get_F('vv')
 Fmi += ccsd.get_F('oo')
 
-# Eq. 24 
+# [Nascimento:2016:5834], Eqn. 24 
 def compute_dmr0(Mr1, Mr2):
+    """Computes [Nascimento:2016:5834], Eqn. 24"""
     dMr0  = np.einsum('ia,ia->',Mr1 , Fme)
     dMr0 += 0.25 * np.einsum('ijab,ijab->',Mr2, ccsd.get_MO('oovv'))
     return -1j * dMr0
 
-# Eq. 25
+# [Nascimento:2016:5834], Eqn. 25
 def compute_dmr1(Mr1, Mr2):
+    """Computes [Nascimento:2016:5834], Eqn. 25"""
     dMr1  = np.einsum('ib,ab->ia',Mr1 , Fae)
     dMr1 -= np.einsum('ji,ja->ia',Fmi , Mr1)
     dMr1 += np.einsum('jb,jabi->ia',Mr1 , Wmbej)
@@ -367,9 +388,15 @@ def compute_dmr1(Mr1, Mr2):
     dMr1 += 0.5 * np.einsum('ijbc,ajbc->ia',Mr2 , Wamef)
     return -1j * dMr1
 
-# Eq. 26 (the paper only contains the terms for CC2, here we provide the 
+# [Nascimento:2016:5834], Eqn. 26 
+# (the paper only contains the terms for CC2, here we provide the 
 # additional terms for CCSD)
 def compute_dmr2(Mr1, Mr2):
+    """Computes [Nascimento:2016:5834], Eqn. 26
+
+    The paper above only contains terms for CC2; here we provide the
+    additional terms for CCSD.
+    """
     # P_(ab) M_m^b W_{mbij}
     Pab = np.einsum('mb,maij->ijab', Mr1, Wmbij)
     dMr2  = Pab
@@ -430,17 +457,16 @@ def compute_dmr2(Mr1, Mr2):
     return -1j * dMr2    
 
 # Step 4: Time propagation. 
-# Equations from D. R. Nascimento and A. E. DePrince III, JCTC, 12, 5834 (2016)
+# Equations from [Nascimento:2016:5834] & [Cheever:2015]
 
 # Here we will use the 4th-order Runge-Kutta scheme.
+# See "Fourth" tab of [Cheever:2015] for details.
+
 # y_{n+1} = y_n + (h/6) * (k_1 + 2k_2 + 2k_3 +k_4)
 # k1 = f(t_n, y_n)
 # k2 = f(t_n + h/2, y_n+ h*k_{1}/2)
 # k3 = f(t_n + h/2, y_n+ h*k_{2}/2)
 # k4 = f(t_n + h, y_n+ h*k_3)
-
-# A nice overview of this scheme can be found at
-# http://lpsa.swarthmore.edu/NumInt/NumIntFourth.html
 
 ### Time propagation
 
@@ -497,7 +523,7 @@ for step in range(0, steps_total + 1):
     M2 += (time_step/6.0) * (k1_2 + 2.0 * k2_2 + 2.0 * k3_2 + 1.0 * k4_2)
 
     # compute autocorrelation function <M(0)|M(t)>
-    # Eq. 13
+    # [Nascimento:2016:5834], Eqn. 13
     corr_func  = ml0 * M0
     corr_func += np.einsum('ia,ia->', ml1, M1)
     corr_func += 0.25 * np.einsum('ijab,ijab->', ml2, M2)

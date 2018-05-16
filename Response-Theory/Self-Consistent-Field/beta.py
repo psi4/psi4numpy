@@ -4,7 +4,7 @@ hyperpolarizability $\beta$ from a restricted HF reference using the
 $2n+1$ rule from perturbation theory.
 
 References:
-Equations taken from [Karna:1991:487], http://dx.doi.org/10.1002/jcc.540120409
+- Equations taken from [Karna:1991:487]
 """
 
 __authors__   =  "Eric J. Berquist"
