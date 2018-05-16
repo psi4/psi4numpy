@@ -341,76 +341,78 @@ SCF_Gradient["OEI"] = SCF_Gradient["T"] + SCF_Gradient["V"] + SCF_Gradient["S"]
 SCF_Gradient["TEI"] = SCF_Gradient["J"] + SCF_Gradient["K"]
 
 
-print("\nSCF Kinetic Energy Gradient:\n",SCF_Gradient["T"])
-print("\nSCF Potential Energy Gradient:\n",SCF_Gradient["V"])
-print("\nSCF Overlap Gradient:\n",SCF_Gradient["S'"])
+#print("\nSCF Kinetic Energy Gradient:\n",SCF_Gradient["T"])
+#print("\nSCF Potential Energy Gradient:\n",SCF_Gradient["V"])
+#print("\nSCF Overlap Gradient:\n",SCF_Gradient["S'"])
+#print("\nCoulomb Gradient:\n",SCF_Gradient["J"])
+#print("\nExchange Gradient:\n",SCF_Gradient["K"])
 
 
 print("\nNuclear Repulsion Gradient:\n",Gradient["N"])
-print("\nKinetic Energy Gradient:\n",Gradient["T"])
-print("\nPotential Energy Gradient:\n",Gradient["V"])
-print("\nOverlap Gradient:\n",Gradient["S"])
+print("\nKinetic Energy Gradient:\n",SCF_Gradient["T"] + Gradient["T"])
+print("\nPotential Energy Gradient:\n",SCF_Gradient["V"] + Gradient["V"])
+print("\nOverlap Gradient:\n",SCF_Gradient["S"] + Gradient["S"])
 Gradient["OEI"] = Gradient["T"] + Gradient["V"] + Gradient["S"]
-print("\nOEI Gradient:\n",Gradient["OEI"])
+#print("\nOEI Gradient:\n",Gradient["OEI"])
 
 
-print("\nCoulomb Gradient:\n",Gradient["J"])
-print("\nExchange Gradient:\n",Gradient["K"])
+print("\nCoulomb Gradient:\n",SCF_Gradient["J"] + Gradient["J"])
+print("\nExchange Gradient:\n",SCF_Gradient["K"] + Gradient["K"])
 Gradient["TEI"] = Gradient["J"] + Gradient["K"]
-print("\nTEI Gradient:\n",Gradient["TEI"])
+#print("\nTEI Gradient:\n",Gradient["TEI"])
 
 
 print("\nResponse Gradient:\n",Gradient["R"])
 
-print("\nSCF Gradient:\n",SCF_Gradient["OEI"] + SCF_Gradient["TEI"] + Gradient["N"])
+#print("\nSCF Gradient:\n",SCF_Gradient["OEI"] + SCF_Gradient["TEI"] + Gradient["N"])
 
 Gradient["Total"] = SCF_Gradient["OEI"] + SCF_Gradient["TEI"] + Gradient["OEI"] + Gradient["TEI"] + Gradient["R"] + Gradient["N"]
 print("\nTotal Gradient:\n",Gradient["Total"])
 
 
 
-# Psi4's Gradients
-Psi4_grad = {}
-
-npDa = psi4.core.Matrix.to_array(mp2_wfn.Da())
-#print("Da:\n",npDa)
-npDb = psi4.core.Matrix.to_array(mp2_wfn.Db())
-#print("Db:\n",npDb)
-npD = npDa + npDb
-#print("Density Matrix:\n",npD)
-
-#print("SCF Density:\n",npD)
-#print(Ppq)
-P_ao = npC * Ppq * npC.T
-npD += P_ao
-#print("Correlated Density Matrix:\n",P_ao)
-#print("Density Matrix:\n",npD)
-
-D = psi4.core.Matrix.from_array(npD)
-
-Psi4_grad["S"] = mints.overlap_grad(D)
-Psi4_grad["T"] = mints.kinetic_grad(D)
-Psi4_grad["V"] = mints.potential_grad(D)
-print("\nPsi4 S_grad:\n",np.asarray(Psi4_grad["S"]))
-print("\nPsi4 T_grad:\n",np.asarray(Psi4_grad["T"]))
-print("\nPsi4 V_grad:\n",np.asarray(Psi4_grad["V"]))
-
-#Convert np array into PSI4 Matrix
-S_grad = psi4.core.Matrix.from_array(Gradient["S"])
-T_grad = psi4.core.Matrix.from_array(Gradient["T"])
-V_grad = psi4.core.Matrix.from_array(Gradient["V"])
-
-# Test OEI gradients with that of PSI4
-#psi4.compare_matrices(Psi4_grad["S"], S_grad, 10, "OVERLAP_GRADIENT_TEST")   # TEST
-#psi4.compare_matrices(Psi4_grad["T"], T_grad, 10, "KINETIC_GRADIENT_TEST")   # TEST
-#psi4.compare_matrices(Psi4_grad["V"], V_grad, 10, "POTENTIAL_GRADIENT_TEST") # TEST
-
-# PSI4's Total Gradient
-Psi4_total_grad = psi4.core.Matrix.from_list([
-            [ 0.00000000000000,  0.00000000000346, -0.05410094144255],
-            [-0.00000000000000, -0.06660615567634,  0.02705047072205],
-            [ 0.00000000000000,  0.06660615567288,  0.02705047072054]
-        ])
-
-total_grad = psi4.core.Matrix.from_array(Gradient["Total"])
-psi4.compare_matrices(Psi4_total_grad, total_grad, 10, "RHF_TOTAL_GRADIENT_TEST") # TEST
+## Psi4's Gradients
+#Psi4_grad = {}
+#
+#npDa = psi4.core.Matrix.to_array(mp2_wfn.Da())
+##print("Da:\n",npDa)
+#npDb = psi4.core.Matrix.to_array(mp2_wfn.Db())
+##print("Db:\n",npDb)
+#npD = npDa + npDb
+##print("Density Matrix:\n",npD)
+#
+##print("SCF Density:\n",npD)
+##print(Ppq)
+#P_ao = npC * Ppq * npC.T
+#npD += P_ao
+##print("Correlated Density Matrix:\n",P_ao)
+##print("Density Matrix:\n",npD)
+#
+#D = psi4.core.Matrix.from_array(npD)
+#
+#Psi4_grad["S"] = mints.overlap_grad(D)
+#Psi4_grad["T"] = mints.kinetic_grad(D)
+#Psi4_grad["V"] = mints.potential_grad(D)
+#print("\nPsi4 S_grad:\n",np.asarray(Psi4_grad["S"]))
+#print("\nPsi4 T_grad:\n",np.asarray(Psi4_grad["T"]))
+#print("\nPsi4 V_grad:\n",np.asarray(Psi4_grad["V"]))
+#
+##Convert np array into PSI4 Matrix
+#S_grad = psi4.core.Matrix.from_array(Gradient["S"])
+#T_grad = psi4.core.Matrix.from_array(Gradient["T"])
+#V_grad = psi4.core.Matrix.from_array(Gradient["V"])
+#
+## Test OEI gradients with that of PSI4
+##psi4.compare_matrices(Psi4_grad["S"], S_grad, 10, "OVERLAP_GRADIENT_TEST")   # TEST
+##psi4.compare_matrices(Psi4_grad["T"], T_grad, 10, "KINETIC_GRADIENT_TEST")   # TEST
+##psi4.compare_matrices(Psi4_grad["V"], V_grad, 10, "POTENTIAL_GRADIENT_TEST") # TEST
+#
+## PSI4's Total Gradient
+#Psi4_total_grad = psi4.core.Matrix.from_list([
+#            [ 0.00000000000000,  0.00000000000346, -0.05410094144255],
+#            [-0.00000000000000, -0.06660615567634,  0.02705047072205],
+#            [ 0.00000000000000,  0.06660615567288,  0.02705047072054]
+#        ])
+#
+#total_grad = psi4.core.Matrix.from_array(Gradient["Total"])
+#psi4.compare_matrices(Psi4_total_grad, total_grad, 10, "RHF_TOTAL_GRADIENT_TEST") # TEST
