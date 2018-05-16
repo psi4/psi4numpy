@@ -1,6 +1,6 @@
 """
-Restricted open-shell Hartree Fock (ROHF) using direct second-order
-convergence accelleration.
+Restricted open-shell Hartree--Fock (ROHF) using direct second-order
+convergence acceleration.
 
 References:
 - ROHF equations & algorithms adapted from Psi4
