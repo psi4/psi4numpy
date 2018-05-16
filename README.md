@@ -124,7 +124,7 @@ detail
 
 ### Psi4 v1.1 (c. May 2017)
 This repostitory has recently been updated to be compatible with Psi4 version 1.1.
-Please see the `v1.0` branch for a Psi4 v1.0 compliant Psi4NumPy version. 
+Please see the [v0.1-beta tag](https://github.com/psi4/psi4numpy/tree/v0.1-beta) for a Psi4 v1.0 compliant Psi4NumPy version. 
 
 ### Psi4 v1.2 (c. May 2018)
 This reposititory is fully compatible with the upcoming Psi4 version 1.2.
