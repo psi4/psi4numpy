@@ -59,6 +59,7 @@ def resp(molecules, options_list=[], intermol_constraints={}):
     # VDW surface options
     if not ('ESP' in options.keys()):
         options['ESP'] = []
+        import psi4
     if not ('GRID' in options.keys()):
         options['GRID'] = []
     if not ('N_VDW_LAYERS' in options.keys()):
@@ -165,8 +166,11 @@ def resp(molecules, options_list=[], intermol_constraints={}):
             options['esp_values'] = np.loadtxt(options['ESP'])
             np.savetxt('grid_esp.dat', options['esp_values'], fmt='%15.10f')
         else:
-            from resp_helper import psi4_esp
-            options['esp_values'] = psi4_esp(options['METHOD_ESP'], options['BASIS_ESP'], molecules[mol])
+            psi4.core.set_active_molecule(molecules[mol])
+            psi4.set_options({'basis': options['BASIS_ESP']})
+            psi4.prop(options['METHOD_ESP'], properties=['GRID_ESP'])
+            options['esp_values'] = np.loadtxt('grid_esp.dat')
+            psi4.core.clean()
             
         os.system("mv grid.dat %i_%s_grid.dat" %(mol+1, molecules[mol].name()))
         os.system("mv grid_esp.dat %i_%s_grid_esp.dat" %(mol+1, molecules[mol].name()))
