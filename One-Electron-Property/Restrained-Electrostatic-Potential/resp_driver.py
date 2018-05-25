@@ -267,13 +267,6 @@ def resp(molecules, options_list=[], intermol_constraints={}):
                 f.write("     Hydrogen atoms are not restrained\n")
             f.write("     resp_a:                           %.4f\n" %(options["RESP_A"]))
             f.write("     resp_b:                           %.4f\n" %(options["RESP_B"]))
-            if len(labelf) < 3:
-                options["TWO_STAGE"] = False
-            f.write("     Two stage:                        %s\n" %(options["TWO_STAGE"]))
-            if options["TWO_STAGE"]:
-                f.write("     resp_a2:                          %.4f\n" %(options["RESP_A2"]))
-                f.write("     resp_b2:                          %.4f\n" %(options["RESP_B2"]))
-
         f.write("\n Fit\n")
         for i in notes:
             if i:
