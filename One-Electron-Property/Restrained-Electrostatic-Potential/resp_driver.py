@@ -165,8 +165,12 @@ def resp(molecules, options_list=[], intermol_constraints={}):
             options['esp_values'] = np.loadtxt(options['ESP'])
             np.savetxt('grid_esp.dat', options['esp_values'], fmt='%15.10f')
         else:
-            from resp_helper import psi4_esp
-            options['esp_values'] = psi4_esp(options['METHOD_ESP'], options['BASIS_ESP'], molecules[mol])
+            import psi4
+            psi4.core.set_active_molecule(molecules[mol])
+            psi4.set_options({'basis': options['BASIS_ESP']})
+            psi4.prop(options['METHOD_ESP'], properties=['GRID_ESP'])
+            options['esp_values'] = np.loadtxt('grid_esp.dat')
+            psi4.core.clean()
             
         os.system("mv grid.dat %i_%s_grid.dat" %(mol+1, molecules[mol].name()))
         os.system("mv grid_esp.dat %i_%s_grid_esp.dat" %(mol+1, molecules[mol].name()))
@@ -263,13 +267,6 @@ def resp(molecules, options_list=[], intermol_constraints={}):
                 f.write("     Hydrogen atoms are not restrained\n")
             f.write("     resp_a:                           %.4f\n" %(options["RESP_A"]))
             f.write("     resp_b:                           %.4f\n" %(options["RESP_B"]))
-            if len(labelf) < 3:
-                options["TWO_STAGE"] = False
-            f.write("     Two stage:                        %s\n" %(options["TWO_STAGE"]))
-            if options["TWO_STAGE"]:
-                f.write("     resp_a2:                          %.4f\n" %(options["RESP_A2"]))
-                f.write("     resp_b2:                          %.4f\n" %(options["RESP_B2"]))
-
         f.write("\n Fit\n")
         for i in notes:
             if i:
