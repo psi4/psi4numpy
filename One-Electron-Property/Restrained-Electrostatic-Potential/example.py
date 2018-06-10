@@ -37,7 +37,7 @@ print(reference_charges1)
 print('Difference')
 print(charges1[0][1]-reference_charges1)
 print('Example works?')
-print(np.allclose(charges1[0][1], reference_charges1, atol=5e-4))
+assert np.allclose(charges1[0][1], reference_charges1, atol=5e-4)
 
 # Change the value of the RESP parameter A
 options['resp_a'] = 0.001
@@ -66,4 +66,4 @@ print(reference_charges2)
 print('Difference')
 print(charges2[0][1]-reference_charges2)
 print('Example works?')
-print(np.allclose(charges2[0][1], reference_charges2, atol=5e-4))
+assert np.allclose(charges2[0][1], reference_charges2, atol=5e-4)
