@@ -53,7 +53,7 @@ def resp(molecules, options_list=[], intermol_constraints={}):
 
     # Check options for first molecule
     check_options = {}
-    for i in options_list[0].keys():
+    for i in sorted(options_list[0].keys()):
         check_options[i.upper()] = options_list[0][i]
     options = check_options
     # VDW surface options
