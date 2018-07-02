@@ -127,7 +127,7 @@ for SCF_ITER in range(1, maxiter + 1):
     D = np.einsum('pi,qi->pq', Cocc, Cocc) # [Szabo:1996] Eqn. 3.145, pp. 139
 
     if SCF_ITER == maxiter:
-        clean()
+        psi4.core.clean()
         raise Exception("Maximum number of SCF cycles exceeded.")
 
 print('Total time for SCF iterations: %.3f seconds \n' % (time.time() - t))
