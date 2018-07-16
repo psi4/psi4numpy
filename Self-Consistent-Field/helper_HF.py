@@ -224,7 +224,7 @@ class helper_HF(object):
 
     def build_jk(self, C_left, C_right=None):
         """
-        A wrapped to compute the J and K objects.
+        A wrapper to compute the J and K objects.
         """
         return compute_jk(self.jk, C_left, C_right)
 
