@@ -136,5 +136,5 @@ Please consider citing this repository through the Psi4NumPy paper:
 
 Psi4NumPy: An Interactive Quantum Chemistry Programming Environment for Reference Implementations and Rapid Development
 Daniel G. A. Smith, Lori A. Burns, Dominic A. Sirianni, Daniel R. Nascimento, Ashutosh Kumar, Andrew M. James, Jeffrey B. Schriber, Tianyuan Zhang, Boyi Zhang, Adam S. Abbott, Eric J. Berquist, Marvin H. Lechner, Leonardo A. Cunha, Alexander G. Heide, Jonathan M. Waldrop, Tyler Y. Takeshita, Asem Alenaizan, Daniel Neuhauser, Rollin A. King, Andrew C. Simmonett, Justin M. Turney, Henry F. Schaefer, Francesco A. Evangelista, A. Eugene DePrince III, T. Daniel Crawford, Konrad Patkowski, and C. David Sherrill
-Journal of Chemical Theory and Computation 2018 14 (7), 3504-3511
+*Journal of Chemical Theory and Computation*, **2018**, 14 (7), 3504-3511
 DOI: 10.1021/acs.jctc.8b00286
