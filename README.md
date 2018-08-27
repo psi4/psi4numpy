@@ -17,6 +17,8 @@
 
 ### Overview
 
+> What I cannot create, I do not understand. - Richard Feynman
+
 The overall goal of the Psi4NumPy project is to provide an interactive quantum chemistry
 framework for reference implementations, rapid prototyping, development, and education.
 To do this, quantities relevant to quantum chemistry are computed with the
