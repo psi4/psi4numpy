@@ -27,3 +27,7 @@ def test_MP3_SO(workspace):
 
 def test_MPn(workspace):
     exe_py(workspace, tdir, 'MPn')
+
+
+def test_MP2_Gradient(workspace):
+    exe_py(workspace, tdir, 'MP2_Gradient')
