@@ -118,7 +118,7 @@ D_ao = wfn.Da()
 D_ao.add(wfn.Db())
 npD_ao = D_ao.to_array()
 # Transform to MO Basis
-ref_opdm = np.einsum('iu,uv,vw,wx,xj', npC.T, npS.T, npD_ao, npS, npC)
+ref_opdm = np.einsum('iu,uv,vw,wx,xj', npC.T, npS.T, npD_ao, npS, npC, optimize=True)
 #print("\n\nMO-basis Reference OPDM:\n",ref_opdm)
 
 # Build MP2 OPDM
@@ -147,15 +147,9 @@ Ppq[nocc:,nocc:] = Pab
 
 # Build Reference TPDM
 ref_tpdm = np.zeros((nmo,nmo,nmo,nmo))
-for i in range(nocc):
-    for j in range(nocc):
-        for k in range(nocc):
-            for l in range(nocc):
-                #ref_tpdm[i][j][k][l] = (ref_opdm[i][j] * ref_opdm[k][l])
-                ref_tpdm[i][j][k][l] = 2.0 * (ref_opdm[i][k] * ref_opdm[j][l]) - (ref_opdm[i][j] * ref_opdm[k][l])
-
-ref_tpdm = 0.5 * ref_tpdm
-ref_tpdm = 0.25 * ref_tpdm
+ref_tpdm[:nocc, :nocc, :nocc, :nocc] = 2.0 * np.einsum("ik,jl->ijkl", ref_opdm[:nocc,:nocc], ref_opdm[:nocc,:nocc])
+ref_tpdm[:nocc, :nocc, :nocc, :nocc] -= np.einsum("ij,kl->ijkl", ref_opdm[:nocc,:nocc], ref_opdm[:nocc,:nocc])
+ref_tpdm = 0.125 * ref_tpdm
 ref_tpdm_nocc = ref_tpdm[:nocc,:nocc,:nocc,:nocc]
 #print("\n\nReference TPDM:\n",ref_tpdm[:nocc,:nocc,:nocc,:nocc].reshape(nocc*nocc,nocc*nocc))
 
@@ -172,25 +166,13 @@ Ppqrs[nocc:,nocc:,:nocc,:nocc] = Pijab.T
 Ip = np.zeros((nmo,nmo))
 
 # Build reference contributions to I'
-for p in range(nmo):
-    for q in range(nmo):
-        for r in range(nmo):
-            Ip[p,q] += F[p][r] * ref_opdm[r][q]
-for p in range(nmo):
-    for q in range(nmo):
-        for r in range(nmo):
-            Ip[p,q] += ref_opdm[q][r] * F[r][p]
+Ip += np.einsum("pr,rq->pq", F, ref_opdm)
+Ip += np.einsum("qr,rp->pq", ref_opdm, F)
 Ip = 0.5 * Ip
 
 # I'pq += fpp(Ppq + Pqp)
-for p in range(nmo):
-    for q in range(nmo):
-        for r in range(nmo):
-            Ip[p,q] += F[p][r] * Ppq[r][q]
-for p in range(nmo):
-    for q in range(nmo):
-        for r in range(nmo):
-            Ip[p,q] += Ppq[q][r] * F[r][p]
+Ip += np.einsum("pr,rq->pq", F, Ppq)
+Ip += np.einsum("qr,rp->pq", Ppq, F)
 
 # I'_pq += sum_rs Prs(4<rp|sq> - <rq|ps> - <rp|qs>) kronecker_delta(q,occ)
 Ip[:,:nocc] += 4.0 * np.einsum('rs,rpsq->pq', Ppq, npERI[:,:,:,:nocc])
@@ -280,13 +262,9 @@ I[:nocc,nocc:] += ZF_prod.T
 # to the form:
 #
 # dE/dx = sum_pq Ppq hpq^x + 1/4 sum_pqrs Gpqrs <pq||rs>^x
-for p in range(nmo):
-    for r in range(nmo):
-        for m in range(nocc):
-            Ppqrs[p][m][r][m] += Ppq[p][r]
-            #Ppqrs[m][p][r][m] += Ppq[p][r]
-            #Ppqrs[p][m][m][r] += Ppq[p][r]
-            Ppqrs[m][p][m][r] += Ppq[p][r]
+for m in range(nocc):
+    Ppqrs[:, m, :, m] += Ppq
+    Ppqrs[m, :, m, :] += Ppq
 
 
 # The original, Fock-adjusted TPDM corresponds to a two-electron energy 
@@ -425,17 +403,22 @@ for atom in range(natoms):
         map_key = string + cart[p]
         deriv1_np[map_key] = np.asarray(deriv1_mat[string][p])
 
-        # Reference OPDM component of TEI gradients
+        # Reference OPDM component of TEI gradient
         Gradient["J"][atom, p] += 2.0 * np.einsum('pq,pqmm->', ref_opdm, deriv1_np[map_key][:,:,:nocc,:nocc])
         Gradient["K"][atom, p] -= 1.0 * np.einsum('pq,pmmq->', ref_opdm, deriv1_np[map_key][:,:nocc,:nocc,:])
 
-        # Reference TPDM component of TEI gradients
+        # Reference TPDM component of TEI gradient
         Gradient["J"][atom, p] += 4.0 * np.einsum('pqrs,prqs->', ref_tpdm, deriv1_np[map_key])
 
-        # Contract MP2 TPDM altogether
+        # MP2 TPDM component of the TEI gradient
         Gradient["J"][atom, p] += 4.0 * np.einsum('pqrs,prqs->', Ppqrs, deriv1_np[map_key])
 
-        # Contract MP2 TPDM by individual components
+        # It should be noted the contraction of the MP2 TPDM and TEI integral derivatives can be done
+        # efficiently with the entire TPDM as above, or it can be done by contracting individual blocks
+        # of the TPDM with associated integral derivatives. The following commented code carries out 
+        # the specified contraction by individual blocks and is left as notes for the developer.
+        #
+        # Contract MP2 TPDM by individual blocks
         ## <OO|OO>
         #Gradient["J"][atom, p] += 4.0 * np.einsum('ijkl,ikjl', Ppqrs[:nocc,:nocc,:nocc,:nocc], deriv1_np[map_key][:nocc,:nocc,:nocc,:nocc])
 
