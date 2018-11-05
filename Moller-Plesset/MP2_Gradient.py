@@ -90,7 +90,7 @@ npERI = npERI.swapaxes(1,2)
 H_core = npT + npV
 
 # Transform H to MO basis
-H = np.einsum('uj,vi,uv', npC, npC, H_core)
+H = np.einsum('uj,vi,uv', npC, npC, H_core, optimize=True)
 
 # Build Fock Matrix
 F = H + 2.0 * np.einsum('pmqm->pq', npERI[:, :nocc, :, :nocc])
