@@ -25,7 +25,12 @@ H 1 R 2 104
 symmetry c1
 """)
 
-mol.R = 1.1 * 0.52917721067 / 0.52917720859
+# physical constants changed, so geometry changes slightly
+from pkg_resources import parse_version
+if parse_version(psi4.__version__) >= parse_version("1.3a1"):
+    mol.R = 1.1 * 0.52917721067 / 0.52917720859
+else:
+    mol.R = 1.1
 
 psi4.core.set_active_molecule(mol)
 
