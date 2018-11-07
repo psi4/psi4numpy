@@ -20,10 +20,12 @@ import psi4
 
 mol = psi4.geometry("""
 O
-H 1 1.1
-H 1 1.1 2 104
+H 1 R
+H 1 R 2 104
 symmetry c1
 """)
+
+mol.R = 1.1 * 0.52917721067 / 0.52917720859
 
 psi4.core.set_active_molecule(mol)
 
