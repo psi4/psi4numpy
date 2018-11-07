@@ -360,4 +360,4 @@ for r in range(6):
     c = off2[r]
     for a in range(3):
         diff = hyperpolarizability[r, a] - hyperpolarizability_full[a, b, c]
-        assert abs(diff) < 1.0e-14
+        assert abs(diff) < 1.0e-13
