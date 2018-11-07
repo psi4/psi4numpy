@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 This script calculates nuclear gradients for MP2 using
 gradients of one and two electron integrals obtained from PSI4. 
@@ -93,8 +94,8 @@ H_core = npT + npV
 H = np.einsum('uj,vi,uv', npC, npC, H_core, optimize=True)
 
 # Build Fock Matrix
-F = H + 2.0 * np.einsum('pmqm->pq', npERI[:, :nocc, :, :nocc])
-F -= np.einsum('pmmq->pq', npERI[:, :nocc, :nocc, :])
+F = H + 2.0 * np.einsum('pmqm->pq', npERI[:, :nocc, :, :nocc], optimize=True)
+F -= np.einsum('pmmq->pq', npERI[:, :nocc, :nocc, :], optimize=True)
 
 # Occupied and Virtual Orbital Energies
 F_occ = np.diag(F)[:nocc]
@@ -126,13 +127,13 @@ Ppq = np.zeros((nmo,nmo))
 
 # Build OO block of MP2 OPDM
 # Pij = - 1/2 sum_kab [( t2(i,k,a,b) * t2_tilde(j,k,a,b) ) + ( t2(j,k,a,b) * t2_tilde(i,k,a,b) )]
-Pij = -0.5 * np.einsum('ikab,jkab->ij', t2, t2_tilde)
-Pij +=  -0.5 * np.einsum('jkab,ikab->ij', t2, t2_tilde)
+Pij = -0.5 * np.einsum('ikab,jkab->ij', t2, t2_tilde, optimize=True)
+Pij +=  -0.5 * np.einsum('jkab,ikab->ij', t2, t2_tilde, optimize=True)
 
 # Build VV block of MP2 OPDM
 # Pab = 1/2 sum_ijc [( t2(i,j,a,c) * t2_tilde(i,j,b,c) ) + ( t2(i,j,b,c) * t2_tilde(i,j,a,c) )]
-Pab = 0.5 * np.einsum('ijac,ijbc->ab',t2, t2_tilde)
-Pab += 0.5 * np.einsum('ijbc,ijac->ab',t2, t2_tilde)
+Pab = 0.5 * np.einsum('ijac,ijbc->ab',t2, t2_tilde, optimize=True)
+Pab += 0.5 * np.einsum('ijbc,ijac->ab',t2, t2_tilde, optimize=True)
 
 # Build Total OPDM
 Ppq[:nocc,:nocc] = Pij
@@ -147,8 +148,8 @@ Ppq[nocc:,nocc:] = Pab
 
 # Build Reference TPDM
 ref_tpdm = np.zeros((nmo,nmo,nmo,nmo))
-ref_tpdm[:nocc, :nocc, :nocc, :nocc] = 2.0 * np.einsum("ik,jl->ijkl", ref_opdm[:nocc,:nocc], ref_opdm[:nocc,:nocc])
-ref_tpdm[:nocc, :nocc, :nocc, :nocc] -= np.einsum("ij,kl->ijkl", ref_opdm[:nocc,:nocc], ref_opdm[:nocc,:nocc])
+ref_tpdm[:nocc, :nocc, :nocc, :nocc] = 2.0 * np.einsum("ik,jl->ijkl", ref_opdm[:nocc,:nocc], ref_opdm[:nocc,:nocc], optimize=True)
+ref_tpdm[:nocc, :nocc, :nocc, :nocc] -= np.einsum("ij,kl->ijkl", ref_opdm[:nocc,:nocc], ref_opdm[:nocc,:nocc], optimize=True)
 ref_tpdm = 0.125 * ref_tpdm
 ref_tpdm_nocc = ref_tpdm[:nocc,:nocc,:nocc,:nocc]
 #print("\n\nReference TPDM:\n",ref_tpdm[:nocc,:nocc,:nocc,:nocc].reshape(nocc*nocc,nocc*nocc))
@@ -166,22 +167,22 @@ Ppqrs[nocc:,nocc:,:nocc,:nocc] = Pijab.T
 Ip = np.zeros((nmo,nmo))
 
 # Build reference contributions to I'
-Ip += np.einsum("pr,rq->pq", F, ref_opdm)
-Ip += np.einsum("qr,rp->pq", ref_opdm, F)
+Ip += np.einsum("pr,rq->pq", F, ref_opdm, optimize=True)
+Ip += np.einsum("qr,rp->pq", ref_opdm, F, optimize=True)
 Ip = 0.5 * Ip
 
 # I'pq += fpp(Ppq + Pqp)
-Ip += np.einsum("pr,rq->pq", F, Ppq)
-Ip += np.einsum("qr,rp->pq", Ppq, F)
+Ip += np.einsum("pr,rq->pq", F, Ppq, optimize=True)
+Ip += np.einsum("qr,rp->pq", Ppq, F, optimize=True)
 
 # I'_pq += sum_rs Prs(4<rp|sq> - <rq|ps> - <rp|qs>) kronecker_delta(q,occ)
-Ip[:,:nocc] += 4.0 * np.einsum('rs,rpsq->pq', Ppq, npERI[:,:,:,:nocc])
-Ip[:,:nocc] -= 1.0 * np.einsum('rs,rqps->pq', Ppq, npERI[:,:nocc,:,:])
-Ip[:,:nocc] -= 1.0 * np.einsum('rs,rpqs->pq', Ppq, npERI[:,:,:nocc,:])
+Ip[:,:nocc] += 4.0 * np.einsum('rs,rpsq->pq', Ppq, npERI[:,:,:,:nocc], optimize=True)
+Ip[:,:nocc] -= 1.0 * np.einsum('rs,rqps->pq', Ppq, npERI[:,:nocc,:,:], optimize=True)
+Ip[:,:nocc] -= 1.0 * np.einsum('rs,rpqs->pq', Ppq, npERI[:,:,:nocc,:], optimize=True)
 
 # I'_pq += sum_rst Pqrst (4<pr|st> - 2<pr|ts>)
-Ip += 4.0 * np.einsum('qrst,prst->pq', Ppqrs, npERI)
-Ip -= 2.0 * np.einsum('qrst,prts->pq', Ppqrs, npERI)
+Ip += 4.0 * np.einsum('qrst,prst->pq', Ppqrs, npERI, optimize=True)
+Ip -= 2.0 * np.einsum('qrst,prts->pq', Ppqrs, npERI, optimize=True)
 
 Ip = - 0.5 * Ip
 
@@ -213,7 +214,7 @@ G -= npERI[:nocc, nocc:, :nocc, nocc:].swapaxes(1,2)
 G = G.swapaxes(1,2)
 
 # G += (eps_a - eps_i) * kronecker_delta(a,b) * kronecker delta(i,j)
-G += np.einsum('ai,ij,ab->iajb', eps_diag, I_occ, I_vir)
+G += np.einsum('ai,ij,ab->iajb', eps_diag, I_occ, I_vir, optimize=True)
 
 # G^T
 G = G.T.reshape(nocc*nvir, nocc*nvir)
@@ -240,10 +241,10 @@ Ppq[nocc:,:nocc] = -Z
 I = copy.deepcopy(Ipp)
 
 # I(i,j) = I''(i,j) + sum_ak ( Z(a,k) * [ 2<ai|kj> - <ai|jk>  + 2<aj|ki> - <aj|ik> ])
-I[:nocc,:nocc] += 2.0 * np.einsum('ak,aikj->ij',Z,npERI[nocc:,:nocc,:nocc,:nocc])
-I[:nocc,:nocc] -= np.einsum('ak,aijk->ij',Z,npERI[nocc:,:nocc,:nocc,:nocc])
-I[:nocc,:nocc] += 2.0 * np.einsum('ak,ajki->ij',Z,npERI[nocc:,:nocc,:nocc,:nocc])
-I[:nocc,:nocc] -= np.einsum('ak,ajik->ij',Z,npERI[nocc:,:nocc,:nocc,:nocc])
+I[:nocc,:nocc] += 2.0 * np.einsum('ak,aikj->ij',Z,npERI[nocc:,:nocc,:nocc,:nocc], optimize=True)
+I[:nocc,:nocc] -= np.einsum('ak,aijk->ij',Z,npERI[nocc:,:nocc,:nocc,:nocc], optimize=True)
+I[:nocc,:nocc] += 2.0 * np.einsum('ak,ajki->ij',Z,npERI[nocc:,:nocc,:nocc,:nocc], optimize=True)
+I[:nocc,:nocc] -= np.einsum('ak,ajik->ij',Z,npERI[nocc:,:nocc,:nocc,:nocc], optimize=True)
 
 # I(a,i) = I''(a,i) + Z(a,i) * eps(i)
 # I(i,a) = I''(i,a) + Z(a,i) * eps(i)
@@ -382,9 +383,9 @@ for atom in range(natoms):
             map_key = key + str(atom) + cart[p]
             deriv1_np[map_key] = np.asarray(deriv1_mat[key + str(atom)][p])
             if key == "S":
-                Gradient[key][atom, p] = 2.0 * np.einsum('pq,pq->', I, deriv1_np[map_key])
+                Gradient[key][atom, p] = 2.0 * np.einsum('pq,pq->', I, deriv1_np[map_key], optimize=True)
             else:
-                Gradient[key][atom, p] = np.einsum("pq,pq->", ref_opdm + (2 * Ppq), deriv1_np[map_key])
+                Gradient[key][atom, p] = np.einsum("pq,pq->", ref_opdm + (2 * Ppq), deriv1_np[map_key], optimize=True)
 
 psi4.core.print_out("\n\n OEI Gradients:\n\n")
 for key in Gradient:
@@ -404,14 +405,14 @@ for atom in range(natoms):
         deriv1_np[map_key] = np.asarray(deriv1_mat[string][p])
 
         # Reference OPDM component of TEI gradient
-        Gradient["J"][atom, p] += 2.0 * np.einsum('pq,pqmm->', ref_opdm, deriv1_np[map_key][:,:,:nocc,:nocc])
-        Gradient["K"][atom, p] -= 1.0 * np.einsum('pq,pmmq->', ref_opdm, deriv1_np[map_key][:,:nocc,:nocc,:])
+        Gradient["J"][atom, p] += 2.0 * np.einsum('pq,pqmm->', ref_opdm, deriv1_np[map_key][:,:,:nocc,:nocc], optimize=True)
+        Gradient["K"][atom, p] -= 1.0 * np.einsum('pq,pmmq->', ref_opdm, deriv1_np[map_key][:,:nocc,:nocc,:], optimize=True)
 
         # Reference TPDM component of TEI gradient
-        Gradient["J"][atom, p] += 4.0 * np.einsum('pqrs,prqs->', ref_tpdm, deriv1_np[map_key])
+        Gradient["J"][atom, p] += 4.0 * np.einsum('pqrs,prqs->', ref_tpdm, deriv1_np[map_key], optimize=True)
 
         # MP2 TPDM component of the TEI gradient
-        Gradient["J"][atom, p] += 4.0 * np.einsum('pqrs,prqs->', Ppqrs, deriv1_np[map_key])
+        Gradient["J"][atom, p] += 4.0 * np.einsum('pqrs,prqs->', Ppqrs, deriv1_np[map_key], optimize=True)
 
         # It should be noted the contraction of the MP2 TPDM and TEI integral derivatives can be done
         # efficiently with the entire TPDM as above, or it can be done by contracting individual blocks
@@ -420,42 +421,42 @@ for atom in range(natoms):
         #
         # Contract MP2 TPDM by individual blocks
         ## <OO|OO>
-        #Gradient["J"][atom, p] += 4.0 * np.einsum('ijkl,ikjl', Ppqrs[:nocc,:nocc,:nocc,:nocc], deriv1_np[map_key][:nocc,:nocc,:nocc,:nocc])
+        #Gradient["J"][atom, p] += 4.0 * np.einsum('ijkl,ikjl', Ppqrs[:nocc,:nocc,:nocc,:nocc], deriv1_np[map_key][:nocc,:nocc,:nocc,:nocc], optimize=True)
 
         ## <OO|OV>
-        #Gradient["J"][atom, p] += 4.0 * np.einsum('ijka,ikja', Ppqrs[:nocc,:nocc,:nocc,nocc:], deriv1_np[map_key][:nocc,:nocc,:nocc,nocc:])
+        #Gradient["J"][atom, p] += 4.0 * np.einsum('ijka,ikja', Ppqrs[:nocc,:nocc,:nocc,nocc:], deriv1_np[map_key][:nocc,:nocc,:nocc,nocc:], optimize=True)
         ## <OO|VO>
-        #Gradient["J"][atom, p] += 4.0 * np.einsum('ijak,iajk', Ppqrs[:nocc,:nocc,nocc:,:nocc], deriv1_np[map_key][:nocc,nocc:,:nocc,:nocc])
+        #Gradient["J"][atom, p] += 4.0 * np.einsum('ijak,iajk', Ppqrs[:nocc,:nocc,nocc:,:nocc], deriv1_np[map_key][:nocc,nocc:,:nocc,:nocc], optimize=True)
         ## <OV|OO>
-        #Gradient["J"][atom, p] += 4.0 * np.einsum('iajk,ijak', Ppqrs[:nocc,nocc:,:nocc,:nocc], deriv1_np[map_key][:nocc,:nocc,nocc:,:nocc])
+        #Gradient["J"][atom, p] += 4.0 * np.einsum('iajk,ijak', Ppqrs[:nocc,nocc:,:nocc,:nocc], deriv1_np[map_key][:nocc,:nocc,nocc:,:nocc], optimize=True)
         ## <VO|OO>
-        #Gradient["J"][atom, p] += 4.0 * np.einsum('aijk,ajik', Ppqrs[nocc:,:nocc,:nocc,:nocc], deriv1_np[map_key][nocc:,:nocc,:nocc,:nocc])
+        #Gradient["J"][atom, p] += 4.0 * np.einsum('aijk,ajik', Ppqrs[nocc:,:nocc,:nocc,:nocc], deriv1_np[map_key][nocc:,:nocc,:nocc,:nocc], optimize=True)
 
         ## <OO|VV>
-        #Gradient["J"][atom, p] += 4.0 * np.einsum('ijab,iajb', Ppqrs[:nocc,:nocc,nocc:,nocc:], deriv1_np[map_key][:nocc,nocc:,:nocc,nocc:])
+        #Gradient["J"][atom, p] += 4.0 * np.einsum('ijab,iajb', Ppqrs[:nocc,:nocc,nocc:,nocc:], deriv1_np[map_key][:nocc,nocc:,:nocc,nocc:], optimize=True)
         ## <VV|OO>
-        #Gradient["J"][atom, p] += 4.0 * np.einsum('abij,aibj', Ppqrs[nocc:,nocc:,:nocc,:nocc], deriv1_np[map_key][nocc:,:nocc,nocc:,:nocc])
+        #Gradient["J"][atom, p] += 4.0 * np.einsum('abij,aibj', Ppqrs[nocc:,nocc:,:nocc,:nocc], deriv1_np[map_key][nocc:,:nocc,nocc:,:nocc], optimize=True)
 
         ## <OV|OV>
-        #Gradient["J"][atom, p] += 4.0 * np.einsum('ibja,ijba', Ppqrs[:nocc,nocc:,:nocc,nocc:], deriv1_np[map_key][:nocc,:nocc,nocc:,nocc:])
+        #Gradient["J"][atom, p] += 4.0 * np.einsum('ibja,ijba', Ppqrs[:nocc,nocc:,:nocc,nocc:], deriv1_np[map_key][:nocc,:nocc,nocc:,nocc:], optimize=True)
         ## <VO|VO>
-        #Gradient["J"][atom, p] += 4.0 * np.einsum('aibj,abij', Ppqrs[nocc:,:nocc,nocc:,:nocc], deriv1_np[map_key][nocc:,nocc:,:nocc,:nocc])
+        #Gradient["J"][atom, p] += 4.0 * np.einsum('aibj,abij', Ppqrs[nocc:,:nocc,nocc:,:nocc], deriv1_np[map_key][nocc:,nocc:,:nocc,:nocc], optimize=True)
         ## <VO|OV>
-        ##Gradient["J"][atom, p] += 4.0 * np.einsum('aijb,abij', Ppqrs[nocc:,:nocc,:nocc,nocc:], deriv1_np[map_key][nocc:,nocc:,:nocc,:nocc])
+        ##Gradient["J"][atom, p] += 4.0 * np.einsum('aijb,abij', Ppqrs[nocc:,:nocc,:nocc,nocc:], deriv1_np[map_key][nocc:,nocc:,:nocc,:nocc], optimize=True)
         ## <OV|VO>
-        ##Gradient["J"][atom, p] += 4.0 * np.einsum('iabj,ijab', Ppqrs[:nocc,nocc:,nocc:,:nocc], deriv1_np[map_key][:nocc,:nocc,nocc:,nocc:])
+        ##Gradient["J"][atom, p] += 4.0 * np.einsum('iabj,ijab', Ppqrs[:nocc,nocc:,nocc:,:nocc], deriv1_np[map_key][:nocc,:nocc,nocc:,nocc:], optimize=True)
 
         ## <VO|VV>
-        #Gradient["J"][atom, p] += 4.0 * np.einsum('ciab,caib', Ppqrs[nocc:,:nocc,nocc:,nocc:], deriv1_np[map_key][nocc:,nocc:,:nocc,nocc:])
+        #Gradient["J"][atom, p] += 4.0 * np.einsum('ciab,caib', Ppqrs[nocc:,:nocc,nocc:,nocc:], deriv1_np[map_key][nocc:,nocc:,:nocc,nocc:], optimize=True)
         ## <OV|VV>
-        #Gradient["J"][atom, p] += 4.0 * np.einsum('icab,iacb', Ppqrs[:nocc,nocc:,nocc:,nocc:], deriv1_np[map_key][:nocc,nocc:,nocc:,nocc:])
+        #Gradient["J"][atom, p] += 4.0 * np.einsum('icab,iacb', Ppqrs[:nocc,nocc:,nocc:,nocc:], deriv1_np[map_key][:nocc,nocc:,nocc:,nocc:], optimize=True)
         ## <VV|OV>
-        #Gradient["J"][atom, p] += 4.0 * np.einsum('abic,aibc', Ppqrs[nocc:,nocc:,:nocc,nocc:], deriv1_np[map_key][nocc:,:nocc,nocc:,nocc:])
+        #Gradient["J"][atom, p] += 4.0 * np.einsum('abic,aibc', Ppqrs[nocc:,nocc:,:nocc,nocc:], deriv1_np[map_key][nocc:,:nocc,nocc:,nocc:], optimize=True)
         ## <VV|VO>
-        #Gradient["J"][atom, p] += 4.0 * np.einsum('abci,acbi', Ppqrs[nocc:,nocc:,nocc:,:nocc], deriv1_np[map_key][nocc:,nocc:,nocc:,:nocc])
+        #Gradient["J"][atom, p] += 4.0 * np.einsum('abci,acbi', Ppqrs[nocc:,nocc:,nocc:,:nocc], deriv1_np[map_key][nocc:,nocc:,nocc:,:nocc], optimize=True)
 
         ## <VV|VV>
-        #Gradient["J"][atom, p] += 4.0 * np.einsum('abcd,acbd', Ppqrs[nocc:,nocc:,nocc:,nocc:], deriv1_np[map_key][nocc:,nocc:,nocc:,nocc:])
+        #Gradient["J"][atom, p] += 4.0 * np.einsum('abcd,acbd', Ppqrs[nocc:,nocc:,nocc:,nocc:], deriv1_np[map_key][nocc:,nocc:,nocc:,nocc:], optimize=True)
 
 psi4.core.print_out("\n\n TEI Gradients:\n\n")
 J_grad = psi4.core.Matrix.from_array(Gradient["J"])
