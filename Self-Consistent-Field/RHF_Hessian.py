@@ -31,7 +31,7 @@ symmetry c1
 
 # physical constants changed, so geometry changes slightly
 from pkg_resources import parse_version
-if parse_version(psi4.__version__) >= parse_version("1.3a1")
+if parse_version(psi4.__version__) >= parse_version("1.3a1"):
     mol.R = 1.1 * 0.52917721067 / 0.52917720859
 else:
     mol.R = 1.1
