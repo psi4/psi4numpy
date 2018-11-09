@@ -1,10 +1,19 @@
-# SAPT0(ROHF) script for the oxygen dimer (two triplets making a quintet)
-# The code is transparent but not optimized in any way, and this test might take up to a couple minutes.
-#
-# Created by: Daniel G. A. Smith
-# Date: 12/1/14
-# License: GPL v3.0
-#
+"""
+SAPT0(ROHF) script for the oxygen dimer (two triplets making a quintet).
+
+Note: The code is transparent but not optimized in any way, and this test
+might take up to a couple minutes.
+
+References:
+- Equations from [Patkowski:2018:164110]
+"""
+
+__authors__   =  "Daniel G. A. Smith"
+__credits__   =  ["Daniel G. A. Smith"]
+
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
+__license__   = "BSD-3-Clause"
+__date__      = "2014-12-01"
 
 import time
 import numpy as np

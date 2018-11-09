@@ -1,11 +1,15 @@
 """
-A restricted Hartree-Fock code using the Psi4 JK class for the 4-index electron repulsion integrals.
+A restricted Hartree-Fock code using the Psi4 JK class for the 
+4-index electron repulsion integrals.
+
+References:
+- Algorithms from [Szabo:1996], [Sherrill:1998], and [Pulay:1980:393]
 """
 
 __authors__ = "Daniel G. A. Smith"
 __credits__ = ["Daniel G. A. Smith"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2017-9-30"
 

@@ -1,12 +1,14 @@
 """
-A simple Psi 4 input script to compute EP2 using spin-orbitals
-From Szabo and Ostlund page 390
+A simple Psi4 input script to compute EP2 using spin-orbitals.
+
+References:
+- EP2 SO energy expression from [Szabo:1996] pp. 390, Eqn. 7.38
 """
 
 __authors__ = "Daniel G. A. Smith"
 __credits__ = ["Daniel G. A. Smith"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2017-9-30"
 

@@ -4,13 +4,13 @@ hyperpolarizability $\beta$ from a restricted HF reference using the
 $2n+1$ rule from perturbation theory.
 
 References:
-Equations taken from [Karna:1991:487], http://dx.doi.org/10.1002/jcc.540120409
+- Equations taken from [Karna:1991:487]
 """
 
 __authors__   =  "Eric J. Berquist"
 __credits__   = ["Eric J. Berquist"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__   = "BSD-3-Clause"
 __date__      = "2017-08-26"
 
@@ -360,4 +360,4 @@ for r in range(6):
     c = off2[r]
     for a in range(3):
         diff = hyperpolarizability[r, a] - hyperpolarizability_full[a, b, c]
-        assert abs(diff) < 1.0e-14
+        assert abs(diff) < 1.0e-13

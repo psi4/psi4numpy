@@ -1,14 +1,18 @@
 """
 A Psi4 input script to compute TDHF linear response. As a note this is, by far,
 not the most efficiently algorithm, but certainly the most verbose.
+
+References:
+- TDHF equations and algorithms taken from [Amos:1985:2186] and [Helgaker:2000]
+- Gauss-Legendre integration from [Amos:1985:2186] and [Jiemchooroj:2006:124306]
 """
 
 __authors__ = "Daniel G. A. Smith"
 __credits__ = ["Daniel G. A. Smith"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
-__date__ = "2017-9-30"
+__date__ = "2017-09-30"
 
 import time
 import numpy as np

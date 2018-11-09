@@ -6,11 +6,18 @@
 <a href="https://codecov.io/gh/psi4/psi4numpy"> <img src="https://codecov.io/gh/psi4/psi4numpy/branch/master/graph/badge.svg" /></a>
 <a href="https://opensource.org/licenses/BSD-3-Clause"><img src="https://img.shields.io/badge/License-BSD%203--Clause-blue.svg" /></a>
 <br>
+<a href="#"> <img src="https://img.shields.io/github/release/psi4/psi4numpy.svg" /></a>
+<a href="#"> <img src="https://img.shields.io/github/commits-since/psi4/psi4numpy/latest.svg" /></a>
+<a href="#"> <img src="https://img.shields.io/github/release-date/psi4/psi4numpy.svg" /></a>
+<a href="#"> <img src="https://img.shields.io/github/commit-activity/y/psi4/psi4numpy.svg" /></a>
+<br>
 </p>
 
 ---
 
 ### Overview
+
+> What I cannot create, I do not understand. - Richard Feynman
 
 The overall goal of the Psi4NumPy project is to provide an interactive quantum chemistry
 framework for reference implementations, rapid prototyping, development, and education.
@@ -43,8 +50,9 @@ please see our [contributor guidelines](https://github.com/psi4/psi4numpy/blob/m
           # Have Psi4conda installer (http://psicode.org/downloads.html)
           >>> bash psi4conda-{various}.sh
           # Check `psi4` command in path; adjust path if needed
-          # **IF** using DFT tutorials,
-          >>> conda update psi4 -c psi4/label/dev
+          # **IF** using DFT tutorials (or a few newer specialized integrals), after above, create a separate environment within for newer psi4:
+          >>> conda create -n p4env psi4 -c psi4/label/dev
+          >>> source activate p4env
           ```
         * Option 2 (easy): Download Conda package according to [instructions](http://psicode.org/psi4manual/1.1/conda.html#how-to-install-a-psi4-binary-into-an-ana-miniconda-distribution)
           ```
@@ -53,10 +61,10 @@ please see our [contributor guidelines](https://github.com/psi4/psi4numpy/blob/m
           >>> bash
           >>> source activate p4env
           # Check `psi4` command in path; adjust path if needed
-          # **IF** using DFT tutorials,
-          >>> conda update psi4 -c psi4/label/dev
+          # **IF** using DFT tutorials (or a few newer specialized integrals), replace above line with this:
+          >>> conda create -n p4env psi4 -c psi4/label/dev
           ```
-        * Option 3 (medium): [Clone source](https://github.com/psi4/psi4) and [compile](https://github.com/psi4/psi4/blob/master/CMakeLists.txt#L16-L123) according to [instructions](http://psicode.org/psi4manual/master/build_faq.html#configuring-building-and-installing-psifour-via-source)
+        * Option 3 (medium): [Clone source](https://github.com/psi4/psi4) and [compile](https://github.com/psi4/psi4/blob/master/CMakeLists.txt#L16-L143) according to [instructions](http://psicode.org/psi4manual/master/build_faq.html#configuring-building-and-installing-psifour-via-source)
           ```
           # Get Psi4 source
           >>> git clone https://github.com/psi4/psi4.git
@@ -64,9 +72,8 @@ please see our [contributor guidelines](https://github.com/psi4/psi4numpy/blob/m
           >>> cmake -H. -Bobjdir -Doption=value ...
           >>> cd objdir && make -j`getconf _NPROCESSORS_ONLN`
           # Find `psi4` command at objdir/stage/<TAB>/<TAB>/.../bin/psi4; adjust path if needed
-          # **IF** using DFT tutorials,
+          # **IF** using DFT tutorials (or a few newer specialized integrals), replace above line with this:
           >>> git checkout master
-          # `make` again
           ```
     3. [Python](https://python.org) 2.7+ (incl. w/ Psi4 Options 1 & 2)
     4. [NumPy](http://www.numpy.org) 1.7.2+ (incl. w/ Psi4 Options 1 & 2)
@@ -117,6 +124,19 @@ tutorials are organized in logical order of progression, which is enumerated in
 detail
 [here](https://github.com/psi4/psi4numpy/tree/master/Tutorials#interactive-tutorials).
 
-### Psi4 v1.1
+### Psi4 v1.1 (c. May 2017)
 This repostitory has recently been updated to be compatible with Psi4 version 1.1.
-Please see the `v1.0` branch for a Psi4 v1.0 compliant Psi4NumPy version. 
+Please see the [v0.1-beta tag](https://github.com/psi4/psi4numpy/tree/v0.1-beta) for a Psi4 v1.0 compliant Psi4NumPy version. 
+
+### Psi4 v1.2 (c. May 2018)
+This reposititory is fully compatible with the upcoming Psi4 version 1.2.
+In fact (for a while), if you use v1.2, there's no need to worry if your Psi4 has
+all the features to run all the reference implementations and tutorials.
+
+### Citation
+Please consider citing this repository through the Psi4NumPy paper:
+
+Psi4NumPy: An Interactive Quantum Chemistry Programming Environment for Reference Implementations and Rapid Development
+Daniel G. A. Smith, Lori A. Burns, Dominic A. Sirianni, Daniel R. Nascimento, Ashutosh Kumar, Andrew M. James, Jeffrey B. Schriber, Tianyuan Zhang, Boyi Zhang, Adam S. Abbott, Eric J. Berquist, Marvin H. Lechner, Leonardo A. Cunha, Alexander G. Heide, Jonathan M. Waldrop, Tyler Y. Takeshita, Asem Alenaizan, Daniel Neuhauser, Rollin A. King, Andrew C. Simmonett, Justin M. Turney, Henry F. Schaefer, Francesco A. Evangelista, A. Eugene DePrince III, T. Daniel Crawford, Konrad Patkowski, and C. David Sherrill
+*Journal of Chemical Theory and Computation*, **2018**, 14 (7), 3504-3511
+DOI: 10.1021/acs.jctc.8b00286

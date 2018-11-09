@@ -1,11 +1,16 @@
 """
 Helper classes and functions for the SCF folder.
+
+References:
+- RHF/UHF equations & algorithms from [Szabo:1996]
+- DIIS equations & algorithm from [Sherrill:1998], [Pulay:1980:393], & [Pulay:1969:197]
+- Orbital rotaion expressions from [Helgaker:2000]
 """
 
 __authors__ = "Daniel G. A. Smith"
 __credits__ = ["Daniel G. A. Smith"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2017-9-30"
 
@@ -17,7 +22,11 @@ np.set_printoptions(precision=5, linewidth=200, suppress=True)
 
 class helper_HF(object):
     """
-    A generalized Hartree Fock helper script
+    A generalized Hartree-Fock helper script.  
+
+    Notes
+    -----
+    Equations and algorithms from [Szabo:1996]
     """
 
     def __init__(self, mol, basis=None, memory=2, ndocc=None, scf_type='DF', guess='CORE'):
@@ -176,10 +185,19 @@ class helper_HF(object):
         """
         Diagonalizes the matrix F using the symmetric orthogonalization matrix S^{-1/2}.
 
-        In more general terms we solve the generalized eigenvalue problem:
+        Parameters
+        ----------
+        F : numpy.array
+            Fock matrix to diagonalize according to [Szabo:1996] pp. 145
+        set_C : {True, False}, optional
+            Set the computed C matrix as the Cleft attribute?
 
-        FC = SCe
-
+        Returns
+        -------
+        e : numpy.array
+            Array of orbital energies (eigenvalues of Fock matrix)
+        C : numpy.array
+            Orbital coefficient matrix
         """
         Xp = self.A.dot(F).dot(self.A)
         e, C2 = np.linalg.eigh(Xp)
@@ -206,7 +224,7 @@ class helper_HF(object):
 
     def build_jk(self, C_left, C_right=None):
         """
-        A wrapped to compute the J and K objects.
+        A wrapper to compute the J and K objects.
         """
         return compute_jk(self.jk, C_left, C_right)
 
@@ -221,6 +239,11 @@ class helper_HF(object):
 class DIIS_helper(object):
     """
     A helper class to compute DIIS extrapolations.
+
+    Notes
+    -----
+    Equations taken from [Sherrill:1998], [Pulay:1980:393], & [Pulay:1969:197]
+    Algorithms adapted from [Sherrill:1998] & [Pulay:1980:393]
     """
 
     def __init__(self, max_vec=6):
@@ -444,6 +467,7 @@ def rotate_orbitals(C, x, return_d=False):
     This function uses a truncated Taylor expansion to approximate the exponential:
         e^{U} \approx 1 + U + 0.5 * U U
 
+    Equations from [Helgaker:2000]
 
     Examples
     --------

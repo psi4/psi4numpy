@@ -1,12 +1,17 @@
 """
 Helper classes and functions for molecular properties requiring
 solution of CPHF equations.
+
+References:
+- Equations and algorithms from [Szabo:1996] and Project 3 from
+Daniel Crawford's programming website:
+http://github.com/CrawfordGroup/ProgrammingProjects
 """
 
 __authors__   =  "Daniel G. A. Smith"
 __credits__   = ["Daniel G. A. Smith", "Eric J. Berquist"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__   = "BSD-3-Clause"
 __date__      = "2017-8-30"
 

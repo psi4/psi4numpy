@@ -2,15 +2,14 @@
 This script calculates nuclear gradients of RHF Wavefunction using
 gradients of one and two electron integrals obtained from PSI4. 
 
-Reference: "Derivative studies in hartree-fock and møller-plesset theories",
-J. A. Pople, R. Krishnan, H. B. Schlegel and J. S. Binkley
-DOI: 10.1002/qua.560160825
+Reference: 
+- Equations and algorithms from [Pople:1979:225]
 """
 
 __authors__ = "Ashutosh Kumar"
 __credits__ = ["Ashutosh Kumar"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2017-12-17"
 
@@ -21,10 +20,17 @@ import psi4
 
 mol = psi4.geometry("""
 O
-H 1 1.1
-H 1 1.1 2 104
+H 1 R
+H 1 R 2 104
 symmetry c1
 """)
+
+# physical constants changed, so geometry changes slightly
+from pkg_resources import parse_version
+if parse_version(psi4.__version__) >= parse_version("1.3a1"):
+    mol.R = 1.1 * 0.52917721067 / 0.52917720859
+else:
+    mol.R = 1.1
 
 psi4.core.set_active_molecule(mol)
 

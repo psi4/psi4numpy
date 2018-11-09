@@ -1,11 +1,16 @@
 """
-A unrestricted Hartree-Fock script using the Psi4NumPy Formalism
+A unrestricted Hartree-Fock script using DIIS convergence acceleration
+and Psi4's libJK
+
+References:
+- UHF equations & algorithms from [Szabo:1996]
+- DIIS equations & algorithms from [Sherrill:1998], [Pulay:1980:393], & [Pulay:1969:197]
 """
 
 __authors__ = "Daniel G. A. Smith"
 __credits__ = ["Daniel G. A. Smith"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2017-9-30"
 
@@ -72,13 +77,29 @@ A = mints.ao_overlap()
 A.power(-0.5, 1.e-16)
 A = np.asarray(A)
 
-
 def diag_H(H, nocc):
-    Hp = A.dot(H).dot(A)
-    e, C2 = np.linalg.eigh(Hp)
-    C = A.dot(C2)
+    """Diagonalizes provided Fock matrix for orbital coefficients C and density
+    matrix D, using equations from [Szabo:1996] pp. 139 & 145.
+
+    Parameters
+    ----------
+    H : numpy.array
+        Fock matrix to diagonalize. 
+    nocc : int
+        Number of occupied molecular orbitals.
+
+    Returns
+    -------
+    C : numpy.array 
+        Molecular orbital coefficient matrix
+    D : numpy.array
+        SCF density matrix
+    """
+    Hp = A.dot(H).dot(A)        # Eqn. 3.177
+    e, C2 = np.linalg.eigh(Hp)  # Solving Eqn. 1.178
+    C = A.dot(C2)               # Back transformation, Eqn. 3.174
     Cocc = C[:, :nocc]
-    D = np.einsum('pi,qi->pq', Cocc, Cocc)
+    D = np.einsum('pi,qi->pq', Cocc, Cocc) # Eqn. 3.145
     return (C, D)
     
 Ca, Da = diag_H(H, nalpha)    
@@ -122,7 +143,7 @@ for SCF_ITER in range(1, maxiter + 1):
     npCb[:] = Cb[:, :nbeta]
     jk.compute()
 
-    # Build fock matrix
+    # Build alpha & beta Fock matrices using Psi4's libJK
     Ja = np.asarray(jk.J()[0])
     Jb = np.asarray(jk.J()[1])
     Ka = np.asarray(jk.K()[0])
@@ -139,7 +160,7 @@ for SCF_ITER in range(1, maxiter + 1):
     diisb_e = (A.T).dot(diisb_e).dot(A)
     diisb.add(Fb, diisb_e)
 
-    # SCF energy and update
+    # SCF energy and update: [Szabo:1996], exercise 3.40, pp. 215
     SCF_E  = np.einsum('pq,pq->', Da + Db, H)
     SCF_E += np.einsum('pq,pq->', Da, Fa)
     SCF_E += np.einsum('pq,pq->', Db, Fb)
@@ -154,6 +175,7 @@ for SCF_ITER in range(1, maxiter + 1):
 
     Eold = SCF_E
 
+    # Extrapolate alpha & beta Fock matrices separately
     Fa = diisa.extrapolate()
     Fb = diisb.extrapolate()
 

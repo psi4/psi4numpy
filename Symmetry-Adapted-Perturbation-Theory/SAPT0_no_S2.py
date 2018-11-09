@@ -1,16 +1,16 @@
 '''
-A script to compute the SAPT0 interaction energy without the the Single-Exchange Approximation
+A script to compute the SAPT0 interaction energy without the
+Single-Exchange Approximation.
 
-Relevant equations can be found in the following papers:
-Jeziorski, B.; Bulski, M.; Piela, L. Int. J. Quantum Chem. 1976, 10, 281-297.
-Schaffer, R.; Jansen, G. Theor. Chem. Acc. 2012, 131, 1235-1244.
-Schaffer, R.; Jansen, G. Mol. Phys. 2013, 111, 2570-2584.
+References
+Equations taken from [Jeziorski:1976:281], [Schaffer:2012:1235],
+and [Schaffer:2013:2570].
 '''
 
 __authors__ = "Jonathan M. Waldrop"
 __credits__ = ["Jonathan M. Waldrop"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2018-01-09"
 

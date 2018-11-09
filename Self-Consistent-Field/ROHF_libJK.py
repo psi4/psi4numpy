@@ -1,11 +1,14 @@
 """
 A restricted open-shell Hartree-Fock script using the Psi4NumPy Formalism
+
+References:
+- Equations and algorithm taken from Psi4
 """
 
 __authors__ = "Daniel G. A. Smith"
 __credits__ = ["Daniel G. A. Smith"]
 
-__copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
+__copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
 __date__ = "2017-9-30"
 
@@ -49,6 +52,7 @@ nsocc = nocc - ndocc
 maxiter = 20
 E_conv = 1.0E-8
 D_conv = 1.0E-8
+guess = 'gwh'
 
 # Integral generation from Psi4's MintsHelper
 t = time.time()
@@ -75,11 +79,13 @@ A = mints.ao_overlap()
 A.power(-0.5, 1.e-16)
 A = np.asarray(A)
 
-if True:
+if guess == 'gwh':
     F = 0.875 * S * (np.diag(H)[:, None] + np.diag(H))
     F[np.diag_indices_from(F)] = np.diag(H)
-else:
+elif guess == 'core':
     F = H.copy()
+else:
+    raise Exception("Unrecognized guess type %s. Please use 'core' or 'gwh'." % guess)
 
 # Build initial orbitals and density matrices
 Hp = A.dot(F).dot(A)
@@ -119,7 +125,7 @@ for SCF_ITER in range(1, maxiter + 1):
     moFa = (C.T).dot(Fa).dot(C)
     moFb = (C.T).dot(Fb).dot(C)
 
-    # Special note on the ROHF Fock matrix (taken from psi4)
+    # Special note on the ROHF Fock matrix (taken from Psi4)
     # Fo = open-shell fock matrix = 0.5 Fa
     # Fc = closed-shell fock matrix = 0.5 (Fa + Fb)
     #
