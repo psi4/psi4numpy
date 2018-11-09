@@ -1,9 +1,15 @@
-#! A simple Psi 4 input script to compute a SCF reference using Psi4's libJK
+#! A simple Psi4 input script to compute a SCF reference using Psi4's libJK
 
 import time
 import numpy as np
 import psi4
 
+from pkg_resources import parse_version
+if parse_version(psi4.__version__) >= parse_version('1.3a1'):
+    build_superfunctional = psi4.driver.dft.build_superfunctional
+else:
+    build_superfunctional = psi4.driver.dft_funcs.build_superfunctional
+    
 # Diagonalize routine
 def build_orbitals(diag, A, ndocc):
     Fp = psi4.core.Matrix.triplet(A, diag, A, True, False, True)
@@ -47,7 +53,7 @@ def ks_solver(alias, mol, options, V_builder, jk_type="DF", output="output.dat",
     S = mints.ao_overlap()
 
     # Build the V Potential
-    sup = psi4.driver.dft_funcs.build_superfunctional(alias, restricted)[0]
+    sup = build_superfunctional(alias, restricted)[0]
     sup.set_deriv(2)
     sup.allocate()
     

@@ -30,19 +30,19 @@ def exe_scriptified_ipynb(workspace, tdir, ipynb):
     script_py = path + '/' + ipynb + '.py'
     sed_inplace(script_py,
                 r"""get_ipython\(\).magic\(u?'matplotlib inline'\)""",
-                """# <<<  Jupyter magic  >>>  get_ipython().magic('matplotlib inline')\nimport matplotlib as mpl; mpl.use('Agg')""")
+                r"""# <<<  Jupyter magic  >>>  get_ipython().magic('matplotlib inline')\nimport matplotlib as mpl; mpl.use('Agg')""")
     sed_inplace(script_py,
                 r"""get_ipython\(\).magic\(u?'matplotlib notebook'\)""",
-                """# <<<  Jupyter magic  >>>  get_ipython().magic('matplotlib notebook')\nimport matplotlib as mpl; mpl.use('Agg')""")
+                r"""# <<<  Jupyter magic  >>>  get_ipython().magic('matplotlib notebook')\nimport matplotlib as mpl; mpl.use('Agg')""")
     sed_inplace(script_py,
                 r"""get_ipython\(\).magic\(u?['"]timeit """,
-                """# <<<  Jupyter magic  >>>""")
+                r"""# <<<  Jupyter magic  >>>""")
     sed_inplace(script_py,
                 r"""get_ipython\(\).run_line_magic\(u?'matplotlib', 'inline'\)""",
-                """# <<<  Jupyter magic  >>>  get_ipython().run_line_magic('matplotlib', 'inline')\nimport matplotlib as mpl; mpl.use('Agg')""")
+                r"""# <<<  Jupyter magic  >>>  get_ipython().run_line_magic('matplotlib', 'inline')\nimport matplotlib as mpl; mpl.use('Agg')""")
     sed_inplace(script_py,
                 r"""get_ipython\(\).run_line_magic\(u?'matplotlib', 'notebook'\)""",
-                """# <<<  Jupyter magic  >>>  get_ipython().run_line_magic('matplotlib', 'notebook')\nimport matplotlib as mpl; mpl.use('Agg')""")
+                r"""# <<<  Jupyter magic  >>>  get_ipython().run_line_magic('matplotlib', 'notebook')\nimport matplotlib as mpl; mpl.use('Agg')""")
     sed_inplace(script_py,
                 r"""get_ipython\(\).run_line_magic\(u?'timeit'""",
                 r"""# <<<  Jupyter magic  >>> get_ipython().run_line_magic('timeit'""")
