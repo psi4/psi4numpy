@@ -35,15 +35,6 @@ H 1 R 2 104
 symmetry c1
 """)
 
-#mol = psi4.geometry("""
-#F     0.0000000000000000  0.0000000000000000 1.76320000000000000
-#H     0.0000000000000000  0.0000000000000000 -0.0001000000000000
-#symmetry c1
-#units bohr
-#no_reorient
-#no_com
-#""")
-
 # physical constants changed, so geometry changes slightly
 from pkg_resources import parse_version
 if parse_version(psi4.__version__) >= parse_version("1.3a1"):
