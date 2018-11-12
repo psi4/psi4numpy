@@ -475,7 +475,7 @@ Tot_grad.name = " TOTAL GRADIENT"
 Tot_grad.print_out()
 
 # Psi4's Total Gradient
-Psi4_total_grad = psi4.core.Matrix.from_list([
+psi4_total_grad = psi4.core.Matrix.from_list([
             [-0.00000000000000, -0.00000000000000, -0.05413558328761],
             [ 0.00000000000000, -0.06662229046965,  0.02706779164384],
             [-0.00000000000000,  0.06662229046965,  0.02706779164384]
@@ -485,4 +485,4 @@ Psi4_total_grad = psi4.core.Matrix.from_list([
 total_grad = psi4.core.Matrix.from_array(Gradient["Total"])
 
 # Compare Total Gradients
-psi4.compare_matrices(Psi4_total_grad, total_grad, 10, "RHF_TOTAL_GRADIENT_TEST") # TEST
+psi4.compare_matrices(psi4_total_grad, total_grad, 10, "RHF_TOTAL_GRADIENT_TEST") # TEST
