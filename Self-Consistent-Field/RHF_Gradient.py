@@ -165,5 +165,5 @@ Total_G_psi4 = psi4.core.Matrix.from_list([
         [-0.000000000000, -0.086300100260,  0.048720720189],
         [-0.000000000000,  0.086300100260,  0.048720720189]
     ])
-G_python_Total_mat = psi4.core.Matrix.from_array(Gradient["Total"])
-psi4.compare_matrices(Total_G_psi4, G_python_Total_mat, 10, "RHF_TOTAL_GRADIENT_TEST") # TEST
+G_python_total_mat = psi4.core.Matrix.from_array(Gradient["Total"])
+psi4.compare_matrices(Total_G_psi4, G_python_total_mat, 10, "RHF_TOTAL_GRADIENT_TEST") # TEST
