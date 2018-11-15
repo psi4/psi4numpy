@@ -65,7 +65,7 @@ print(reference_charges1)
 print("Difference")
 print(charges1[0][1]-reference_charges1)
 print("Example works?")
-assert np.allclose(charges1[0][1], reference_charges1, atol=1e-5)
+assert np.allclose(charges1[0][1], reference_charges1, atol=2e-5)
 
 # Add constraint for atoms fixed in second stage fit
 stage2 = resp_helper.helper_stage2()
