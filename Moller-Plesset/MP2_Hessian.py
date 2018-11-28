@@ -157,16 +157,8 @@ print("Reference OPDM trace = 10: ",np.isclose(sum(np.linalg.eigh(Ppq)[0]),10))
 
 # Build Reference TPDM
 ref_tpdm = np.zeros((nmo, nmo, nmo, nmo))
-ref_tpdm[:nocc, :nocc, :nocc, :nocc] = 2.0 * np.einsum(
-    "ik,jl->ijkl",
-    ref_opdm[:nocc, :nocc],
-    ref_opdm[:nocc, :nocc],
-    optimize=True)
-ref_tpdm[:nocc, :nocc, :nocc, :nocc] -= np.einsum(
-    "ij,kl->ijkl",
-    ref_opdm[:nocc, :nocc],
-    ref_opdm[:nocc, :nocc],
-    optimize=True)
+ref_tpdm[:nocc, :nocc, :nocc, :nocc] = 2.0 * np.einsum("ik,jl->ijkl", ref_opdm[:nocc, :nocc], ref_opdm[:nocc, :nocc], optimize=True)
+ref_tpdm[:nocc, :nocc, :nocc, :nocc] -= np.einsum("ij,kl->ijkl", ref_opdm[:nocc, :nocc], ref_opdm[:nocc, :nocc], optimize=True)
 ref_tpdm = 0.125 * ref_tpdm
 print("\n\nReference TPDM:\n",ref_tpdm[:nocc,:nocc,:nocc,:nocc].reshape(nocc*nocc,nocc*nocc))
 
@@ -279,106 +271,109 @@ I[:nocc, nocc:] += ZF_prod.T
 
 print("\n\nLagrangian I:\n",4*I)
 
-# Fold the Fock matrix contributions to the gradient into the TPDM, i.e.
-# we are converting from a gradient expression of the form
-#
-# dE/dx = sum_pq Ppq fpq^x + 1/4 sum_pqrs Gpqrs <pq||rs>^x
-#
-# to the form:
-#
-# dE/dx = sum_pq Ppq hpq^x + 1/4 sum_pqrs Gpqrs <pq||rs>^x
-for m in range(nocc):
-    Ppqrs[:, m, :, m] += Ppq
-    Ppqrs[m, :, m, :] += Ppq
-
-# The original, Fock-adjusted TPDM corresponds to a two-electron energy
-# derivative expression of the form:
-#
-# dE/dx = 1/4 sum_pqrs Gpqrs <pq||rs>^x
-#
-# This code block alters the TPDM to avoid antisymmetric integrals for
-# an energy derivative expression of the form:
-#
-# dE/dx = 1/2 sum_pqrs Gpqrs <pq|rs>^x
-
-Pijkl = Ppqrs[:nocc, :nocc, :nocc, :nocc]
-Pijka = Ppqrs[:nocc, :nocc, :nocc, nocc:]
-Pijak = Ppqrs[:nocc, :nocc, nocc:, :nocc]
-Piajk = Ppqrs[:nocc, nocc:, :nocc, :nocc]
-Paijk = Ppqrs[nocc:, :nocc, :nocc, :nocc]
-Pijab = Ppqrs[:nocc, :nocc, nocc:, nocc:]
-Pabij = Ppqrs[nocc:, nocc:, :nocc, :nocc]
-Piajb = Ppqrs[:nocc, nocc:, :nocc, nocc:]
-Piabj = Ppqrs[:nocc, nocc:, :nocc, nocc:]
-Paibj = Ppqrs[nocc:, :nocc, nocc:, :nocc]
-Paijb = Ppqrs[nocc:, :nocc, nocc:, :nocc]
-Paibc = Ppqrs[nocc:, :nocc, nocc:, nocc:]
-Piabc = Ppqrs[:nocc, nocc:, nocc:, nocc:]
-Pabic = Ppqrs[nocc:, nocc:, :nocc, nocc:]
-Pabci = Ppqrs[nocc:, nocc:, nocc:, :nocc]
-Pabcd = Ppqrs[nocc:, nocc:, nocc:, nocc:]
-
-# <OO|OO>:
-# <--- sum_ijkl ( [2 P(i,j,k,l) - P(i,j,l,k)] * <ij|kl> )
-Pijkl = 2 * Pijkl - Pijkl.swapaxes(2, 3)
-Ppqrs[:nocc, :nocc, :nocc, :nocc] = Pijkl
-
-# <OO|OV>:
-# <--- sum_ijka ( [2 P(i,j,k,a) - P(j,i,k,a)] * <ij|ka> )
-Pijka = 2 * Pijka - Pijka.swapaxes(0, 1)
-Ppqrs[:nocc, :nocc, :nocc, nocc:] = Pijka
-# <OO|VO>:
-# <--- sum_ijka ( [2 P(i,j,a,k) - P(j,i,a,k)] * <ij|ak> )
-Pijak = 2 * Pijak - Pijak.swapaxes(0, 1)
-Ppqrs[:nocc, :nocc, nocc:, :nocc] = Pijak
-# <OV|OO>:
-# <--- sum_ijka ( [2 P(i,a,j,k) - P(i,a,k,j)] * <ia|jk> )
-Piajk = 2 * Piajk - Piajk.swapaxes(2, 3)
-Ppqrs[:nocc, nocc:, :nocc, :nocc] = Piajk
-# <VO|OO>:
-# <--- sum_ijka ( [2 P(a,i,j,k) - P(a,i,k,j)] * <ai|jk> )
-Paijk = 2 * Paijk - Paijk.swapaxes(2, 3)
-Ppqrs[nocc:, :nocc, :nocc, :nocc] = Paijk
-
-# <OO|VV>:
-# <--- sum_ijab ( [2 P(i,j,a,b) - P(i,j,b,a) - P(i,a,j,b)] * <ij|ab> )
-Pijab = 2 * Pijab - Pijab.swapaxes(2, 3) - Piajb.swapaxes(1, 2)
-Ppqrs[:nocc, :nocc, nocc:, nocc:] = Pijab
-# <VV|OO>:
-# <--- sum_ijab ( [2 P(a,b,i,j) - P(a,b,j,i) - P(a,i,b,j)] * <ab|ij> )
-Pabij = 2 * Pabij - Pabij.swapaxes(2, 3) - Paibj.swapaxes(1, 2)
-Ppqrs[nocc:, nocc:, :nocc, :nocc] = Pabij
-
-# <OV|OV> + <OV|VO>:
-# <--- sum_iajb ( [P(i,a,j,b) - P(i,a,b,j)] * <ia|jb> )
-#    = sum_iajb ( [P(i,a,j,b) + P(i,a,j,b)] * <ia|jb> )
-Ppqrs[:nocc, nocc:, :nocc, nocc:] = Piajb + Piabj
-# <VO|VO> + <VO|OV>:
-# <--- sum_aibj ( [P(a,i,b,j) - P(a,i,j,b)] * <ai|bj> )
-#    = sum_aibj ( [P(a,i,b,j) + P(a,i,b,j)] * <ai|bj> )
-Ppqrs[nocc:, :nocc, nocc:, :nocc] = Paibj + Paijb
-
-# <VO|VV>:
-# <--- sum_aibc ( [2 P(a,i,b,c) - P(a,i,c,b)] * <ai|bc> )
-Paibc = 2 * Paibc - Paibc.swapaxes(2, 3)
-Ppqrs[nocc:, :nocc, nocc:, nocc:] = Paibc
-# <OV|VV>:
-# <--- sum_aibc ( [2 P(i,a,b,c) - P(i,a,c,b)] * <ia|bc> )
-Piabc = 2 * Piabc - Piabc.swapaxes(2, 3)
-Ppqrs[:nocc, nocc:, nocc:, nocc:] = Piabc
-# <VV|OV>:
-# <--- sum_aibc ( [2 P(a,b,i,c) - P(b,a,i,c)] * <ab|ic> )
-Pabic = 2 * Pabic - Pabic.swapaxes(0, 1)
-Ppqrs[nocc:, nocc:, :nocc, nocc:] = Pabic
-# <VV|VO>:
-# <--- sum_aibc ( [2 P(a,b,c,i) - P(b,a,c,i)] * <ab|ci> )
-Pabci = 2 * Pabci - Pabci.swapaxes(0, 1)
-Ppqrs[nocc:, nocc:, nocc:, :nocc] = Pabci
-
-# <VV|VV>
-# <--- sum_abcd ( [2 P(a,b,c,d) - P(a,b,d,c)] * <ab|cd> )
-Pabcd = 2 * Pabcd - Pabcd.swapaxes(2, 3)
-Ppqrs[nocc:, nocc:, nocc:, nocc:] = Pabcd
+### Fold the Fock matrix contributions to the gradient into the TPDM, i.e.
+### we are converting from a gradient expression of the form
+###
+### dE/dx = sum_pq Ppq fpq^x + 1/4 sum_pqrs Gpqrs <pq||rs>^x
+###
+### to the form:
+###
+### dE/dx = sum_pq Ppq hpq^x + 1/4 sum_pqrs Gpqrs <pq||rs>^x
+####for m in range(nocc):
+####    Ppqrs[:, m, :, m] += Ppq
+####    Ppqrs[m, :, m, :] += Ppq
+####print("\n\nReference TPDM:\n",ref_tpdm[:nocc,:nocc,:nocc,:nocc].reshape(nocc*nocc,nocc*nocc))
+##
+### The original, Fock-adjusted TPDM corresponds to a two-electron energy
+### derivative expression of the form:
+###
+### dE/dx = 1/4 sum_pqrs Gpqrs <pq||rs>^x
+###
+### This code block alters the TPDM to avoid antisymmetric integrals for
+### an energy derivative expression of the form:
+###
+### dE/dx = 1/2 sum_pqrs Gpqrs <pq|rs>^x
+##
+##Pijkl = Ppqrs[:nocc, :nocc, :nocc, :nocc]
+##Pijka = Ppqrs[:nocc, :nocc, :nocc, nocc:]
+##Pijak = Ppqrs[:nocc, :nocc, nocc:, :nocc]
+##Piajk = Ppqrs[:nocc, nocc:, :nocc, :nocc]
+##Paijk = Ppqrs[nocc:, :nocc, :nocc, :nocc]
+##Pijab = Ppqrs[:nocc, :nocc, nocc:, nocc:]
+##Pabij = Ppqrs[nocc:, nocc:, :nocc, :nocc]
+##Piajb = Ppqrs[:nocc, nocc:, :nocc, nocc:]
+##Piabj = Ppqrs[:nocc, nocc:, :nocc, nocc:]
+##Paibj = Ppqrs[nocc:, :nocc, nocc:, :nocc]
+##Paijb = Ppqrs[nocc:, :nocc, nocc:, :nocc]
+##Paibc = Ppqrs[nocc:, :nocc, nocc:, nocc:]
+##Piabc = Ppqrs[:nocc, nocc:, nocc:, nocc:]
+##Pabic = Ppqrs[nocc:, nocc:, :nocc, nocc:]
+##Pabci = Ppqrs[nocc:, nocc:, nocc:, :nocc]
+##Pabcd = Ppqrs[nocc:, nocc:, nocc:, nocc:]
+##
+### <OO|OO>:
+### <--- sum_ijkl ( [2 P(i,j,k,l) - P(i,j,l,k)] * <ij|kl> )
+##Pijkl = 2 * Pijkl - Pijkl.swapaxes(2, 3)
+##Ppqrs[:nocc, :nocc, :nocc, :nocc] = Pijkl
+##
+### <OO|OV>:
+### <--- sum_ijka ( [2 P(i,j,k,a) - P(j,i,k,a)] * <ij|ka> )
+##Pijka = 2 * Pijka - Pijka.swapaxes(0, 1)
+##Ppqrs[:nocc, :nocc, :nocc, nocc:] = Pijka
+### <OO|VO>:
+### <--- sum_ijka ( [2 P(i,j,a,k) - P(j,i,a,k)] * <ij|ak> )
+##Pijak = 2 * Pijak - Pijak.swapaxes(0, 1)
+##Ppqrs[:nocc, :nocc, nocc:, :nocc] = Pijak
+### <OV|OO>:
+### <--- sum_ijka ( [2 P(i,a,j,k) - P(i,a,k,j)] * <ia|jk> )
+##Piajk = 2 * Piajk - Piajk.swapaxes(2, 3)
+##Ppqrs[:nocc, nocc:, :nocc, :nocc] = Piajk
+### <VO|OO>:
+### <--- sum_ijka ( [2 P(a,i,j,k) - P(a,i,k,j)] * <ai|jk> )
+##Paijk = 2 * Paijk - Paijk.swapaxes(2, 3)
+##Ppqrs[nocc:, :nocc, :nocc, :nocc] = Paijk
+##
+### <OO|VV>:
+### <--- sum_ijab ( [2 P(i,j,a,b) - P(i,j,b,a) - P(i,a,j,b)] * <ij|ab> )
+##Pijab = 2 * Pijab - Pijab.swapaxes(2, 3) - Piajb.swapaxes(1, 2)
+##Ppqrs[:nocc, :nocc, nocc:, nocc:] = Pijab
+### <VV|OO>:
+### <--- sum_ijab ( [2 P(a,b,i,j) - P(a,b,j,i) - P(a,i,b,j)] * <ab|ij> )
+##Pabij = 2 * Pabij - Pabij.swapaxes(2, 3) - Paibj.swapaxes(1, 2)
+##Ppqrs[nocc:, nocc:, :nocc, :nocc] = Pabij
+##
+### <OV|OV> + <OV|VO>:
+### <--- sum_iajb ( [P(i,a,j,b) - P(i,a,b,j)] * <ia|jb> )
+###    = sum_iajb ( [P(i,a,j,b) + P(i,a,j,b)] * <ia|jb> )
+##Ppqrs[:nocc, nocc:, :nocc, nocc:] = Piajb + Piabj
+### <VO|VO> + <VO|OV>:
+### <--- sum_aibj ( [P(a,i,b,j) - P(a,i,j,b)] * <ai|bj> )
+###    = sum_aibj ( [P(a,i,b,j) + P(a,i,b,j)] * <ai|bj> )
+##Ppqrs[nocc:, :nocc, nocc:, :nocc] = Paibj + Paijb
+##
+### <VO|VV>:
+### <--- sum_aibc ( [2 P(a,i,b,c) - P(a,i,c,b)] * <ai|bc> )
+##Paibc = 2 * Paibc - Paibc.swapaxes(2, 3)
+##Ppqrs[nocc:, :nocc, nocc:, nocc:] = Paibc
+### <OV|VV>:
+### <--- sum_aibc ( [2 P(i,a,b,c) - P(i,a,c,b)] * <ia|bc> )
+##Piabc = 2 * Piabc - Piabc.swapaxes(2, 3)
+##Ppqrs[:nocc, nocc:, nocc:, nocc:] = Piabc
+### <VV|OV>:
+### <--- sum_aibc ( [2 P(a,b,i,c) - P(b,a,i,c)] * <ab|ic> )
+##Pabic = 2 * Pabic - Pabic.swapaxes(0, 1)
+##Ppqrs[nocc:, nocc:, :nocc, nocc:] = Pabic
+### <VV|VO>:
+### <--- sum_aibc ( [2 P(a,b,c,i) - P(b,a,c,i)] * <ab|ci> )
+##Pabci = 2 * Pabci - Pabci.swapaxes(0, 1)
+##Ppqrs[nocc:, nocc:, nocc:, :nocc] = Pabci
+##
+### <VV|VV>
+### <--- sum_abcd ( [2 P(a,b,c,d) - P(a,b,d,c)] * <ab|cd> )
+##Pabcd = 2 * Pabcd - Pabcd.swapaxes(2, 3)
+##Ppqrs[nocc:, nocc:, nocc:, nocc:] = Pabcd
+##
+##print("\n\nReference TPDM:\n",ref_tpdm[:nocc,:nocc,:nocc,:nocc].reshape(nocc*nocc,nocc*nocc))
 
 Gradient = {}
 Gradient["N"] = np.zeros((natoms, 3))
@@ -435,14 +430,11 @@ for atom in range(natoms):
         deriv1_np[map_key] = np.asarray(deriv1_mat[string][p])
 
         # Reference OPDM component of TEI gradient
-        Gradient["J"][atom, p] += 4.0 * np.einsum('pq,pqmm->', Ppq, deriv1_np[map_key][:, :, :nocc, :nocc], optimize=True)
-        Gradient["K"][atom, p] -= 2.0 * np.einsum('pq,pmmq->', Ppq, deriv1_np[map_key][:, :nocc, :nocc, :], optimize=True)
-        #Gradient["J"][atom, p] += 2.0 * np.einsum('pq,pqmm->', ref_opdm, deriv1_np[map_key][:, :, :nocc, :nocc], optimize=True)
-        #Gradient["K"][atom, p] -= 1.0 * np.einsum('pq,pmmq->', ref_opdm, deriv1_np[map_key][:, :nocc, :nocc, :], optimize=True)
+        Gradient["J"][atom, p] += 2.0 * np.einsum('pq,pqmm->', Ppq, deriv1_np[map_key][:, :, :nocc, :nocc], optimize=True)
+        Gradient["K"][atom, p] -= 1.0 * np.einsum('pq,pmmq->', Ppq, deriv1_np[map_key][:, :nocc, :nocc, :], optimize=True)
 
         # Reference TPDM component of TEI gradient
-#        Gradient["J"][atom, p] += 4.0 * np.einsum('pqrs,prqs->', Ppqrs, deriv1_np[map_key], optimize=True)
-        #Gradient["J"][atom, p] += 4.0 * np.einsum('pqrs,prqs->', ref_tpdm, deriv1_np[map_key], optimize=True)
+        Gradient["J"][atom, p] += 4.0 * np.einsum('pqrs,prqs->', Ppqrs, deriv1_np[map_key], optimize=True)
 
         ### MP2 TPDM component of the TEI gradient
         ##Gradient["J"][atom, p] += 4.0 * np.einsum(
