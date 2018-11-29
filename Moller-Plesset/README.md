@@ -9,6 +9,7 @@ ontop of this result.
 ### Included Reference Implementations
  - `MP2.py`: Second-order Moller-Plesset perturbation theory
  - `DF-MP2.py`: MP2 utilizing density-fitting to reduce its overall cost.
+ - `DF-MP2_NAG.py`: DF-MP2 using natural auxiliary functions to reduce the DF tensor rank. Explicitly builds DF tensor.
  - `sDF-MP2.py`: Stochastic orbital MP2 utilizing density-fitting (sDF-MP2) to further reduce the computational cost of DF-MP2.
  - `MP3.py`: Third-order Moller-Plesset perturbation theory
  - `MP3-SO.py`: MP3 in spin-orbital formalism that simplifies the equations and provides contrast to the spin-summed version above.
