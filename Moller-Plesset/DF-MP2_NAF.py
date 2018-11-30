@@ -14,7 +14,7 @@ Bottom of the page: http://www.psicode.org/developers.php
 """
 
 __authors__ = "Holger Kruse"
-__credits__ = ["Holger Kruse","Daniel G. A. Smith", "Dominic A. Sirianni"]
+__credits__ = ["Holger Kruse", "Daniel G. A. Smith", "Dominic A. Sirianni"]
 
 __copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
@@ -61,8 +61,8 @@ orbital_basis = wfn.basisset()
 nbf = wfn.nso()
 nvirt = nbf - ndocc
 
-print('ndocc',ndocc)
-print('nvirt',nvirt)
+print('ndocc', ndocc)
+print('nvirt', nvirt)
 
 # Split eigenvectors and eigenvalues into o and v
 eps_occ = np.asarray(wfn.epsilon_a_subset("AO", "ACTIVE_OCC"))
@@ -86,7 +86,7 @@ naux = aux_basis.nbf()
 # Build (P|pq) raw 3-index ERIs, dimension (1, Naux, nbf, nbf)
 # this is I^t in the paper
 Ppq = mints.ao_eri(zero_bas, aux_basis, orbital_basis, orbital_basis)
-print('Ppq = I^t = (Q|pg)',Ppq.shape)
+print('Ppq = I^t = (Q|pg)', Ppq.shape)
 
 # Build Coulomb metric but only invert, dimension (1, Naux, 1, Naux)
 metric = mints.ao_eri(zero_bas, aux_basis, zero_bas, aux_basis)
@@ -102,14 +102,14 @@ print("L  = cholesky[(P|Q)^1 ]dim:", L.shape)
 
 # Form intermediate W'= I^t*I (eq 10)
 # note that Wp = Wp^t
-Wp = np.einsum('Ppq,Qpq->PQ',Ppq,Ppq, optimize=True)
+Wp = np.einsum('Ppq,Qpq->PQ', Ppq, Ppq, optimize=True)
 print("W' = (P|P) dim:", Wp.shape)
 
 # form W proper (eq 11)
 W = np.dot(np.dot(L.T, Wp), L)
 print("W  = (Q|Q) dim:", W.shape)
 
-# form N(bar) from significant eigenvectors of W 
+# form N(bar) from significant eigenvectors of W
 # epsilon threshold is supposed to be in the range of 10^-2 to 10^-4
 e_val, e_vec = np.linalg.eigh(W)
 eps = 1e-2
@@ -129,15 +129,15 @@ print("N'^bar  = (P^bar|Q) dim)", Npbar.shape)
 
 # form J(bar) = I * N'(bar) (eq 13)
 # we form the transpose of Jbar to be inline with PSI4
-Jbar = np.einsum('Ppq,PQ->Qpq',Ppq,Npbar, optimize=True)
+Jbar = np.einsum('Ppq,PQ->Qpq', Ppq, Npbar, optimize=True)
 print("J^bar  = (Q|pq) dim)", Npbar.shape)
 
 # ==> AO->MO transform: Qpq -> Qmo @ O(N^4) <==
 print('AO->MO transform')
-Cocc=C[:,:ndocc]
-Cvirt=C[:,ndocc:]
+Cocc = C[:, :ndocc]
+Cvirt = C[:, ndocc:]
 Qov = np.einsum('pi,Qpq->Qqi', Cocc, Jbar, optimize=True)
-Qov = np.einsum('Qqi,qa->Qia', Qov,Cvirt, optimize=True)
+Qov = np.einsum('Qqi,qa->Qia', Qov, Cvirt, optimize=True)
 
 time_qov = time.time() - t
 print('...Qov build in %.3f seconds with a shape of %s, %.3f GB.' \
