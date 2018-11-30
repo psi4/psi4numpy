@@ -9,6 +9,10 @@ def test_DF_MP2(workspace):
     exe_py(workspace, tdir, 'DF-MP2')
 
 
+def test_DF_MP2_NAF(workspace):
+    exe_py(workspace, tdir, 'DF-MP2_NAF')
+
+
 def test_MP2(workspace):
     exe_py(workspace, tdir, 'MP2')
 
