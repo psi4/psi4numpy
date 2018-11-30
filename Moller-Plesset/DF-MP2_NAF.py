@@ -45,6 +45,10 @@ H    1.23809    2.14444   0.00000
 symmetry c1
 """)
 
+# Adjustable selection parameter (e.g 10^-2 to 10^-4)
+# for constructing the NAF space
+epsilon_naf = 1e-2
+
 # Basis used in mp2 density fitting
 psi4.set_options({'basis': 'aug-cc-pVDZ', 'df_basis_mp2': 'aug-cc-pvdz-ri'})
 
@@ -110,17 +114,13 @@ W = np.dot(np.dot(L.T, Wp), L)
 print("W  = (Q|Q) dim:", W.shape)
 
 # form N(bar) from significant eigenvectors of W
-# epsilon threshold is supposed to be in the range of 10^-2 to 10^-4
 e_val, e_vec = np.linalg.eigh(W)
-eps = 1e-2
-print('epsilon = %.3e ' % (eps))
-mask = np.argwhere(abs(e_val) > eps)
-naux2 = len(mask)
-mask = np.squeeze(mask)
+mask = np.abs(e_val) > epsilon_naf
+naux2 = np.sum(mask)
 Nbar = e_vec[:, mask]
 
-print('retaining #naux = %i  of  %i [ %4.1f %% ]' % (naux2, naux,
-                                                     naux2 / naux * 100.0))
+print('retaining #naux = %i  of  %i [ %4.1f %% ] for epsilon(naf) = %.3e ' %
+      (naux2, naux, naux2 / naux * 100.0, epsilon_naf))
 print("N^bar  = (Q^bar|Q) dim)", Nbar.shape)
 
 # form N'(bar) = L * N(bar) (eq 12)
@@ -196,7 +196,7 @@ if check_energy:
     print('E_REF(MP2) %f' % (e_total))
     ecorr = psi4.core.get_variable('MP2 CORRELATION ENERGY')
     t = time.time()
-    print('reference Ecorr(MP2) = %f ; error = %.3e for eps = %.3e' %
-          (ecorr, ecorr - MP2corr_E, eps))
+    print('reference Ecorr(MP2) = %f ; error = %.3e for epsilon(naf) = %.3e' %
+          (ecorr, ecorr - MP2corr_E, epsilon_naf))
     print('PSI4 DF-MP2 finished in %.3f s' \
     % (time.time() - t))
