@@ -10,11 +10,11 @@ References:
 1. Algorithm modified from Rob Parrish's most excellent Psi4 plugin example
 Bottom of the page: http://www.psicode.org/developers.php
 2. Tutorials/03_Hartree-Fock/density-fitting.ipynb
-3. M. Kállay, J. Chem. Phys. 2014, 141, 244113. [http://aip.scitation.org/doi/10.1063/1.4905005]
+3. M. Kallay, J. Chem. Phys. 2014, 141, 244113. [http://aip.scitation.org/doi/10.1063/1.4905005]
 """
 
 __authors__ = "Holger Kruse"
-__credits__ = ["Daniel G. A. Smith", "Dominic A. Sirianni"]
+__credits__ = ["Holger Kruse","Daniel G. A. Smith", "Dominic A. Sirianni"]
 
 __copyright__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
@@ -61,6 +61,9 @@ orbital_basis = wfn.basisset()
 nbf = wfn.nso()
 nvirt = nbf - ndocc
 
+print('ndocc',ndocc)
+print('nvirt',nvirt)
+
 # Split eigenvectors and eigenvalues into o and v
 eps_occ = np.asarray(wfn.epsilon_a_subset("AO", "ACTIVE_OCC"))
 eps_vir = np.asarray(wfn.epsilon_a_subset("AO", "ACTIVE_VIR"))
@@ -68,7 +71,7 @@ eps_vir = np.asarray(wfn.epsilon_a_subset("AO", "ACTIVE_VIR"))
 # Build DF tensors
 print('\nBuilding DF ERI tensor Qov...')
 t = time.time()
-C = wfn.Ca()
+C = np.asarray(wfn.Ca())
 
 # Build instance of MintsHelper
 mints = psi4.core.MintsHelper(orbital_basis)
@@ -81,68 +84,60 @@ aux_basis = psi4.core.BasisSet.build(
 naux = aux_basis.nbf()
 
 # Build (P|pq) raw 3-index ERIs, dimension (1, Naux, nbf, nbf)
+# this is I^t in the paper
 Ppq = mints.ao_eri(zero_bas, aux_basis, orbital_basis, orbital_basis)
+print('Ppq = I^t = (Q|pg)',Ppq.shape)
 
 # Build Coulomb metric but only invert, dimension (1, Naux, 1, Naux)
 metric = mints.ao_eri(zero_bas, aux_basis, zero_bas, aux_basis)
 metric.power(-1.0, 1.e-14)
 
-# Remove excess dimensions of Ppq, & metric
+# Remove excess dimensions of Ppq & metric
 Ppq = np.squeeze(Ppq)
 metric = np.squeeze(metric)
-
-# paper uses transpose of Ppq, so we adapt for now
-Ppq = np.reshape(Ppq, (naux, nbf * nbf)).T
-print("I  = (pq|P) dim:", Ppq.shape)
 
 # cholesky decomp of inverse metric
 L = np.linalg.cholesky(metric)
 print("L  = cholesky[(P|Q)^1 ]dim:", L.shape)
 
-# Form intermediate W'= I^t*I
-Wp = np.dot(Ppq.T, Ppq)
+# Form intermediate W'= I^t*I (eq 10)
+# note that Wp = Wp^t
+Wp = np.einsum('Ppq,Qpq->PQ',Ppq,Ppq, optimize=True)
 print("W' = (P|P) dim:", Wp.shape)
 
-# form W proper
+# form W proper (eq 11)
 W = np.dot(np.dot(L.T, Wp), L)
 print("W  = (Q|Q) dim:", W.shape)
 
-# from N(bar) from eigenvectors of W
+# form N(bar) from significant eigenvectors of W 
 # epsilon threshold is supposed to be in the range of 10^-2 to 10^-4
 e_val, e_vec = np.linalg.eigh(W)
 eps = 1e-2
 print('epsilon = %.3e ' % (eps))
-nskipped = 0
-Ntmp = np.zeros((naux, naux))
-naux2 = 0
-for n in range(naux):
-    if (abs(e_val[n]) > eps):
-        Ntmp[:, naux2] = e_vec[:, n]
-        naux2 += 1
+mask = np.argwhere(abs(e_val) > eps)
+naux2 = len(mask)
+mask = np.squeeze(mask)
+Nbar = e_vec[:, mask]
 
 print('retaining #naux = %i  of  %i [ %4.1f %% ]' % (naux2, naux,
                                                      naux2 / naux * 100.0))
-Nbar = Ntmp[0:naux, 0:naux2]
 print("N^bar  = (Q^bar|Q) dim)", Nbar.shape)
 
-# form N'(bar) = L * N(bar)
+# form N'(bar) = L * N(bar) (eq 12)
 Npbar = np.dot(L, Nbar)
 print("N'^bar  = (P^bar|Q) dim)", Npbar.shape)
 
-# form J(bar) = I * N'(bar)
-Jbar = np.dot(Ppq, Npbar)
-print("J^bar  = (pq|Q) dim)", Npbar.shape)
-
-# transpose to be inline with PIS4 and expand J(bar) to proper dimensions
-# Qpg is then final NAF DF Tensor in AO space
-Qpq = Jbar.T.reshape(naux2, nbf, nbf)
+# form J(bar) = I * N'(bar) (eq 13)
+# we form the transpose of Jbar to be inline with PSI4
+Jbar = np.einsum('Ppq,PQ->Qpq',Ppq,Npbar, optimize=True)
+print("J^bar  = (Q|pq) dim)", Npbar.shape)
 
 # ==> AO->MO transform: Qpq -> Qmo @ O(N^4) <==
-Qov = np.einsum('pi,Qpq->Qiq', C, Qpq)
-Qov = np.einsum('Qiq,qj->Qij', Qov, C)
-
-# for MP2 we just need the occupied-virtual block of the DF MO tensor
-Qov = Qov[:, :ndocc, ndocc:]
+print('AO->MO transform')
+Cocc=C[:,:ndocc]
+Cvirt=C[:,ndocc:]
+Qov = np.einsum('pi,Qpq->Qqi', Cocc, Jbar, optimize=True)
+Qov = np.einsum('Qqi,qa->Qia', Qov,Cvirt, optimize=True)
 
 time_qov = time.time() - t
 print('...Qov build in %.3f seconds with a shape of %s, %.3f GB.' \
@@ -164,9 +159,6 @@ for i in range(ndocc):
 
         eps_j = eps_occ[j]
         j_Qv = Qov[:, j, :]
-
-        # We can either use einsum here
-        #        tmp = np.einsum('Qa,Qb->ab', i_Qv, j_Qv)
 
         # Or a dot product (DGEMM) for speed)
         tmp = np.dot(i_Qv.T, j_Qv)
