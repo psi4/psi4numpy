@@ -22,7 +22,7 @@ np.set_printoptions(precision=5, linewidth=200, suppress=True)
 
 class helper_HF(object):
     """
-    A generalized Hartree-Fock helper script.  
+    A generalized Hartree-Fock helper script.
 
     Notes
     -----
@@ -136,6 +136,7 @@ class helper_HF(object):
             self.npC_left[:] = self.Ca[:, :self.ndocc]
             self.epsilon = e
             self.Da = np.dot(self.npC_left, self.npC_left.T)
+            self.F = self.H
 
         elif guess.upper() == 'SAD':
 
@@ -509,3 +510,13 @@ def rotate_orbitals(C, x, return_d=False):
         return C, np.dot(Cocc, Cocc.T)
     else:
         return C
+
+
+def transform_aotoso(m_ao, transformers):
+    return tuple(transformer.T.dot(m_ao).dot(transformer)
+                 for transformer in transformers)
+
+
+def transform_sotoao(m_so_, transformers):
+    return sum(transformer.dot(m_so).dot(transformer.T)
+               for transformer, m_so in zip(transformers, m_so_))
