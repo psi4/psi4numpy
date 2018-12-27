@@ -151,9 +151,6 @@ for SCF_ITER in range(1, maxiter + 1):
 
     SCF_E = sum(E_) + Enuc
 
-    # print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E   dRMS = %1.5E' % (SCF_ITER, SCF_E, (SCF_E - Eold), dRMS))
-    # if (abs(SCF_E - Eold) < E_conv) and (dRMS < D_conv):
-    #     break
     print('SCF Iteration %3d: Energy = %4.16f   dE = % 1.5E' % (SCF_ITER, SCF_E, (SCF_E - Eold)))
     if abs(SCF_E - Eold) < E_conv:
         break
