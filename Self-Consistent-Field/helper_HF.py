@@ -513,10 +513,41 @@ def rotate_orbitals(C, x, return_d=False):
 
 
 def transform_aotoso(m_ao, transformers):
+    """
+    Transform a matrix from the atomic orbital to spin orbital basis.
+
+    Parameters
+    ----------
+    m_ao : numpy.ndarray
+        A [nao, nao] matrix
+    transformers : list or tuple of numpy.ndarray
+        Transformation matrices, one for each irrep, with shape [nao, nso in irrep]
+
+    Returns
+    -------
+    tuple of numpy.ndarray
+        One matrix for each irrep with shape [nso in irrep, nso in irrep]
+    """
     return tuple(transformer.T.dot(m_ao).dot(transformer)
                  for transformer in transformers)
 
 
 def transform_sotoao(m_so_, transformers):
+    """
+    Transform an operator from the spin orbital to the atomic orbital basis.
+
+    Parameters
+    ----------
+    m_so_ : list or tuple of numpy.ndarray
+        Matrices, one for each irrep, with shape [nso in irrep, nso in irrep]
+    transformers : list or tuple of numpy.ndarray
+        Transformation matrices, one for each irrep, with shape [nao, nso in irrep]
+
+    Returns
+    -------
+    numpy.ndarray
+        A [nao, nao] matrix
+    """
+    assert len(m_so_) == len(transformers)
     return sum(transformer.dot(m_so).dot(transformer.T)
                for transformer, m_so in zip(transformers, m_so_))
