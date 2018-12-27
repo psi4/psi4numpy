@@ -98,6 +98,9 @@ Enuc = mol.nuclear_repulsion_energy()
 Eold = 0.0
 Dold = np.zeros_like(D)
 
+E_guess = np.einsum('pq,pq->', H + H, D) + Enuc
+print('SCF Iteration %3d: Energy = %4.16f' % (0, E_guess))
+
 for SCF_ITER in range(1, maxiter + 1):
 
     # Build fock matrix: [Szabo:1996] Eqn. 3.154, pp. 141
