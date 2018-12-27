@@ -33,6 +33,10 @@ def test_RHF_EFP(workspace):
     exe_py(workspace, tdir, 'RHF_EFP')
 
 
+def test_RHF_symmetry(workspace):
+    exe_py(workspace, tdir, 'RHF_symmetry')
+
+
 def test_ROHF_libJK(workspace):
     exe_py(workspace, tdir, 'ROHF_libJK')
 
