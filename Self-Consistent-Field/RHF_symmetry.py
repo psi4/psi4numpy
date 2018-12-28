@@ -49,7 +49,8 @@ t = time.time()
 mints = psi4.core.MintsHelper(wfn.basisset())
 
 nirrep = wfn.nirrep()
-# A_1, A_2, B_1, and B_2
+# Water belongs to the C2v point group, which has four irreducable
+# representations (irreps): A_1, A_2, B_1, and B_2.
 assert nirrep == 4
 
 dimension_to_list = lambda dim: [dim[i] for i in range(nirrep)]
@@ -74,14 +75,24 @@ if I_Size > numpy_memory:
     raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory "
                     "limit of %4.2f GB." % (memory_footprint, numpy_memory))
 
-# The convention will be to have 
-S_ = mints.so_overlap().to_array()
-T_ = mints.so_kinetic().to_array()
-V_ = mints.so_potential().to_array()
+# A matrix is returned for every irrep, even if the irrep is not present for
+# the molecule; these must be filtered out to avoid problems with NumPy arrays
+# that have a zero dimension.
+filter_empty_irrep = lambda coll: tuple(m for m in coll if all(m.shape))
+
+# The convention will be to have quantities in the spin-orbital basis ending
+# with an underscore, each consisting of one matrix per irrep.
+S_ = filter_empty_irrep(mints.so_overlap().to_array())
+T_ = filter_empty_irrep(mints.so_kinetic().to_array())
+V_ = filter_empty_irrep(mints.so_potential().to_array())
 # The two-electron integrals are not blocked according to symmetry, so a
 # transformation between the AO and SO bases will be required.
-I = np.asarray(mints.ao_eri())
-transformers = wfn.aotoso().to_array()
+I_AO = np.asarray(mints.ao_eri())
+transformers_ = filter_empty_irrep(wfn.aotoso().to_array())
+
+assert len(S_) == len(T_) == len(V_) == len(transformers_)
+nirrep = len(S_)
+nsopi = [n for n in nsopi if n > 0]
 
 print('\nTotal time taken for integrals: %.3f seconds.' % (time.time() - t))
 t = time.time()
@@ -96,7 +107,7 @@ for S in S_:
     # the diagonal basis, applying the function to the diagonal form,
     # then backtransformation to the original basis.
     eigval, eigvec = np.linalg.eigh(S)
-    eigval_diag = np.diag(eigval ** (-1/2))
+    eigval_diag = np.diag(eigval ** (-1./2))
     A = eigvec.dot(eigval_diag).dot(eigvec.T)
     A_.append(A)
 
@@ -143,9 +154,9 @@ for SCF_ITER in range(1, maxiter + 1):
 
     # Perform the two-electron integral contraction with the density in the AO
     # basis.
-    D_AO = transform_sotoao(D_, transformers)
-    J_ = transform_aotoso(np.einsum("mnls,ls->mn", I, D_AO), transformers)
-    K_ = transform_aotoso(np.einsum("mlns,ls->mn", I, D_AO), transformers)
+    D_AO = transform_sotoao(D_, transformers_)
+    J_ = transform_aotoso(np.einsum("mnls,ls->mn", I_AO, D_AO), transformers_)
+    K_ = transform_aotoso(np.einsum("mlns,ls->mn", I_AO, D_AO), transformers_)
     F_ = [H + (2 * J) - K for H, J, K in zip(H_, J_, K_)]
     E_ = [np.einsum("mn,mn->", D, H + F) for D, H, F in zip(D_, H_, F_)]
 
