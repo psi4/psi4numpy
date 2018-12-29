@@ -52,9 +52,7 @@ nirrep = wfn.nirrep()
 # Water belongs to the C2v point group, which has four irreducable
 # representations (irreps): A_1, A_2, B_1, and B_2.
 assert nirrep == 4
-
-dimension_to_list = lambda dim: [dim[i] for i in range(nirrep)]
-nsopi = dimension_to_list(wfn.nsopi())
+nsopi = list(wfn.nsopi())
 
 # Get nbf and ndocc for closed shell molecules
 nbf = sum(nsopi)
@@ -78,7 +76,8 @@ if I_Size > numpy_memory:
 # A matrix is returned for every irrep, even if the irrep is not present for
 # the molecule; these must be filtered out to avoid problems with NumPy arrays
 # that have a zero dimension.
-filter_empty_irrep = lambda coll: tuple(m for m in coll if all(m.shape))
+def filter_empty_irrep(coll):
+    return tuple(m for m in coll if all(m.shape))
 
 # The convention will be to have quantities in the spin-orbital basis ending
 # with an underscore, each consisting of one matrix per irrep.
@@ -123,10 +122,12 @@ for i in range(nirrep):
 
 # Initial occupations are taken from the lowest eigenvalues (energies)
 # of the guess coefficients.
-e_tot = np.concatenate(e_)
-idxsort = np.argsort(e_tot)
-so_to_irrep = np.array([i for i, nso in enumerate(nsopi) for _ in range(nso)])
-lowest_occupied = so_to_irrep[idxsort][:ndocc].tolist()
+energies_and_irreps = np.array(sorted(
+    (energy, irrep)
+    for (irrep, energies_irrep) in enumerate(e_)
+    for energy in energies_irrep
+))
+lowest_occupied = sorted(energies_and_irreps[:ndocc, 1].astype(int))
 ndoccpi = [lowest_occupied.count(i) for i in range(nirrep)]
 print('Number of occupied spin orbitals per irrep:', ndoccpi)
 
