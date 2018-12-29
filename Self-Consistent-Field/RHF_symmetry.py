@@ -110,13 +110,17 @@ for S in S_:
     A = eigvec.dot(eigval_diag).dot(eigvec.T)
     A_.append(A)
 
+def form_new_orbitals(A, F):
+    Fp = A.dot(F).dot(A)        # Eqn. 3.177
+    e, C2 = np.linalg.eigh(Fp)  # Solving Eqn. 1.178
+    C = A.dot(C2)               # Back transform, Eqn. 3.174
+    return C, e
+
 # Calculate initial core guess: [Szabo:1996] pp. 145
 C_ = []
 e_ = []
 for i in range(nirrep):
-    Hp = A_[i].dot(H_[i]).dot(A_[i])  # Eqn. 3.177
-    e, C2 = np.linalg.eigh(Hp)        # Solving Eqn. 1.178
-    C = A_[i].dot(C2)                 # Back transform, Eqn. 3.174
+    C, e = form_new_orbitals(A_[i], H_[i])
     C_.append(C)
     e_.append(e)
 
@@ -132,10 +136,10 @@ ndoccpi = [lowest_occupied.count(i) for i in range(nirrep)]
 print('Number of occupied spin orbitals per irrep:', ndoccpi)
 
 # Form (occupied) density: [Szabo:1996] Eqn. 3.145, pp. 139
-D_ = []
-for i, indocc in enumerate(ndoccpi):
-    D = np.einsum('mi,ni->mn', C_[i][:, :indocc], C_[i][:, :indocc])
-    D_.append(D)
+D_ = [
+    np.einsum('mi,ni->mn', C_[i][:, :indocc], C_[i][:, :indocc])
+    for i, indocc in enumerate(ndoccpi)
+]
 
 print('\nTotal time taken for setup: %.3f seconds' % (time.time() - t))
 
@@ -144,12 +148,15 @@ t = time.time()
 E = 0.0
 Enuc = mol.nuclear_repulsion_energy()
 Eold = 0.0
-Dold_ = [np.zeros_like(D) for D in D_]
-F_ = [np.zeros_like(D) for D in D_]
 
 E_ = np.array([(D * (H + H)).sum() for (D, H) in zip(D_, H_)])
 E_guess = sum(E_) + Enuc
 print('SCF Iteration %3d: Energy = %4.16f' % (0, E_guess))
+
+def form_new_density(A, F, indocc):
+    C, _ = form_new_orbitals(A, F)
+    Cocc = C[:, :indocc]
+    return np.einsum('mi,ni->mn', Cocc, Cocc)
 
 for SCF_ITER in range(1, maxiter + 1):
 
@@ -169,12 +176,10 @@ for SCF_ITER in range(1, maxiter + 1):
 
     Eold = SCF_E
 
-    for h, indocc in enumerate(ndoccpi):
-        Fp = A_[h].dot(F_[h]).dot(A_[h])
-        e, C2 = np.linalg.eigh(Fp)
-        C_[h] = A_[h].dot(C2)
-        Cocc = C_[h][:, :indocc]
-        D_[h] = np.einsum('mi,ni->mn', Cocc, Cocc)
+    D_ = [
+        form_new_density(A_[h], F_[h], indocc)
+        for h, indocc in enumerate(ndoccpi)
+    ]
 
     if SCF_ITER == maxiter:
         psi4.core.clean()
