@@ -1,6 +1,5 @@
-"""
-A restricted Hartree-Fock script using the Psi4NumPy formalism with
-integral symmetry.
+"""A restricted Hartree-Fock script using the Psi4NumPy formalism that
+accounts for molecular symmetry using symmetrized orbitals.
 
 References:
 - Algorithm taken from [Szabo:1996], pp. 146
@@ -79,14 +78,19 @@ if I_Size > numpy_memory:
 def filter_empty_irrep(coll):
     return tuple(m for m in coll if all(m.shape))
 
-# The convention will be to have quantities in the spin-orbital basis ending
-# with an underscore, each consisting of one matrix per irrep.
+# The convention will be to have quantities in the spin orbital (SO) basis
+# ending with an underscore, each consisting of one matrix per irrep.
 S_ = filter_empty_irrep(mints.so_overlap().to_array())
 T_ = filter_empty_irrep(mints.so_kinetic().to_array())
 V_ = filter_empty_irrep(mints.so_potential().to_array())
 # The two-electron integrals are not blocked according to symmetry, so a
-# transformation between the AO and SO bases will be required.
+# transformation between the atomic orbital (AO) and SO bases will be required.
 I_AO = np.asarray(mints.ao_eri())
+# In order to convert from the C1 AO basis to the symmetrized SO basis, a set
+# of matrices (one for each irrep with shape [nao, irrep_size]) is used to
+# transform the dense AO representation into the block-diagonal SO
+# representation. A SO-to-AO transformation matrix is obtained by transposing
+# the corresponding AO-to-SO transformation matrix.
 transformers_ = filter_empty_irrep(wfn.aotoso().to_array())
 
 assert len(S_) == len(T_) == len(V_) == len(transformers_)
@@ -124,7 +128,7 @@ for i in range(nirrep):
     C_.append(C)
     e_.append(e)
 
-# Initial occupations are taken from the lowest eigenvalues (energies)
+# Occupations of each irrep are taken from the lowest eigenvalues (energies)
 # of the guess coefficients.
 energies_and_irreps = np.array(sorted(
     (energy, irrep)
@@ -136,10 +140,8 @@ ndoccpi = [lowest_occupied.count(i) for i in range(nirrep)]
 print('Number of occupied spin orbitals per irrep:', ndoccpi)
 
 # Form (occupied) density: [Szabo:1996] Eqn. 3.145, pp. 139
-D_ = [
-    np.einsum('mi,ni->mn', C_[i][:, :indocc], C_[i][:, :indocc])
-    for i, indocc in enumerate(ndoccpi)
-]
+D_ = [np.einsum('mi,ni->mn', C_[i][:, :indocc], C_[i][:, :indocc])
+      for i, indocc in enumerate(ndoccpi)]
 
 print('\nTotal time taken for setup: %.3f seconds' % (time.time() - t))
 
@@ -176,10 +178,8 @@ for SCF_ITER in range(1, maxiter + 1):
 
     Eold = SCF_E
 
-    D_ = [
-        form_new_density(A_[h], F_[h], indocc)
-        for h, indocc in enumerate(ndoccpi)
-    ]
+    D_ = [form_new_density(A_[h], F_[h], indocc)
+          for h, indocc in enumerate(ndoccpi)]
 
     if SCF_ITER == maxiter:
         psi4.core.clean()

@@ -514,7 +514,7 @@ def rotate_orbitals(C, x, return_d=False):
 
 def transform_aotoso(m_ao, transformers):
     """
-    Transform a matrix from the atomic orbital to spin orbital basis.
+    Transform an operator from the atomic orbital to spin orbital basis.
 
     Parameters
     ----------
