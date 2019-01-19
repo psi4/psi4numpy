@@ -135,7 +135,7 @@ energies_and_irreps = np.array(sorted(
     for (irrep, energies_irrep) in enumerate(e_)
     for energy in energies_irrep
 ))
-lowest_occupied = sorted(energies_and_irreps[:ndocc, 1].astype(int))
+lowest_occupied = energies_and_irreps[:ndocc, 1].astype(int).tolist()
 ndoccpi = [lowest_occupied.count(i) for i in range(nirrep)]
 print('Number of occupied spin orbitals per irrep:', ndoccpi)
 
