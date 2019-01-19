@@ -107,16 +107,18 @@ t = time.time()
 # Build H_core: [Szabo:1996] Eqn. 3.153, pp. 141
 H_ = [T + V for (T, V) in zip(T_, V_)]
 
-# Build the orthogonalizer A = S^(-1/2) for each irrep.
-A_ = []
-for S in S_:
+def build_orthogonalizer(S):
+    """
+    Form the orthogonalization matrix A = S^{-1/2} using pure NumPy.
+    """
     # Application of a function to a matrix requires transforming to
     # the diagonal basis, applying the function to the diagonal form,
     # then backtransformation to the original basis.
     eigval, eigvec = np.linalg.eigh(S)
     eigval_diag = np.diag(eigval ** (-1./2))
-    A = eigvec.dot(eigval_diag).dot(eigvec.T)
-    A_.append(A)
+    return eigvec.dot(eigval_diag).dot(eigvec.T)
+
+A_ = [build_orthogonalizer(S) for S in S_]
 
 def form_new_orbitals(A, F):
     Fp = A.dot(F).dot(A)        # Eqn. 3.177
