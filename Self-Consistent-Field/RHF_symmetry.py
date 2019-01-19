@@ -152,8 +152,8 @@ Enuc = mol.nuclear_repulsion_energy()
 Eold = 0.0
 
 E_ = np.array([(D * (H + H)).sum() for (D, H) in zip(D_, H_)])
-E_guess = sum(E_) + Enuc
-print('SCF Iteration %3d: Energy = %4.16f' % (0, E_guess))
+E_1el = sum(E_) + Enuc
+print('One-electron energy = %4.16f' % E_1el)
 
 def form_new_density(A, F, indocc):
     C, _ = form_new_orbitals(A, F)

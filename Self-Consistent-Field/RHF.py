@@ -98,8 +98,8 @@ Enuc = mol.nuclear_repulsion_energy()
 Eold = 0.0
 Dold = np.zeros_like(D)
 
-E_guess = np.einsum('pq,pq->', H + H, D) + Enuc
-print('SCF Iteration %3d: Energy = %4.16f' % (0, E_guess))
+E_1el = np.einsum('pq,pq->', H + H, D) + Enuc
+print('One-electron energy = %4.16f' % E_1el)
 
 for SCF_ITER in range(1, maxiter + 1):
 
