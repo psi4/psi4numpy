@@ -97,9 +97,12 @@ I_AO = np.asarray(mints.ao_eri())
 # the corresponding AO-to-SO transformation matrix.
 transformers_ = filter_empty_irrep(wfn.aotoso().to_array())
 
+# At this point, all irreps that are not present (such as A_2 in water) should
+# be filtered out.
 assert len(S_) == len(T_) == len(V_) == len(transformers_)
 nirrep = len(S_)
 nsopi = [n for n in nsopi if n > 0]
+print('Number of spin orbitals per irrep (with empty irreps removed):', nsopi)
 
 print('\nTotal time taken for integrals: %.3f seconds.' % (time.time() - t))
 t = time.time()
