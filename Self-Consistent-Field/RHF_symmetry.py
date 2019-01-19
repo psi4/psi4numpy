@@ -72,10 +72,12 @@ if I_Size > numpy_memory:
     raise Exception("Estimated memory utilization (%4.2f GB) exceeds numpy_memory "
                     "limit of %4.2f GB." % (memory_footprint, numpy_memory))
 
-# A matrix is returned for every irrep, even if the irrep is not present for
-# the molecule; these must be filtered out to avoid problems with NumPy arrays
-# that have a zero dimension.
 def filter_empty_irrep(coll):
+    """
+    A matrix is returned for every irrep, even if the irrep is not present for
+    the molecule; these must be filtered out to avoid problems with NumPy
+    arrays that have a zero dimension.
+    """
     return tuple(m for m in coll if all(m.shape))
 
 # The convention will be to have quantities in the spin orbital (SO) basis
@@ -83,9 +85,11 @@ def filter_empty_irrep(coll):
 S_ = filter_empty_irrep(mints.so_overlap().to_array())
 T_ = filter_empty_irrep(mints.so_kinetic().to_array())
 V_ = filter_empty_irrep(mints.so_potential().to_array())
+
 # The two-electron integrals are not blocked according to symmetry, so a
 # transformation between the atomic orbital (AO) and SO bases will be required.
 I_AO = np.asarray(mints.ao_eri())
+
 # In order to convert from the C1 AO basis to the symmetrized SO basis, a set
 # of matrices (one for each irrep with shape [nao, irrep_size]) is used to
 # transform the dense AO representation into the block-diagonal SO
