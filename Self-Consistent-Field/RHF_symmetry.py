@@ -2,8 +2,9 @@
 accounts for molecular symmetry using symmetrized orbitals.
 
 References:
-- Algorithm taken from [Szabo:1996], pp. 146
-- Equations taken from [Szabo:1996]
+- SCF Algorithm taken from [Szabo:1996] (pp. 146)
+- SCF Equations taken from [Szabo:1996]
+- Symmetry-specific details taken from https://github.com/CrawfordGroup/ProgrammingProjects/tree/master/Project%2309
 """
 
 __authors__ = "Eric J. Berquist"
