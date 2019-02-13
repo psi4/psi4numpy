@@ -224,10 +224,12 @@ G += np.einsum('ai,ij,ab->iajb', eps_diag, I_occ, I_vir, optimize=True)
 
 # Take Transpose of G_iajb
 G = G.T.reshape(nocc * nvir, nocc * nvir)
+#print("\n\nMO Hessian Matrix:\n",G)
 
 # Solve G^T(ai,bj) Z(b,j) = X(a,i)
 X = X.reshape(nocc * nvir, -1)
 Z = np.linalg.solve(G, X).reshape(nvir, -1)
+#print("\n\nZ Vector:\n",Z)
 
 # Relax OPDM
 # Ppq(a,i) = Ppq(i,a) = - Z(a,i)
