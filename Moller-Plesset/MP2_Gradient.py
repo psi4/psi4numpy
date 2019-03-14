@@ -307,10 +307,11 @@ deriv1_np = {}
 # 1st Derivative of OEIs
 for atom in range(natoms):
     for key in oei_dict:
-        deriv1_mat[key + str(atom)] = mints.mo_oei_deriv1(oei_dict[key], atom, C, C)
+        string = key + str(atom)
+        deriv1_mat[string] = mints.mo_oei_deriv1(oei_dict[key], atom, C, C)
         for p in range(3):
-            map_key = key + str(atom) + cart[p]
-            deriv1_np[map_key] = np.asarray(deriv1_mat[key + str(atom)][p])
+            map_key = string + cart[p]
+            deriv1_np[map_key] = np.asarray(deriv1_mat[string][p])
             if key == "S":
                 Gradient["S"][atom, p] = np.einsum('pq,pq->', I, deriv1_np[map_key], optimize=True)
             else:
@@ -330,11 +331,11 @@ for key in Gradient:
 
 # 1st Derivative of TEIs
 for atom in range(natoms):
-    key = "TEI"
-    deriv1_mat[key + str(atom)] = mints.mo_tei_deriv1(atom, C, C, C, C)
+    string = "TEI" + str(atom)
+    deriv1_mat[string] = mints.mo_tei_deriv1(atom, C, C, C, C)
     for p in range(3):
-        map_key = key + str(atom) + cart[p]
-        deriv1_np[map_key] = np.asarray(deriv1_mat[key + str(atom)][p])
+        map_key = string + cart[p]
+        deriv1_np[map_key] = np.asarray(deriv1_mat[string][p])
 
         Gradient["TEI"][atom, p] += np.einsum('pqrs,prqs->', Ppqrs, deriv1_np[map_key], optimize=True)
 
