@@ -194,7 +194,7 @@ if check_energy:
     # re-used RHF wavefunction
     e_total = psi4.energy('mp2', ref_wfn=wfn)
     print('E_REF(MP2) %f' % (e_total))
-    ecorr = psi4.core.get_variable('MP2 CORRELATION ENERGY')
+    ecorr = psi4.core.variable('MP2 CORRELATION ENERGY')
     t = time.time()
     print('reference Ecorr(MP2) = %f ; error = %.3e for epsilon(naf) = %.3e' %
           (ecorr, ecorr - MP2corr_E, epsilon_naf))

@@ -151,7 +151,7 @@ psi4.set_options({'e_convergence': 1e-10})
 psi4.set_options({'r_convergence': 1e-10})
 psi4.set_options({'omega': [589, 'nm']})
 psi4.properties('ccsd', properties=['polarizability'])
-psi4.compare_values(Isotropic_polar, psi4.get_variable("CCSD DIPOLE POLARIZABILITY @ 589NM"),  6, "CCSD Isotropic Dipole Polarizability @ 589 nm (Length Gauge)") #TEST
+psi4.compare_values(Isotropic_polar, psi4.variable("CCSD DIPOLE POLARIZABILITY @ 589NM"),  6, "CCSD Isotropic Dipole Polarizability @ 589 nm (Length Gauge)") #TEST
 """
 
 psi4.compare_values(

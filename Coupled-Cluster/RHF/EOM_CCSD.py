@@ -188,5 +188,5 @@ if compare_psi4:
     psi4.energy('eom-ccsd')
     for i in range(nroot):
         var_str = "CC ROOT {} CORRELATION ENERGY".format(i + 1)
-        e_ex = psi4.core.get_variable(var_str)
+        e_ex = psi4.core.variable(var_str)
         psi4.compare_values(e_ex, theta[i], 5, var_str)

@@ -145,7 +145,7 @@ print("Time per sample (us):              % 16.2f" % (time_per_sample * 1.e6))
 print("sRI-MP2 correlation sample energy: % 16.10f" % e_srimp2)
 
 psi_mp2_energy = psi4.energy("MP2")
-mp2_correlation_energy = psi4.get_variable("MP2 CORRELATION ENERGY")
+mp2_correlation_energy = psi4.variable("MP2 CORRELATION ENERGY")
 
 print("\nRI-MP2 energy:                     % 16.10f" % mp2_correlation_energy)
 print("Sample error                       % 16.10f" % (e_srimp2 - mp2_correlation_energy))
