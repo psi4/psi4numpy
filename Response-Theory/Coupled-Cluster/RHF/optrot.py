@@ -349,9 +349,9 @@ psi4.set_options({'d_convergence': 1e-10,
                   'omega': [589, 'nm'],  
                   'gauge': 'both'})  
 psi4.properties('ccsd', properties=['rotation'])
-psi4.compare_values(specific_rotation_lg, psi4.get_variable("CCSD SPECIFIC ROTATION (LEN) @ 589NM"), \
+psi4.compare_values(specific_rotation_lg, psi4.variable("CCSD SPECIFIC ROTATION (LEN) @ 589NM"), \
  5, "CCSD SPECIFIC ROTATION (LENGTH GAUGE) 589 nm") #TEST
-psi4.compare_values(specific_rotation_mvg, psi4.get_variable("CCSD SPECIFIC ROTATION (MVG) @ 589NM"), \
+psi4.compare_values(specific_rotation_mvg, psi4.variable("CCSD SPECIFIC ROTATION (MVG) @ 589NM"), \
   5, "CCSD SPECIFIC ROTATION (MODIFIED VELOCITY GAUGE) 589 nm") #TEST
 """
 

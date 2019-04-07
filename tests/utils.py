@@ -61,7 +61,7 @@ def copy_helpers(workspace, tdir, files):
 
 # from https://stackoverflow.com/a/31499114
 def sed_inplace(filename, pattern, repl):
-    """Perform the pure-Python equivalent of in-place `sed` substitution: e.g.,
+    r"""Perform the pure-Python equivalent of in-place `sed` substitution: e.g.,
     `sed -i -e 's/'${pattern}'/'${repl}' "${filename}"`.
 
     Examples

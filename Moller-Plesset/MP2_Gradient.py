@@ -31,7 +31,7 @@ np.set_printoptions(
     precision=12, 
     linewidth=200, 
     suppress=True, 
-    threshold=np.nan
+    threshold=10000
 )
 
 # Specify Molecule
