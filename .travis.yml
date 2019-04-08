@@ -29,10 +29,10 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - if [[ "$PYTHON_VER" == "2.7" ]]; then
-        conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 numpy=1.12 matplotlib jupyter scipy -c psi4;
+  - if [[ "$PYTHON_VER" == "3.6" ]]; then
+        conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 numpy=1.13 matplotlib jupyter scipy -c psi4;
     else
-        conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 numpy=1.13 matplotlib jupyter scipy -c psi4/label/dev -c conda-forge;
+        conda create -q -n p4env python=$PYTHON_VER ci-psi4 psi4 numpy matplotlib jupyter scipy -c psi4/label/dev -c defaults -c conda-forge;
     fi
 
   - source activate p4env
