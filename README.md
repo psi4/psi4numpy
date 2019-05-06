@@ -60,9 +60,6 @@ please see our [contributor guidelines](https://github.com/psi4/psi4numpy/blob/m
           >>> conda create -n p4env psi4 -c psi4
           >>> bash
           >>> source activate p4env
-          # Check `psi4` command in path; adjust path if needed
-          # **IF** using DFT tutorials (or a few newer specialized integrals), replace above line with this:
-          >>> conda create -n p4env psi4 -c psi4/label/dev
           ```
         * Option 3 (medium): [Clone source](https://github.com/psi4/psi4) and [compile](https://github.com/psi4/psi4/blob/master/CMakeLists.txt#L16-L143) according to [instructions](http://psicode.org/psi4manual/master/build_faq.html#configuring-building-and-installing-psifour-via-source)
           ```
@@ -72,13 +69,11 @@ please see our [contributor guidelines](https://github.com/psi4/psi4numpy/blob/m
           >>> cmake -H. -Bobjdir -Doption=value ...
           >>> cd objdir && make -j`getconf _NPROCESSORS_ONLN`
           # Find `psi4` command at objdir/stage/<TAB>/<TAB>/.../bin/psi4; adjust path if needed
-          # **IF** using DFT tutorials (or a few newer specialized integrals), replace above line with this:
-          >>> git checkout master
           ```
-    3. [Python](https://python.org) 2.7+ (incl. w/ Psi4 Options 1 & 2)
+    3. [Python](https://python.org) 3.6+ (incl. w/ Psi4 Options 1 & 2)
     4. [NumPy](http://www.numpy.org) 1.7.2+ (incl. w/ Psi4 Options 1 & 2)
     5. [Scipy](https://scipy.org) 0.13.0+
-2. Enable Psi4 & PsiAPI
+2. Enable Psi4 & PsiAPI (if Psi4 was built from source)
    1. Find appropriate paths
         ```
         >>> psi4 --psiapi-path
