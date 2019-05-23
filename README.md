@@ -11,6 +11,7 @@
 <a href="#"> <img src="https://img.shields.io/github/release-date/psi4/psi4numpy.svg" /></a>
 <a href="#"> <img src="https://img.shields.io/github/commit-activity/y/psi4/psi4numpy.svg" /></a>
 <br>
+<a href="https://mybinder.org/v2/gh/psi4/psi4numpy/master?filepath=Tutorials%2F01_Psi4NumPy-Basics%2F1a_Getting-Started.ipynb"> <img src="https://mybinder.org/badge_logo.svg" /></a>
 </p>
 
 ---
