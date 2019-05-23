@@ -1,13 +1,11 @@
-name: p4env
-
+name: p4env37
 channels:
-  - psi4/label/devel
-  - psi4
-
+  - psi4/label/dev
+  - defaults
 dependencies:
-  - matplotlib
-  - pandas
-  - scipy
+  - python=3.7
   - psi4
-  - psi4-deps
-  - python=3.5
+  - dftd3
+  - matplotlib
+  - scipy
+  - pandas
