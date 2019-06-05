@@ -57,12 +57,19 @@ psi4.set_memory(int(1e9), False)
 psi4.core.set_num_threads(4)
 
 # Specify Molecule
+#mol = psi4.geometry("""
+#O
+#H 1 R
+#H 1 R 2 104
+#symmetry c1
+#""")
 mol = psi4.geometry("""
-O
-H 1 R
-H 1 R 2 104
-units bohr
+O   0.00000000     0.00000000     0.07579184
+H   0.00000000    -0.86681183    -0.60143578
+H   0.00000000     0.86681183    -0.60143578
 symmetry c1
+units bohr
+noreorient
 """)
 
 # physical constants changed, so geometry changes slightly
@@ -196,8 +203,8 @@ Pab += np.einsum('ijbc,ijac->ab', t2, t2_tilde, optimize=True)
 # Build Total OPDM
 Ppq = np.zeros((nmo, nmo))
 Ppq += ref_opdm
-#Ppq[:nocc, :nocc] += Pij
-#Ppq[nocc:, nocc:] += Pab
+Ppq[:nocc, :nocc] += Pij
+Ppq[nocc:, nocc:] += Pab
 print("\n\nTotal OPDM:\n", Ppq)
 print("\nChecks:")
 print("OPDM is symmetric: ",np.allclose(Ppq, Ppq.T))
@@ -215,8 +222,8 @@ Pijab = copy.deepcopy(t2_tilde)
 # Build Total TPDM
 Ppqrs = np.zeros((nmo, nmo, nmo, nmo))
 Ppqrs += ref_tpdm
-#Ppqrs[:nocc, :nocc, nocc:, nocc:] += Pijab
-#Ppqrs[nocc:, nocc:, :nocc, :nocc] += Pijab.T
+Ppqrs[:nocc, :nocc, nocc:, nocc:] += Pijab
+Ppqrs[nocc:, nocc:, :nocc, :nocc] += Pijab.T
 #print("\n\nTotal TPDM:\n", Ppqrs.reshape(nmo*nmo, nmo*nmo))
 
 
@@ -474,12 +481,12 @@ for atom in range(natoms):
         UMat.name = key
         UMat.print_out()
 
-dPpq = {}
-for atom in range(natoms):
-    for p in range(3):
-        key = str(atom) + cart[p]
-
-        # SCF Derivatives of OPDM
+#dPpq = {}
+#for atom in range(natoms):
+#    for p in range(3):
+#        key = str(atom) + cart[p]
+#
+#        # SCF Derivatives of OPDM
 #        dPpq[key] =  1.0 * np.einsum('tp,tq->pq', U[key], Ppq)
 #        dPpq[key] += 1.0 * np.einsum('tq,pt->pq', U[key], Ppq)
 #        print("\nCurrent dPpq/da[", key, "]:\n", dPpq[key])
@@ -492,91 +499,117 @@ for atom in range(natoms):
 #        dPpq[key] += 1.0 * np.einsum('pm,mq->pq', npS_mo[:, :nocc], deriv1_np["S" + key][:nocc, :])
 #        print("\nCurrent dPpq/da[", key, "]:\n", dPpq[key])
 
+
 # MP2 Derivaties of OPDM
 #
-# Derivatives of T2-amplitudes:
-dt2 = {}
-for i in range(nocc):
-    for j in range(nocc):
-        for a in range(nvir):
-            for b in range(nvir):
-                for atom in range(natoms):
-                    for xyz in range(3):
-                        string = "t2[" + str(i) + "][" + str(j) + "][" + str(a) + "][" + str(b) + "]_"
-                        key = str(atom) + cart[xyz]
+# Derivative of t2 amplitudes
+for atom in range(natoms):
+    for p in range(3):
+        string = "T2" 
+        key = str(atom) + cart[p]
+        map_key = string + key
 
-                        # dt2 += <ij||ab>^a + sum_t [ ( Uti^a * <tj||ab> ) + ( Utj^a * <it||ab> ) + ( Uta^a * <ij||tb> ) + ( Utb^a * <ij||at> ) ]
-                        #dt2[string + key] =  np.einsum('prqs->pqrs', deriv1_np["TEI" + key])
-                        dt2[string + key] =  copy.deepcopy(deriv1_np["TEI" + key][:nocc, nocc:, :nocc, nocc:].swapaxes(1,2))
-                        dt2[string + key] -= np.einsum('ibja->ijab', deriv1_np["TEI" + key][:nocc, nocc:, :nocc, nocc:])
+        # d{t2_ab^ij}/dx = <ij|ab>^x + sum_t [ ( Uti^x * <tj|ab> ) + ( Utj^x * <it|ab> ) + ( Uta^x * <ij|tb> ) + ( Utb^x * <ij|at> ) ] + ...
+        #                  ... + t_cb^ij * dF_ac/dx + t_ac^ij * dF_bc/dx + t_ab^kj * dF_ki/dx + t_ab^ik * dF_kj/dx
 
-                        dt2[string + key] += np.einsum('ti,tjab->ijab', U[key][:, :nocc], npERI[:, :nocc, nocc:, nocc:])
-                        dt2[string + key] -= np.einsum('ti,tjba->ijab', U[key][:, :nocc], npERI[:, :nocc, nocc:, nocc:])
-                        dt2[string + key] += np.einsum('tj,itab->ijab', U[key][:, :nocc], npERI[:nocc, :, nocc:, nocc:])
-                        dt2[string + key] -= np.einsum('tj,itba->ijab', U[key][:, :nocc], npERI[:nocc, :, nocc:, nocc:])
-                        dt2[string + key] += np.einsum('ta,ijtb->ijab', U[key][:, nocc:], npERI[:nocc, :nocc, :, nocc:])
-                        dt2[string + key] -= np.einsum('ta,ijbt->ijab', U[key][:, nocc:], npERI[:nocc, :nocc, nocc:, :])
-                        dt2[string + key] += np.einsum('tb,ijat->ijab', U[key][:, nocc:], npERI[:nocc, :nocc, nocc:, :])
-                        dt2[string + key] -= np.einsum('tb,ijta->ijab', U[key][:, nocc:], npERI[:nocc, :nocc, :, nocc:])
+        # d{t2_ab^ij}/dx += <ij|ab>^x + sum_t [ ( Uti^x * <tj|ab> ) + ( Utj^x * <it|ab> ) + ( Uta^x * <ij|tb> ) + ( Utb^x * <ij|at> ) ]
+        deriv1_np[map_key] = copy.deepcopy(deriv1_np["TEI" + key][:nocc, nocc:, :nocc, nocc:].swapaxes(1,2))
+        deriv1_np[map_key] += np.einsum('ti,tjab->ijab', U[key][:, :nocc], npERI[:, :nocc, nocc:, nocc:])
+        deriv1_np[map_key] += np.einsum('tj,itab->ijab', U[key][:, :nocc], npERI[:nocc, :, nocc:, nocc:])
+        deriv1_np[map_key] += np.einsum('ta,ijtb->ijab', U[key][:, nocc:], npERI[:nocc, :nocc, :, nocc:])
+        deriv1_np[map_key] += np.einsum('tb,ijat->ijab', U[key][:, nocc:], npERI[:nocc, :nocc, nocc:, :])
 
-                        # dt2 += t_ab^ij * ( dF_aa/da + dF_bb/da - dF_ii/da - dF_jj/da )
-                        #
-                        # dt2 + t_cb^ij * dF_ac/da
-                        dt2[string + key] += np.einsum('ijcb,ac->ijab', t2, F_grad[key][nocc:, nocc:])
-                        dt2[string + key] += np.einsum('ijcb,ta,tc->ijab', t2, U[key][:, nocc:], F[:, nocc:])
-                        dt2[string + key] += np.einsum('ijcb,tc,at->ijab', t2, U[key][:, nocc:], F[nocc:, :]) 
-                        dt2[string + key] -= 0.5 * 4.0 * np.einsum('ijcb,mn,amcn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, :nocc, nocc:, :nocc])
-                        dt2[string + key] += 0.5 * 1.0 * np.einsum('ijcb,mn,acmn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc])
-                        dt2[string + key] += 0.5 * 1.0 * np.einsum('ijcb,mn,acnm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc])
-                        dt2[string + key] += 1.0 * 4.0 * np.einsum('ijcb,dm,adcm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc])
-                        dt2[string + key] -= 1.0 * 1.0 * np.einsum('ijcb,dm,acdm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc])
-                        dt2[string + key] -= 1.0 * 1.0 * np.einsum('ijcb,dm,acmd->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, :nocc, nocc:])
-                        #
-                        # dt2 + t_ac^ij * dF_bc/da
-                        dt2[string + key] += np.einsum('ijac,bc->ijab', t2, F_grad[key][nocc:, nocc:])
-                        dt2[string + key] += np.einsum('ijac,tb,tc->ijab', t2, U[key][:, nocc:], F[:, nocc:])
-                        dt2[string + key] += np.einsum('ijac,tc,bt->ijab', t2, U[key][:, nocc:], F[nocc:, :]) 
-                        dt2[string + key] -= 0.5 * 4.0 * np.einsum('ijac,mn,bmcn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, :nocc, nocc:, :nocc])
-                        dt2[string + key] += 0.5 * 1.0 * np.einsum('ijac,mn,bcmn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc])
-                        dt2[string + key] += 0.5 * 1.0 * np.einsum('ijac,mn,bcnm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc])
-                        dt2[string + key] += 1.0 * 4.0 * np.einsum('ijac,dm,bdcm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc])
-                        dt2[string + key] -= 1.0 * 1.0 * np.einsum('ijac,dm,bcdm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc])
-                        dt2[string + key] -= 1.0 * 1.0 * np.einsum('ijac,dm,bcmd->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, :nocc, nocc:])
-                        #
-                        # dt2 + t_ab^kj * dF_ki/da
-                        dt2[string + key] += -1.0 * np.einsum('kjab,ki->ijab', t2, F_grad[key][:nocc, :nocc])
-                        dt2[string + key] += -1.0 * np.einsum('kjab,tk,ti->ijab', t2, U[key][:, :nocc], F[:, :nocc])
-                        dt2[string + key] += -1.0 * np.einsum('kjab,ti,kt->ijab', t2, U[key][:, :nocc], F[:nocc, :]) 
-                        dt2[string + key] -= -1.0 * 0.5 * 4.0 * np.einsum('kjab,mn,kmin->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
-                        dt2[string + key] += -1.0 * 0.5 * 1.0 * np.einsum('kjab,mn,kimn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
-                        dt2[string + key] += -1.0 * 0.5 * 1.0 * np.einsum('kjab,mn,kinm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
-                        dt2[string + key] += -1.0 * 1.0 * 4.0 * np.einsum('kjab,dm,kdim->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, nocc:, :nocc, :nocc])
-                        dt2[string + key] -= -1.0 * 1.0 * 1.0 * np.einsum('kjab,dm,kidm->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, nocc:, :nocc])
-                        dt2[string + key] -= -1.0 * 1.0 * 1.0 * np.einsum('kjab,dm,kimd->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, :nocc, nocc:])
-                        #
-                        # dt2 + t_ab^ik * dF_kj/da
-                        dt2[string + key] += -1.0 * np.einsum('ikab,kj->ijab', t2, F_grad[key][:nocc, :nocc])
-                        dt2[string + key] += -1.0 * np.einsum('ikab,tk,tj->ijab', t2, U[key][:, :nocc], F[:, :nocc])
-                        dt2[string + key] += -1.0 * np.einsum('ikab,tj,kt->ijab', t2, U[key][:, :nocc], F[:nocc, :]) 
-                        dt2[string + key] -= -1.0 * 0.5 * 4.0 * np.einsum('ikab,mn,kmjn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
-                        dt2[string + key] += -1.0 * 0.5 * 1.0 * np.einsum('ikab,mn,kjmn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
-                        dt2[string + key] += -1.0 * 0.5 * 1.0 * np.einsum('ikab,mn,kjnm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
-                        dt2[string + key] += -1.0 * 1.0 * 4.0 * np.einsum('ikab,dm,kdjm->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, nocc:, :nocc, :nocc])
-                        dt2[string + key] -= -1.0 * 1.0 * 1.0 * np.einsum('ikab,dm,kjdm->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, nocc:, :nocc])
-                        dt2[string + key] -= -1.0 * 1.0 * 1.0 * np.einsum('ikab,dm,kjmd->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, :nocc, nocc:])
+        # d{t2_ab^ij}/dx += t_cb^ij * dF_ac/dx
+        deriv1_np[map_key] += np.einsum('ijcb,ac->ijab', t2, F_grad[key][nocc:, nocc:])
+        deriv1_np[map_key] += np.einsum('ijcb,ta,tc->ijab', t2, U[key][:, nocc:], F[:, nocc:])
+        deriv1_np[map_key] += np.einsum('ijcb,tc,at->ijab', t2, U[key][:, nocc:], F[nocc:, :]) 
+        deriv1_np[map_key] -= 0.5 * 4.0 * np.einsum('ijcb,mn,amcn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, :nocc, nocc:, :nocc])
+        deriv1_np[map_key] += 0.5 * 1.0 * np.einsum('ijcb,mn,acmn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc])
+        deriv1_np[map_key] += 0.5 * 1.0 * np.einsum('ijcb,mn,acnm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc])
+        deriv1_np[map_key] += 1.0 * 4.0 * np.einsum('ijcb,dm,adcm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc])
+        deriv1_np[map_key] -= 1.0 * 1.0 * np.einsum('ijcb,dm,acdm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc])
+        deriv1_np[map_key] -= 1.0 * 1.0 * np.einsum('ijcb,dm,acmd->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, :nocc, nocc:])
+        #
+        # d{t2_ab^ij}/dx += t_ac^ij * dF_bc/dx
+        deriv1_np[map_key] += np.einsum('ijac,bc->ijab', t2, F_grad[key][nocc:, nocc:])
+        deriv1_np[map_key] += np.einsum('ijac,tb,tc->ijab', t2, U[key][:, nocc:], F[:, nocc:])
+        deriv1_np[map_key] += np.einsum('ijac,tc,bt->ijab', t2, U[key][:, nocc:], F[nocc:, :]) 
+        deriv1_np[map_key] -= 0.5 * 4.0 * np.einsum('ijac,mn,bmcn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, :nocc, nocc:, :nocc])
+        deriv1_np[map_key] += 0.5 * 1.0 * np.einsum('ijac,mn,bcmn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc])
+        deriv1_np[map_key] += 0.5 * 1.0 * np.einsum('ijac,mn,bcnm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc])
+        deriv1_np[map_key] += 1.0 * 4.0 * np.einsum('ijac,dm,bdcm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc])
+        deriv1_np[map_key] -= 1.0 * 1.0 * np.einsum('ijac,dm,bcdm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc])
+        deriv1_np[map_key] -= 1.0 * 1.0 * np.einsum('ijac,dm,bcmd->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, :nocc, nocc:])
+        #
+        # d{t2_ab^ij}/dx += t_ab^kj * dF_ki/dx
+        deriv1_np[map_key] += -1.0 * np.einsum('kjab,ki->ijab', t2, F_grad[key][:nocc, :nocc])
+        deriv1_np[map_key] += -1.0 * np.einsum('kjab,tk,ti->ijab', t2, U[key][:, :nocc], F[:, :nocc])
+        deriv1_np[map_key] += -1.0 * np.einsum('kjab,ti,kt->ijab', t2, U[key][:, :nocc], F[:nocc, :]) 
+        deriv1_np[map_key] -= -1.0 * 0.5 * 4.0 * np.einsum('kjab,mn,kmin->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
+        deriv1_np[map_key] += -1.0 * 0.5 * 1.0 * np.einsum('kjab,mn,kimn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
+        deriv1_np[map_key] += -1.0 * 0.5 * 1.0 * np.einsum('kjab,mn,kinm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
+        deriv1_np[map_key] += -1.0 * 1.0 * 4.0 * np.einsum('kjab,dm,kdim->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, nocc:, :nocc, :nocc])
+        deriv1_np[map_key] -= -1.0 * 1.0 * 1.0 * np.einsum('kjab,dm,kidm->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, nocc:, :nocc])
+        deriv1_np[map_key] -= -1.0 * 1.0 * 1.0 * np.einsum('kjab,dm,kimd->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, :nocc, nocc:])
+        #
+        # d{t2_ab^ij}/dx += t_ab^ik * dF_kj/dx
+        deriv1_np[map_key] += -1.0 * np.einsum('ikab,kj->ijab', t2, F_grad[key][:nocc, :nocc])
+        deriv1_np[map_key] += -1.0 * np.einsum('ikab,tk,tj->ijab', t2, U[key][:, :nocc], F[:, :nocc])
+        deriv1_np[map_key] += -1.0 * np.einsum('ikab,tj,kt->ijab', t2, U[key][:, :nocc], F[:nocc, :]) 
+        deriv1_np[map_key] -= -1.0 * 0.5 * 4.0 * np.einsum('ikab,mn,kmjn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
+        deriv1_np[map_key] += -1.0 * 0.5 * 1.0 * np.einsum('ikab,mn,kjmn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
+        deriv1_np[map_key] += -1.0 * 0.5 * 1.0 * np.einsum('ikab,mn,kjnm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
+        deriv1_np[map_key] += -1.0 * 1.0 * 4.0 * np.einsum('ikab,dm,kdjm->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, nocc:, :nocc, :nocc])
+        deriv1_np[map_key] -= -1.0 * 1.0 * 1.0 * np.einsum('ikab,dm,kjdm->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, nocc:, :nocc])
+        deriv1_np[map_key] -= -1.0 * 1.0 * 1.0 * np.einsum('ikab,dm,kjmd->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, :nocc, nocc:])
 
-                        dt2[string + key] /= Dijab
-#print(dt2)
+        deriv1_np[map_key] /= Dijab
 
+
+#dPpq = {}
+#for atom in range(natoms):
+#    for p in range(3):
+#        key = str(atom) + cart[p]
+#        # MP2 Derivatives of OPDM
+#        dPpq[key] =  1.0 * np.einsum('tp,tq->pq', U[key], Ppq)
+#        dPpq[key] += 1.0 * np.einsum('tq,pt->pq', U[key], Ppq)
+#        print("\nCurrent dPpq/da[", key, "]:\n", dPpq[key])
+#
+#        dPpq[key] = 2.0 * np.einsum('tm,pt,mq->pq', U[key][:, :nocc], npS_mo[:, :], npS_mo[:nocc, :])
+#        dPpq[key] += 2.0 * np.einsum('tm,pm,tq->pq', U[key][:, :nocc], npS_mo[:, :nocc], npS_mo[:, :])
+#        print("\nCurrent dPpq/da[", key, "]:\n", dPpq[key])
+#
+#        dPpq[key] = 1.0 * np.einsum('pm,mq->pq', deriv1_np["S" + key][:, :nocc], npS_mo[:nocc, :])
+#        dPpq[key] += 1.0 * np.einsum('pm,mq->pq', npS_mo[:, :nocc], deriv1_np["S" + key][:nocc, :])
+#        print("\nCurrent dPpq/da[", key, "]:\n", dPpq[key])
 
 #print(dPpq)
 
-## Gradient Test
+
+
+# Energy and Gradient Tests
+#
+# Energy Test
+energy_test =  2.0 * np.einsum('ijab,ijab->', t2, npERI[:nocc, :nocc, nocc:, nocc:])
+energy_test -= 1.0 * np.einsum('ijab,ijba->', t2, npERI[:nocc, :nocc, nocc:, nocc:])
+print("Energy Test: ", energy_test)
+#
+# Gradient Test
+scf_Gradient = [[ 0.0, -0.000000000000035, -2.430230565071191],
+ [ 0.0,  1.678776347069892,  1.215115282535529],
+ [-0.0, -1.678776347069857,  1.215115282535499]]
+print("\nSCF Gradient:\n", np.asarray(scf_Gradient))
+
+# Calculate SCF Gradient with Densities and U matrices to check Densities and U matrices
+#testGradient = np.zeros((natoms, 3))
 #Gradient = np.zeros((natoms, 3))
 #for atom in range(natoms):
 #    for p in range(3):
 #        key = str(atom) + cart[p]
-#        #Gradient[atom, p] =  1.0 * np.einsum('pq,pq->', Ppq, F_grad[key], optimize=True)
+#
+#        testGradient[atom, p] +=  1.0 * np.einsum('pq,pq->', Ppq, F_grad[key], optimize=True)
+#        testGradient[atom, p] += 1.0 * np.einsum("pqrs,prqs->", Ppqrs, deriv1_np["TEI" + key])
+#        testGradient[atom, p] -= 2.0 * np.einsum("pq,pq->", U[key], Ip)
 #
 #        Gradient[atom, p] += 1.0 * np.einsum("pq,pq->", Ppq, deriv1_np["T" + key])
 #        Gradient[atom, p] += 1.0 * np.einsum("pq,pq->", Ppq, deriv1_np["V" + key])
@@ -584,7 +617,33 @@ for i in range(nocc):
 #        Gradient[atom, p] -= 1.0 * np.einsum("pq,pmmq->", Ppq, deriv1_np["TEI" + key][:, :nocc, :nocc, :])
 #        Gradient[atom, p] += 1.0 * np.einsum("pqrs,prqs->", Ppqrs, deriv1_np["TEI" + key])
 #        Gradient[atom, p] -= 2.0 * np.einsum("pq,pq->", U[key], Ip)
-#print("\nGradient Test:\n", Gradient + np.asarray(mol.nuclear_repulsion_energy_deriv1([0,0,0])))
+#print("\nSCF Gradient:\n", Gradient)
+#print("\ntest Gradient:\n", testGradient)
+
+# Calculate MP2 Gradient with derivative of T2 amplitudes to check derivatives of T2 amplitudes
+Gradient = np.zeros((natoms, 3))
+for atom in range(natoms):
+    for p in range(3):
+        key = str(atom) + cart[p]
+
+        # dt2/dx * V Gradient Term:
+        Gradient[atom, p] +=  2.0 * np.einsum('ijab,ijab->', deriv1_np["T2" + key], npERI[:nocc, :nocc, nocc:, nocc:])
+        Gradient[atom, p] -= 1.0 * np.einsum('ijab,ijba->', deriv1_np["T2" + key], npERI[:nocc, :nocc, nocc:, nocc:])
+
+        # t2 * dV/dx Gradient Term:
+        Gradient[atom, p] += 2.0 * np.einsum('ijab,iajb->', t2, deriv1_np["TEI" + key][:nocc, nocc:, :nocc, nocc:])
+        Gradient[atom, p] += 2.0 * np.einsum('ijab,ti,tjab->', t2, U[key][:, :nocc], npERI[:, :nocc, nocc:, nocc:])
+        Gradient[atom, p] += 2.0 * np.einsum('ijab,tj,itab->', t2, U[key][:, :nocc], npERI[:nocc, :, nocc:, nocc:])
+        Gradient[atom, p] += 2.0 * np.einsum('ijab,ta,ijtb->', t2, U[key][:, nocc:], npERI[:nocc, :nocc, :, nocc:])
+        Gradient[atom, p] += 2.0 * np.einsum('ijab,tb,ijat->', t2, U[key][:, nocc:], npERI[:nocc, :nocc, nocc:, :])
+        Gradient[atom, p] -= 1.0 * np.einsum('ijab,ibja->', t2, deriv1_np["TEI" + key][:nocc, nocc:, :nocc, nocc:])
+        Gradient[atom, p] -= 1.0 * np.einsum('ijab,ti,tjba->', t2, U[key][:, :nocc], npERI[:, :nocc, nocc:, nocc:])
+        Gradient[atom, p] -= 1.0 * np.einsum('ijab,tj,itba->', t2, U[key][:, :nocc], npERI[:nocc, :, nocc:, nocc:])
+        Gradient[atom, p] -= 1.0 * np.einsum('ijab,ta,ijbt->', t2, U[key][:, nocc:], npERI[:nocc, :nocc, nocc:, :])
+        Gradient[atom, p] -= 1.0 * np.einsum('ijab,tb,ijta->', t2, U[key][:, nocc:], npERI[:nocc, :nocc, :, nocc:])
+
+#print(np.asarray(mol.nuclear_repulsion_energy_deriv1([0,0,0])))
+print("\nGradient Test:\n", scf_Gradient + Gradient)
 
 
 # Build the response hessian now
@@ -752,29 +811,29 @@ Mat = psi4.core.Matrix.from_array(Hessian)
 Mat.name = " TOTAL HESSIAN"
 Mat.print_out()
 
+##H_psi4 = psi4.core.Matrix.from_list([
+##[ 0.07613952484989, 0.00000000000000, 0.00000000000000,-0.03806976242497, 0.00000000000000,-0.00000000000000,-0.03806976242497,-0.00000000000000, 0.00000000000000],
+##[ 0.00000000000000, 0.48290536165172,-0.00000000000000,-0.00000000000000,-0.24145268082589, 0.15890015082364, 0.00000000000000,-0.24145268082590,-0.15890015082364],
+##[ 0.00000000000000,-0.00000000000000, 0.43734495429393,-0.00000000000000, 0.07344233387869,-0.21867247714697,-0.00000000000000,-0.07344233387869,-0.21867247714697],
+##[-0.03806976242497,-0.00000000000000,-0.00000000000000, 0.04537741867538,-0.00000000000000, 0.00000000000000,-0.00730765625041, 0.00000000000000,-0.00000000000000],
+##[ 0.00000000000000,-0.24145268082589, 0.07344233387869,-0.00000000000000, 0.25786500091002,-0.11617124235117, 0.00000000000000,-0.01641232008412, 0.04272890847247],
+##[-0.00000000000000, 0.15890015082364,-0.21867247714697, 0.00000000000000,-0.11617124235117, 0.19775197798054, 0.00000000000000,-0.04272890847247, 0.02092049916645],
+##[-0.03806976242497, 0.00000000000000,-0.00000000000000,-0.00730765625041, 0.00000000000000, 0.00000000000000, 0.04537741867538,-0.00000000000000, 0.00000000000000],
+##[-0.00000000000000,-0.24145268082590,-0.07344233387869, 0.00000000000000,-0.01641232008412,-0.04272890847247,-0.00000000000000, 0.25786500091002, 0.11617124235117],
+##[ 0.00000000000000,-0.15890015082364,-0.21867247714697,-0.00000000000000, 0.04272890847247, 0.02092049916645, 0.00000000000000, 0.11617124235117, 0.19775197798054]
+##])
+#
 #H_psi4 = psi4.core.Matrix.from_list([
-#[ 0.07613952484989, 0.00000000000000, 0.00000000000000,-0.03806976242497, 0.00000000000000,-0.00000000000000,-0.03806976242497,-0.00000000000000, 0.00000000000000],
-#[ 0.00000000000000, 0.48290536165172,-0.00000000000000,-0.00000000000000,-0.24145268082589, 0.15890015082364, 0.00000000000000,-0.24145268082590,-0.15890015082364],
-#[ 0.00000000000000,-0.00000000000000, 0.43734495429393,-0.00000000000000, 0.07344233387869,-0.21867247714697,-0.00000000000000,-0.07344233387869,-0.21867247714697],
-#[-0.03806976242497,-0.00000000000000,-0.00000000000000, 0.04537741867538,-0.00000000000000, 0.00000000000000,-0.00730765625041, 0.00000000000000,-0.00000000000000],
-#[ 0.00000000000000,-0.24145268082589, 0.07344233387869,-0.00000000000000, 0.25786500091002,-0.11617124235117, 0.00000000000000,-0.01641232008412, 0.04272890847247],
-#[-0.00000000000000, 0.15890015082364,-0.21867247714697, 0.00000000000000,-0.11617124235117, 0.19775197798054, 0.00000000000000,-0.04272890847247, 0.02092049916645],
-#[-0.03806976242497, 0.00000000000000,-0.00000000000000,-0.00730765625041, 0.00000000000000, 0.00000000000000, 0.04537741867538,-0.00000000000000, 0.00000000000000],
-#[-0.00000000000000,-0.24145268082590,-0.07344233387869, 0.00000000000000,-0.01641232008412,-0.04272890847247,-0.00000000000000, 0.25786500091002, 0.11617124235117],
-#[ 0.00000000000000,-0.15890015082364,-0.21867247714697,-0.00000000000000, 0.04272890847247, 0.02092049916645, 0.00000000000000, 0.11617124235117, 0.19775197798054]
+#[-3.5884988758,-0.0000000000,-0.0000000000, 1.7942494379, 0.0000000000, 0.0000000000, 1.7942494379,-0.0000000000, 0.0000000000],
+#[-0.0000000000, 8.4614335110,-0.0000000000,-0.0000000000,-4.2307167555, 4.7072194871, 0.0000000000,-4.2307167555,-4.7072194871],
+#[-0.0000000000,-0.0000000000, 3.7953179675, 0.0000000000, 4.3768046756,-1.8976589837, 0.0000000000,-4.3768046756,-1.8976589837],
+#[ 1.7942494379,-0.0000000000, 0.0000000000,-1.8654873342,-0.0000000000,-0.0000000000, 0.0712378963, 0.0000000000,-0.0000000000],
+#[ 0.0000000000,-4.2307167555, 4.3768046756,-0.0000000000, 4.3786082939,-4.5420120813,-0.0000000000,-0.1478915384, 0.1652074058],
+#[ 0.0000000000, 4.7072194871,-1.8976589837,-0.0000000000,-4.5420120813, 1.8193083397,-0.0000000000,-0.1652074058, 0.0783506441],
+#[ 1.7942494379, 0.0000000000, 0.0000000000, 0.0712378963,-0.0000000000,-0.0000000000,-1.8654873342, 0.0000000000,-0.0000000000],
+#[-0.0000000000,-4.2307167555,-4.3768046756, 0.0000000000,-0.1478915384,-0.1652074058, 0.0000000000, 4.3786082939, 4.5420120813],
+#[ 0.0000000000,-4.7072194871,-1.8976589837,-0.0000000000, 0.1652074058, 0.0783506441,-0.0000000000, 4.5420120813, 1.8193083397]
 #])
-
-H_psi4 = psi4.core.Matrix.from_list([
-[-3.5884988758,-0.0000000000,-0.0000000000, 1.7942494379, 0.0000000000, 0.0000000000, 1.7942494379,-0.0000000000, 0.0000000000],
-[-0.0000000000, 8.4614335110,-0.0000000000,-0.0000000000,-4.2307167555, 4.7072194871, 0.0000000000,-4.2307167555,-4.7072194871],
-[-0.0000000000,-0.0000000000, 3.7953179675, 0.0000000000, 4.3768046756,-1.8976589837, 0.0000000000,-4.3768046756,-1.8976589837],
-[ 1.7942494379,-0.0000000000, 0.0000000000,-1.8654873342,-0.0000000000,-0.0000000000, 0.0712378963, 0.0000000000,-0.0000000000],
-[ 0.0000000000,-4.2307167555, 4.3768046756,-0.0000000000, 4.3786082939,-4.5420120813,-0.0000000000,-0.1478915384, 0.1652074058],
-[ 0.0000000000, 4.7072194871,-1.8976589837,-0.0000000000,-4.5420120813, 1.8193083397,-0.0000000000,-0.1652074058, 0.0783506441],
-[ 1.7942494379, 0.0000000000, 0.0000000000, 0.0712378963,-0.0000000000,-0.0000000000,-1.8654873342, 0.0000000000,-0.0000000000],
-[-0.0000000000,-4.2307167555,-4.3768046756, 0.0000000000,-0.1478915384,-0.1652074058, 0.0000000000, 4.3786082939, 4.5420120813],
-[ 0.0000000000,-4.7072194871,-1.8976589837,-0.0000000000, 0.1652074058, 0.0783506441,-0.0000000000, 4.5420120813, 1.8193083397]
-])
-
-H_python_mat = psi4.core.Matrix.from_array(Hessian)
-psi4.compare_matrices(H_psi4, H_python_mat, 10, "RHF-HESSIAN-TEST")
+#
+#H_python_mat = psi4.core.Matrix.from_array(Hessian)
+#psi4.compare_matrices(H_psi4, H_python_mat, 10, "RHF-HESSIAN-TEST")
