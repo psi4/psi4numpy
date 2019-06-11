@@ -127,7 +127,7 @@ print('MP2 OS correlation energy:         %16.10f' % MP2corr_OS)
 print('\nMP2 correlation energy:            %16.10f' % MP2corr_E)
 print('MP2 total energy:                  %16.10f' % MP2_E)
 
-print('\nSCS-MP2 correlation energy:        %16.10f' % MP2corr_SS)
+print('\nSCS-MP2 correlation energy:        %16.10f' % SCS_MP2corr_E)
 print('SCS-MP2 total energy:              %16.10f' % SCS_MP2_E)
 
 if check_energy:
