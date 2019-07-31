@@ -12,5 +12,3 @@ This module seeks to provide an overview of the theory and programming challenge
 - 4d VV10: A guide to compute the non-local kernel VV10
 
 - 4e GRAC: Demonstrates the failures of DFT for ionization potentials and illustrates the gradient regularized asymptotic correction (GRAC).
-
-- 4f DFAs: Demonstrates the failures of Density Functional Approximations in various cases. 
