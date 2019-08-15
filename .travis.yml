@@ -44,8 +44,9 @@ before_script:
   - python -V
 
 script:
-  - python -m pytest -rs -v -m "not long" --cov --durations=5
+  #- python -m pytest -rs -v -m "not long" --cov --durations=5
   #- python -m pytest -rs -v -k "RHF"  # e.g., run only tests with RHF in name
+  - python -m pytest -rs -v -k "MP2_Hessian" 
 
 after_success:
   - codecov
