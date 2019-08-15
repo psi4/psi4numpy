@@ -23,16 +23,13 @@ __authors__ = "Kirk C. Pearce"
 __credits__ = ["Kirk C. Pearce", "Ashutosh Kumar"]
 __copyright__ = "(c) 2014-2017, The Psi4NumPy Developers"
 __license__ = "BSD-3-Clause"
-__date__ = "2019-02-11"
+__date__ = "2019-08-15"
 
 import time
 import numpy as np
 import copy
-
 import psi4
 from psi4 import *
-from psi4.core import *
-psi4_io = core.IOManager.shared_object()
 
 # Setup NumPy options
 np.set_printoptions(
@@ -43,16 +40,10 @@ np.set_printoptions(
 )
 
 psi4.set_memory(int(1e9), False)
-#psi4.core.set_output_file('output.dat', False)
+psi4.core.set_output_file('output.dat', False)
 psi4.core.set_num_threads(4)
 
 # Specify Molecule
-#mol = psi4.geometry("""
-#H
-#F 1 R
-#units bohr
-#symmetry c1
-#""")
 #mol = psi4.geometry("""
 #O
 #H 1 R
@@ -83,14 +74,13 @@ psi4.core.set_active_molecule(mol)
 options = {
     #'BASIS': 'STO-3G',
     'SCF_TYPE': 'PK',
-    'GUESS': 'CORE',
     'MP2_TYPE': 'CONV',
     'E_CONVERGENCE': 1e-14,
     'D_CONVERGENCE': 1e-14,
     'print': 1
 }
 
-# Define custom basis set
+# Define custom basis set to match STO-3G from CFOUR
 def basisspec_psi4_yo__anonymous203a4092(mol, role):
     basstrings = {}
     mol.set_basis_all_atoms("sto-3g", role=role)
@@ -131,7 +121,6 @@ core.set_global_option("BASIS", "anonymous203a4092")
 psi4.set_options(options)
 
 # Perform MP2 Energy Calculation
-#rhf_e, wfn = psi4.energy('SCF', return_wfn=True)
 mp2_e, wfn = psi4.energy('MP2', return_wfn=True)
 
 # Relevant Variables
@@ -215,7 +204,6 @@ Ppq[nocc:, nocc:] += Pab
 #print("\nChecks:")
 #print("OPDM is symmetric: ",np.allclose(Ppq, Ppq.T))
 #print("OPDM trace = 10: ",np.isclose(sum(np.linalg.eigh(Ppq)[0]),10))
-unrelaxedPpq = copy.deepcopy(Ppq)
 
 # Build Reference TPDM
 ref_tpdm = np.zeros((nmo, nmo, nmo, nmo))
@@ -351,19 +339,54 @@ for atom in range(natoms):
         map_key = key + str(atom) + cart[p]
         deriv1_np[map_key] = np.asarray(deriv1_mat[key + str(atom)][p])
 
+# Build Fpq^x
+F_grad = {}
+for atom in range(natoms):
+    for p in range(3):
+        key = str(atom) + cart[p]
+        F_grad[key] = copy.deepcopy(deriv1_np["T" + key])
+        F_grad[key] += deriv1_np["V" + key]
+        F_grad[key] += 2.0 * np.einsum('pqmm->pq', deriv1_np["TEI" + key][:, :, :nocc, :nocc], optimize=True)
+        F_grad[key] -= 1.0 * np.einsum('pmmq->pq', deriv1_np["TEI" + key][:, :nocc, :nocc, :], optimize=True)
+
+
+## Build I'^x
+## I'_pq^x = - (1/2) * [ fpp^x(Ppq + Pqp) + sum_rs (Prs * (4<rp|sq>^x - <rp|qs>^x - <rq|ps>^x)) * kronecker_delta(q,occ) + ...
+##         ... + sum_rst (Pqrst <pr|st>^x + Prqst <rp|st>^x + Prsqt <rs|pt>^x + Prstq <rs|tp>^x) ]
+#Ip_grad = {}
+#for atom in range(natoms):
+#    for pp in range(3):
+#        key = str(atom) + cart[pp]
+#
+#        Ip_grad[key] = np.zeros((nmo, nmo))
+#
+#        # I'pq += fpp^x(Ppq + Pqp)
+#        Ip_grad[key] += np.einsum("pr,rq->pq", F_grad[key], Ppq, optimize=True)
+#        Ip_grad[key] += np.einsum("qr,rp->pq", Ppq, F_grad[key], optimize=True)
+#
+#        # I'_pq += sum_rst (Pqrst <pr|st>^x + Prqst <rp|st>^x + Prsqt <rs|pt>^x + Prstq <rs|tp>^x)
+#        Ip_grad[key] += np.einsum('qrst,psrt->pq', Ppqrs, deriv1_np["TEI" + key], optimize=True)
+#        Ip_grad[key] += np.einsum('rqst,rspt->pq', Ppqrs, deriv1_np["TEI" + key], optimize=True)
+#        Ip_grad[key] += np.einsum('rsqt,rpst->pq', Ppqrs, deriv1_np["TEI" + key], optimize=True)
+#        Ip_grad[key] += np.einsum('rstq,rtsp->pq', Ppqrs, deriv1_np["TEI" + key], optimize=True)
+#
+#        # I'_pq += sum_rs Prs(4<rp|sq>^x - <rp|qs>^x - <rq|ps>^x) kronecker_delta(q,occ)
+#        Ip_grad[key][:, :nocc] += 4.0 * np.einsum('rs,rspq->pq', Ppq , deriv1_np["TEI" + key][:, :, :, :nocc], optimize=True)
+#        Ip_grad[key][:, :nocc] -= 1.0 * np.einsum('rs,rqps->pq', Ppq , deriv1_np["TEI" + key][:, :nocc, :, :], optimize=True)
+#        Ip_grad[key][:, :nocc] -= 1.0 * np.einsum('rs,rpqs->pq', Ppq , deriv1_np["TEI" + key][:, :, :nocc, :], optimize=True)
+#
+#        Ip_grad[key] *= -0.5
+
+
 Hes = {};
 deriv2_mat = {}
-deriv2 = {}
+deriv2_np = {}
 
 Hes["N"] = np.zeros((3 * natoms, 3 * natoms))
 Hes["S"] = np.zeros((3 * natoms, 3 * natoms))
 Hes["T"] = np.zeros((3 * natoms, 3 * natoms))
 Hes["V"] = np.zeros((3 * natoms, 3 * natoms))
 Hes["TEI"] = np.zeros((3 * natoms, 3 * natoms))
-#Hes["TEI1"] = np.zeros((3 * natoms, 3 * natoms))
-#Hes["TEI2"] = np.zeros((3 * natoms, 3 * natoms))
-#Hes["TEI3"] = np.zeros((3 * natoms, 3 * natoms))
-#Hes["TEI4"] = np.zeros((3 * natoms, 3 * natoms))
 Hes["R"] = np.zeros((3 * natoms, 3 * natoms))
 Hessian = np.zeros((3 * natoms, 3 * natoms))
 
@@ -377,7 +400,7 @@ Mat.print_out()
 
 # 2nd Derivative of OEIs
 for atom1 in range(natoms):
-    for atom2 in range(atom1 + 1):
+    for atom2 in range(natoms):
         for key in  oei_dict:
             string = key + str(atom1) + str(atom2)
             deriv2_mat[string] = mints.mo_oei_deriv2(oei_dict[key], atom1, atom2, C, C)
@@ -385,16 +408,14 @@ for atom1 in range(natoms):
             for p in range(3):
                 for q in range(3):
                     map_key = string + cart[p] + cart[q]
-                    deriv2[map_key] = np.asarray(deriv2_mat[string][pq])
+                    deriv2_np[map_key] = np.asarray(deriv2_mat[string][pq])
                     pq += 1
                     row = 3 * atom1 + p
                     col = 3 * atom2 + q
                     if key == "S":
-                        Hes[key][row][col] = np.einsum("pq,pq->", I, deriv2[map_key], optimize=True)
+                        Hes[key][row][col] = np.einsum("pq,pq->", I, deriv2_np[map_key], optimize=True)
                     else:
-                        Hes[key][row][col] = np.einsum("pq,pq->", Ppq, deriv2[map_key], optimize=True)
-                    Hes[key][col][row] = Hes[key][row][col]
-                    #Hes[key][col][row] = Hes[key][row][col]
+                        Hes[key][row][col] = np.einsum("pq,pq->", Ppq, deriv2_np[map_key], optimize=True)
 
 for key in Hes:
     Mat = psi4.core.Matrix.from_array(Hes[key])
@@ -405,43 +426,32 @@ for key in Hes:
 
 
 for atom1 in range(natoms):
-    #for atom2 in range(atom1 + 1):
     for atom2 in range(natoms):
         string = "TEI" + str(atom1) + str(atom2)
         deriv2_mat[string] = mints.mo_tei_deriv2(atom1, atom2, C, C, C, C)
-        #deriv2_mat[string] = mints.ao_tei_deriv2(atom1, atom2)
         pq = 0
         for p in range(3):
             for q in range(3):
                 map_key = string + cart[p] + cart[q]
-                deriv2[map_key] = np.asarray(deriv2_mat[string][pq])
+                deriv2_np[map_key] = np.asarray(deriv2_mat[string][pq])
                 pq = pq + 1
                 row = 3 * atom1 + p
                 col = 3 * atom2 + q
 
-                deriv2[map_key]
+                Hes["TEI"][row][col] +=  2.0 * np.einsum("pq,pqmm->", ref_opdm, deriv2_np[map_key][:, :, :nocc, :nocc], optimize=True)
+                Hes["TEI"][row][col] += -1.0 * np.einsum("pq,pmmq->", ref_opdm, deriv2_np[map_key][:, :nocc, :nocc, :], optimize=True)
 
-                Hes["TEI"][row][col] +=  2.0 * np.einsum("pq,pqmm->", ref_opdm, deriv2[map_key][:, :, :nocc, :nocc], optimize=True)
-                Hes["TEI"][row][col] += -1.0 * np.einsum("pq,pmmq->", ref_opdm, deriv2[map_key][:, :nocc, :nocc, :], optimize=True)
+                Hes["TEI"][row][col] +=  2.0 * np.einsum("pq,pqmm->", Ppq-ref_opdm, deriv2_np[map_key][:, :, :nocc, :nocc], optimize=True)
+                Hes["TEI"][row][col] += -1.0 * np.einsum("pq,pmmq->", Ppq-ref_opdm, deriv2_np[map_key][:, :nocc, :nocc, :], optimize=True)
 
-                Hes["TEI"][row][col] +=  2.0 * np.einsum("pq,pqmm->", Ppq-ref_opdm, deriv2[map_key][:, :, :nocc, :nocc], optimize=True)
-                Hes["TEI"][row][col] += -1.0 * np.einsum("pq,pmmq->", Ppq-ref_opdm, deriv2[map_key][:, :nocc, :nocc, :], optimize=True)
-                #Hes["TEI1"][row][col] +=  2.0 * np.einsum("ij,ijmm->", (Ppq-ref_opdm)[:nocc, :nocc], deriv2[map_key][:nocc, :nocc, :nocc, :nocc], optimize=True)
-                #Hes["TEI1"][row][col] += -1.0 * np.einsum("ij,immj->", (Ppq-ref_opdm)[:nocc, :nocc], deriv2[map_key][:nocc, :nocc, :nocc, :nocc], optimize=True)
-                #Hes["TEI2"][row][col] +=  2.0 * np.einsum("ia,iamm->", (Ppq-ref_opdm)[:nocc, nocc:], deriv2[map_key][:nocc, nocc:, :nocc, :nocc], optimize=True)
-                #Hes["TEI2"][row][col] += -1.0 * np.einsum("ia,imma->", (Ppq-ref_opdm)[:nocc, nocc:], deriv2[map_key][:nocc, :nocc, :nocc, nocc:], optimize=True)
-                #Hes["TEI3"][row][col] +=  2.0 * np.einsum("ai,aimm->", (Ppq-ref_opdm)[nocc:, :nocc], deriv2[map_key][nocc:, :nocc, :nocc, :nocc], optimize=True)
-                #Hes["TEI3"][row][col] += -1.0 * np.einsum("ai,ammi->", (Ppq-ref_opdm)[nocc:, :nocc], deriv2[map_key][nocc:, :nocc, :nocc, :nocc], optimize=True)
-                #Hes["TEI4"][row][col] +=  2.0 * np.einsum("ab,abmm->", (Ppq-ref_opdm)[nocc:, nocc:], deriv2[map_key][nocc:, nocc:, :nocc, :nocc], optimize=True)
-                #Hes["TEI4"][row][col] += -1.0 * np.einsum("ab,ammb->", (Ppq-ref_opdm)[nocc:, nocc:], deriv2[map_key][nocc:, :nocc, :nocc, nocc:], optimize=True)
-
-                Hes["TEI"][row][col] += np.einsum("pqrs,prqs->", Ppqrs, deriv2[map_key], optimize=True)
+                Hes["TEI"][row][col] += np.einsum("pqrs,prqs->", Ppqrs, deriv2_np[map_key], optimize=True)
 
 TEIMat = psi4.core.Matrix.from_array(Hes["TEI"])
 TEIMat.name = " TEI HESSIAN"
 TEIMat.print_out()
 
-# Solve the CPHF equations here,  G_aibj Ubj^x = Bai^x (Einstein summation),
+
+# Solve the first-order CPHF equations here,  G_aibj Ubj^x = Bai^x (Einstein summation),
 # where G is the electronic hessian,
 # G_aibj = delta_ij * delta_ab * epsilon_ij * epsilon_ab + 4 <ij|ab> - <ij|ba> - <ia|jb>,
 # where epsilon_ij = epsilon_i - epsilon_j, (epsilon -> orbital energies),
@@ -449,30 +459,18 @@ TEIMat.print_out()
 # and Bai^x = Sai^x * epsilon_ii - Fai^x + Smn^x  * (2<am|in> - <am|ni>),
 # where, S^x =  del(S)/del(x), F^x =  del(F)/del(x).
 
-B = {}
-F_grad = {}
-U = {}
-
-# Build Fpq^x
-for atom in range(natoms):
-    for p in range(3):
-        key = str(atom) + cart[p]
-        F_grad[key] = copy.deepcopy(deriv1_np["T" + key])
-        F_grad[key] += deriv1_np["V" + key]
-        F_grad[key] += 2.0 * np.einsum('pqmm->pq', deriv1_np["TEI" + key][:, :, :nocc, :nocc])
-        F_grad[key] -= 1.0 * np.einsum('pmmq->pq', deriv1_np["TEI" + key][:, :nocc, :nocc, :])
-
-
 #psi4.core.print_out("\n\n CPHF Coefficentsn:\n")
 
+B = {}
+U = {}
 # Build Bai^x
 for atom in range(natoms):
     for p in range(3):
         key = str(atom) + cart[p]
-        B[key] =  np.einsum("ai,ii->ai", deriv1_np["S" + key][nocc:, :nocc], F[:nocc, :nocc])
+        B[key] =  np.einsum("ai,ii->ai", deriv1_np["S" + key][nocc:, :nocc], F[:nocc, :nocc], optimize=True)
         B[key] -= F_grad[key][nocc:, :nocc]
-        B[key] +=  2.0 * np.einsum("amin,mn->ai", npERI[nocc:, :nocc, :nocc, :nocc], deriv1_np["S" + key][:nocc, :nocc])
-        B[key] += -1.0 * np.einsum("amni,mn->ai", npERI[nocc:, :nocc, :nocc, :nocc], deriv1_np["S" + key][:nocc, :nocc])
+        B[key] +=  2.0 * np.einsum("amin,mn->ai", npERI[nocc:, :nocc, :nocc, :nocc], deriv1_np["S" + key][:nocc, :nocc], optimize=True)
+        B[key] += -1.0 * np.einsum("amni,mn->ai", npERI[nocc:, :nocc, :nocc, :nocc], deriv1_np["S" + key][:nocc, :nocc], optimize=True)
 
         # Compute U^x, where
         # U_ij^x = - 1/2 S_ij^a
@@ -481,7 +479,7 @@ for atom in range(natoms):
         # U_ab^x = - 1/2 S_ab^a
         U[key] = np.zeros((nmo, nmo))
         U[key][:nocc, :nocc] = - 0.5 * deriv1_np["S" + key][:nocc, :nocc]
-        U[key][nocc:, :nocc] = np.einsum("iajb,bj->ai", Ginv, B[key])
+        U[key][nocc:, :nocc] = np.einsum("iajb,bj->ai", Ginv, B[key], optimize=True)
         U[key][:nocc, nocc:] = - (U[key][nocc:, :nocc] + deriv1_np["S" + key][nocc:, :nocc]).T
         U[key][nocc:, nocc:] = - 0.5 * deriv1_np["S" + key][nocc:, nocc:]
 
@@ -490,26 +488,10 @@ for atom in range(natoms):
         #UMat.name = key
         #UMat.print_out()
 
-#dPpq = {}
-#for atom in range(natoms):
-#    for p in range(3):
-#        key = str(atom) + cart[p]
-#
-#        # SCF Derivatives of OPDM
-#        dPpq[key] =  1.0 * np.einsum('tp,tq->pq', U[key], unrelaxedPpq)
-#        dPpq[key] += 1.0 * np.einsum('tq,pt->pq', U[key], unrelaxedPpq)
-#        print("\nCurrent dPpq/da[", key, "]:\n", dPpq[key])
-#
-#        dPpq[key] = 2.0 * np.einsum('tm,pt,mq->pq', U[key][:, :nocc], npS_mo[:, :], npS_mo[:nocc, :])
-#        dPpq[key] += 2.0 * np.einsum('tm,pm,tq->pq', U[key][:, :nocc], npS_mo[:, :nocc], npS_mo[:, :])
-#        print("\nCurrent dPpq/da[", key, "]:\n", dPpq[key])
-#
-#        dPpq[key] = 1.0 * np.einsum('pm,mq->pq', deriv1_np["S" + key][:, :nocc], npS_mo[:nocc, :])
-#        dPpq[key] += 1.0 * np.einsum('pm,mq->pq', npS_mo[:, :nocc], deriv1_np["S" + key][:nocc, :])
-#        print("\nCurrent dPpq/da[", key, "]:\n", dPpq[key])
 
-
-# MP2 Derivaties of OPDM
+# Density Derivatives:
+# For SCF reference, dPpq/dx = 0, and dPpqrs/dx = 0.
+# For MP2, dPpq/dx and dPpqrs/dx both involve t2 derivatives
 #
 # Derivative of t2 amplitudes
 for atom in range(natoms):
@@ -518,68 +500,68 @@ for atom in range(natoms):
         key = str(atom) + cart[p]
         map_key = string + key
 
-        # d{t2_ab^ij}/dx = <ij|ab>^x + sum_t [ ( Uti^x * <tj|ab> ) + ( Utj^x * <it|ab> ) + ( Uta^x * <ij|tb> ) + ( Utb^x * <ij|at> ) ] + ...
-        #                  ... + t_cb^ij * dF_ac/dx + t_ac^ij * dF_bc/dx + t_ab^kj * dF_ki/dx + t_ab^ik * dF_kj/dx
+        # d{t2_ab^ij}/dx = ( <ij|ab>^x + sum_t [ ( Uti^x * <tj|ab> ) + ( Utj^x * <it|ab> ) + ( Uta^x * <ij|tb> ) + ( Utb^x * <ij|at> ) ] + ...
+        #                  ... + t_cb^ij * dF_ac/dx + t_ac^ij * dF_bc/dx - t_ab^kj * dF_ki/dx - t_ab^ik * dF_kj/dx ) / ( Fii + Fjj - Faa - Fbb )
 
         # d{t2_ab^ij}/dx += <ij|ab>^x + sum_t [ ( Uti^x * <tj|ab> ) + ( Utj^x * <it|ab> ) + ( Uta^x * <ij|tb> ) + ( Utb^x * <ij|at> ) ]
         deriv1_np[map_key] = copy.deepcopy(deriv1_np["TEI" + key][:nocc, nocc:, :nocc, nocc:].swapaxes(1,2))
-        deriv1_np[map_key] += np.einsum('ti,tjab->ijab', U[key][:, :nocc], npERI[:, :nocc, nocc:, nocc:])
-        deriv1_np[map_key] += np.einsum('tj,itab->ijab', U[key][:, :nocc], npERI[:nocc, :, nocc:, nocc:])
-        deriv1_np[map_key] += np.einsum('ta,ijtb->ijab', U[key][:, nocc:], npERI[:nocc, :nocc, :, nocc:])
-        deriv1_np[map_key] += np.einsum('tb,ijat->ijab', U[key][:, nocc:], npERI[:nocc, :nocc, nocc:, :])
+        deriv1_np[map_key] += np.einsum('ti,tjab->ijab', U[key][:, :nocc], npERI[:, :nocc, nocc:, nocc:], optimize=True)
+        deriv1_np[map_key] += np.einsum('tj,itab->ijab', U[key][:, :nocc], npERI[:nocc, :, nocc:, nocc:], optimize=True)
+        deriv1_np[map_key] += np.einsum('ta,ijtb->ijab', U[key][:, nocc:], npERI[:nocc, :nocc, :, nocc:], optimize=True)
+        deriv1_np[map_key] += np.einsum('tb,ijat->ijab', U[key][:, nocc:], npERI[:nocc, :nocc, nocc:, :], optimize=True)
 
         # d{t2_ab^ij}/dx += t_cb^ij * dF_ac/dx
-        deriv1_np[map_key] += np.einsum('ijcb,ac->ijab', t2, F_grad[key][nocc:, nocc:])
-        deriv1_np[map_key] += np.einsum('ijcb,ta,tc->ijab', t2, U[key][:, nocc:], F[:, nocc:])
-        deriv1_np[map_key] += np.einsum('ijcb,tc,at->ijab', t2, U[key][:, nocc:], F[nocc:, :]) 
-        deriv1_np[map_key] -= 0.5 * 4.0 * np.einsum('ijcb,mn,amcn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, :nocc, nocc:, :nocc])
-        deriv1_np[map_key] += 0.5 * 1.0 * np.einsum('ijcb,mn,acmn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc])
-        deriv1_np[map_key] += 0.5 * 1.0 * np.einsum('ijcb,mn,acnm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc])
-        deriv1_np[map_key] += 1.0 * 4.0 * np.einsum('ijcb,dm,adcm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc])
-        deriv1_np[map_key] -= 1.0 * 1.0 * np.einsum('ijcb,dm,acdm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc])
-        deriv1_np[map_key] -= 1.0 * 1.0 * np.einsum('ijcb,dm,acmd->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, :nocc, nocc:])
+        deriv1_np[map_key] += np.einsum('ijcb,ac->ijab', t2, F_grad[key][nocc:, nocc:], optimize=True)
+        deriv1_np[map_key] += np.einsum('ijcb,ta,tc->ijab', t2, U[key][:, nocc:], F[:, nocc:], optimize=True)
+        deriv1_np[map_key] += np.einsum('ijcb,tc,at->ijab', t2, U[key][:, nocc:], F[nocc:, :], optimize=True)
+        deriv1_np[map_key] -= 0.5 * 4.0 * np.einsum('ijcb,mn,amcn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, :nocc, nocc:, :nocc], optimize=True)
+        deriv1_np[map_key] += 0.5 * 1.0 * np.einsum('ijcb,mn,acmn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc], optimize=True)
+        deriv1_np[map_key] += 0.5 * 1.0 * np.einsum('ijcb,mn,acnm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc], optimize=True)
+        deriv1_np[map_key] += 1.0 * 4.0 * np.einsum('ijcb,dm,adcm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc], optimize=True)
+        deriv1_np[map_key] -= 1.0 * 1.0 * np.einsum('ijcb,dm,acdm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc], optimize=True)
+        deriv1_np[map_key] -= 1.0 * 1.0 * np.einsum('ijcb,dm,acmd->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, :nocc, nocc:], optimize=True)
         #
         # d{t2_ab^ij}/dx += t_ac^ij * dF_bc/dx
-        deriv1_np[map_key] += np.einsum('ijac,bc->ijab', t2, F_grad[key][nocc:, nocc:])
-        deriv1_np[map_key] += np.einsum('ijac,tb,tc->ijab', t2, U[key][:, nocc:], F[:, nocc:])
-        deriv1_np[map_key] += np.einsum('ijac,tc,bt->ijab', t2, U[key][:, nocc:], F[nocc:, :]) 
-        deriv1_np[map_key] -= 0.5 * 4.0 * np.einsum('ijac,mn,bmcn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, :nocc, nocc:, :nocc])
-        deriv1_np[map_key] += 0.5 * 1.0 * np.einsum('ijac,mn,bcmn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc])
-        deriv1_np[map_key] += 0.5 * 1.0 * np.einsum('ijac,mn,bcnm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc])
-        deriv1_np[map_key] += 1.0 * 4.0 * np.einsum('ijac,dm,bdcm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc])
-        deriv1_np[map_key] -= 1.0 * 1.0 * np.einsum('ijac,dm,bcdm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc])
-        deriv1_np[map_key] -= 1.0 * 1.0 * np.einsum('ijac,dm,bcmd->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, :nocc, nocc:])
+        deriv1_np[map_key] += np.einsum('ijac,bc->ijab', t2, F_grad[key][nocc:, nocc:], optimize=True)
+        deriv1_np[map_key] += np.einsum('ijac,tb,tc->ijab', t2, U[key][:, nocc:], F[:, nocc:], optimize=True)
+        deriv1_np[map_key] += np.einsum('ijac,tc,bt->ijab', t2, U[key][:, nocc:], F[nocc:, :], optimize=True)
+        deriv1_np[map_key] -= 0.5 * 4.0 * np.einsum('ijac,mn,bmcn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, :nocc, nocc:, :nocc], optimize=True)
+        deriv1_np[map_key] += 0.5 * 1.0 * np.einsum('ijac,mn,bcmn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc], optimize=True)
+        deriv1_np[map_key] += 0.5 * 1.0 * np.einsum('ijac,mn,bcnm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[nocc:, nocc:, :nocc, :nocc], optimize=True)
+        deriv1_np[map_key] += 1.0 * 4.0 * np.einsum('ijac,dm,bdcm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc], optimize=True)
+        deriv1_np[map_key] -= 1.0 * 1.0 * np.einsum('ijac,dm,bcdm->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, nocc:, :nocc], optimize=True)
+        deriv1_np[map_key] -= 1.0 * 1.0 * np.einsum('ijac,dm,bcmd->ijab', t2, U[key][nocc:, :nocc], npERI[nocc:, nocc:, :nocc, nocc:], optimize=True)
         #
-        # d{t2_ab^ij}/dx += t_ab^kj * dF_ki/dx
-        deriv1_np[map_key] += -1.0 * np.einsum('kjab,ki->ijab', t2, F_grad[key][:nocc, :nocc])
-        deriv1_np[map_key] += -1.0 * np.einsum('kjab,tk,ti->ijab', t2, U[key][:, :nocc], F[:, :nocc])
-        deriv1_np[map_key] += -1.0 * np.einsum('kjab,ti,kt->ijab', t2, U[key][:, :nocc], F[:nocc, :]) 
-        deriv1_np[map_key] -= -1.0 * 0.5 * 4.0 * np.einsum('kjab,mn,kmin->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
-        deriv1_np[map_key] += -1.0 * 0.5 * 1.0 * np.einsum('kjab,mn,kimn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
-        deriv1_np[map_key] += -1.0 * 0.5 * 1.0 * np.einsum('kjab,mn,kinm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
-        deriv1_np[map_key] += -1.0 * 1.0 * 4.0 * np.einsum('kjab,dm,kdim->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, nocc:, :nocc, :nocc])
-        deriv1_np[map_key] -= -1.0 * 1.0 * 1.0 * np.einsum('kjab,dm,kidm->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, nocc:, :nocc])
-        deriv1_np[map_key] -= -1.0 * 1.0 * 1.0 * np.einsum('kjab,dm,kimd->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, :nocc, nocc:])
+        # d{t2_ab^ij}/dx -= t_ab^kj * dF_ki/dx
+        deriv1_np[map_key] -= np.einsum('kjab,ki->ijab', t2, F_grad[key][:nocc, :nocc], optimize=True)
+        deriv1_np[map_key] -= np.einsum('kjab,tk,ti->ijab', t2, U[key][:, :nocc], F[:, :nocc], optimize=True)
+        deriv1_np[map_key] -= np.einsum('kjab,ti,kt->ijab', t2, U[key][:, :nocc], F[:nocc, :], optimize=True)
+        deriv1_np[map_key] += 0.5 * 4.0 * np.einsum('kjab,mn,kmin->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc], optimize=True)
+        deriv1_np[map_key] -= 0.5 * 1.0 * np.einsum('kjab,mn,kimn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc], optimize=True)
+        deriv1_np[map_key] -= 0.5 * 1.0 * np.einsum('kjab,mn,kinm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc], optimize=True)
+        deriv1_np[map_key] -= 1.0 * 4.0 * np.einsum('kjab,dm,kdim->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, nocc:, :nocc, :nocc], optimize=True)
+        deriv1_np[map_key] += 1.0 * 1.0 * np.einsum('kjab,dm,kidm->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, nocc:, :nocc], optimize=True)
+        deriv1_np[map_key] += 1.0 * 1.0 * np.einsum('kjab,dm,kimd->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, :nocc, nocc:], optimize=True)
         #
-        # d{t2_ab^ij}/dx += t_ab^ik * dF_kj/dx
-        deriv1_np[map_key] += -1.0 * np.einsum('ikab,kj->ijab', t2, F_grad[key][:nocc, :nocc])
-        deriv1_np[map_key] += -1.0 * np.einsum('ikab,tk,tj->ijab', t2, U[key][:, :nocc], F[:, :nocc])
-        deriv1_np[map_key] += -1.0 * np.einsum('ikab,tj,kt->ijab', t2, U[key][:, :nocc], F[:nocc, :]) 
-        deriv1_np[map_key] -= -1.0 * 0.5 * 4.0 * np.einsum('ikab,mn,kmjn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
-        deriv1_np[map_key] += -1.0 * 0.5 * 1.0 * np.einsum('ikab,mn,kjmn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
-        deriv1_np[map_key] += -1.0 * 0.5 * 1.0 * np.einsum('ikab,mn,kjnm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc])
-        deriv1_np[map_key] += -1.0 * 1.0 * 4.0 * np.einsum('ikab,dm,kdjm->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, nocc:, :nocc, :nocc])
-        deriv1_np[map_key] -= -1.0 * 1.0 * 1.0 * np.einsum('ikab,dm,kjdm->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, nocc:, :nocc])
-        deriv1_np[map_key] -= -1.0 * 1.0 * 1.0 * np.einsum('ikab,dm,kjmd->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, :nocc, nocc:])
+        # d{t2_ab^ij}/dx -= t_ab^ik * dF_kj/dx
+        deriv1_np[map_key] -= np.einsum('ikab,kj->ijab', t2, F_grad[key][:nocc, :nocc], optimize=True)
+        deriv1_np[map_key] -= np.einsum('ikab,tk,tj->ijab', t2, U[key][:, :nocc], F[:, :nocc], optimize=True)
+        deriv1_np[map_key] -= np.einsum('ikab,tj,kt->ijab', t2, U[key][:, :nocc], F[:nocc, :], optimize=True)
+        deriv1_np[map_key] += 0.5 * 4.0 * np.einsum('ikab,mn,kmjn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc], optimize=True)
+        deriv1_np[map_key] -= 0.5 * 1.0 * np.einsum('ikab,mn,kjmn->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc], optimize=True)
+        deriv1_np[map_key] -= 0.5 * 1.0 * np.einsum('ikab,mn,kjnm->ijab', t2, deriv1_np["S" + key][:nocc, :nocc], npERI[:nocc, :nocc, :nocc, :nocc], optimize=True)
+        deriv1_np[map_key] -= 1.0 * 4.0 * np.einsum('ikab,dm,kdjm->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, nocc:, :nocc, :nocc], optimize=True)
+        deriv1_np[map_key] += 1.0 * 1.0 * np.einsum('ikab,dm,kjdm->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, nocc:, :nocc], optimize=True)
+        deriv1_np[map_key] += 1.0 * 1.0 * np.einsum('ikab,dm,kjmd->ijab', t2, U[key][nocc:, :nocc], npERI[:nocc, :nocc, :nocc, nocc:], optimize=True)
 
+        # d{t2_ab^ij}/dx /= ( Fii + Fjj - Faa - Fbb )
         deriv1_np[map_key] /= Dijab
-        #print(deriv1_np[map_key])
 
+        # Make t2_tilde derivatives while we're at it
         deriv1_np["T2_tilde" + key] = np.zeros((nocc, nocc, nvir, nvir))
         deriv1_np["T2_tilde" + key] += 2.0 * deriv1_np[map_key] - deriv1_np[map_key].swapaxes(2,3)
-#print(deriv1_np["T22_Z"].reshape(nocc * nocc, nvir * nvir))
-#print(deriv1_np["T2_tilde2_Z"].reshape(nocc * nocc, nvir * nvir))
 
+# Derivatives of MP2 Densities
 dPpq = {}
 dPpqrs = {}
 for atom in range(natoms):
@@ -587,26 +569,20 @@ for atom in range(natoms):
         key = str(atom) + cart[p]
 
         # MP2 Derivatives of OPDM
-        #dPij = np.zeros((nocc, nocc))
-        #dPab = np.zeros((nvir, nvir))
         #
         # Build OO block of MP2 OPDM derivative
         # Pij = sum_kab [( t2(i,k,a,b) * t2_tilde(j,k,a,b) ) + ( t2(j,k,a,b) * t2_tilde(i,k,a,b) )]
-        dPij = -1.0 * np.einsum('ikab,jkab->ij', deriv1_np["T2" + key], t2_tilde)
-        dPij += -1.0 * np.einsum('ikab,jkab->ij', t2, deriv1_np["T2_tilde" + key])
-        dPij += -1.0 * np.einsum('jkab,ikab->ij', deriv1_np["T2" + key], t2_tilde)
-        dPij += -1.0 * np.einsum('jkab,ikab->ij', t2, deriv1_np["T2_tilde" + key])
-        #Pij = -1.0 * np.einsum('ikab,jkab->ij', t2, t2_tilde, optimize=True)
-        #Pij += -1.0 * np.einsum('jkab,ikab->ij', t2, t2_tilde, optimize=True)
+        dPij =  -1.0 * np.einsum('ikab,jkab->ij', deriv1_np["T2" + key], t2_tilde, optimize=True)
+        dPij -=  1.0 * np.einsum('ikab,jkab->ij', t2, deriv1_np["T2_tilde" + key], optimize=True)
+        dPij -=  1.0 * np.einsum('jkab,ikab->ij', deriv1_np["T2" + key], t2_tilde, optimize=True)
+        dPij -=  1.0 * np.einsum('jkab,ikab->ij', t2, deriv1_np["T2_tilde" + key], optimize=True)
         #
         # Build VV block of MP2 OPDM derivative
         # Pab = sum_ijc [( t2(i,j,a,c) * t2_tilde(i,j,b,c) ) + ( t2(i,j,b,c) * t2_tilde(i,j,a,c) )]
-        dPab = np.einsum('ijac,ijbc->ab', deriv1_np["T2" + key], t2_tilde)
-        dPab += np.einsum('ijac,ijbc->ab', t2, deriv1_np["T2_tilde" + key])
-        dPab += np.einsum('ijbc,ijac->ab', deriv1_np["T2" + key], t2_tilde)
-        dPab += np.einsum('ijbc,ijac->ab', t2, deriv1_np["T2_tilde" + key])
-        #Pab = np.einsum('ijac,ijbc->ab', t2, t2_tilde, optimize=True)
-        #Pab += np.einsum('ijbc,ijac->ab', t2, t2_tilde, optimize=True)
+        dPab =  np.einsum('ijac,ijbc->ab', deriv1_np["T2" + key], t2_tilde, optimize=True)
+        dPab += np.einsum('ijac,ijbc->ab', t2, deriv1_np["T2_tilde" + key], optimize=True)
+        dPab += np.einsum('ijbc,ijac->ab', deriv1_np["T2" + key], t2_tilde, optimize=True)
+        dPab += np.einsum('ijbc,ijac->ab', t2, deriv1_np["T2_tilde" + key], optimize=True)
         #
         dPpq[key] = np.zeros((nmo, nmo))
         dPpq[key][:nocc, :nocc] = dPij
@@ -623,75 +599,6 @@ for atom in range(natoms):
         dPpqrs[key][:nocc, :nocc, nocc:, nocc:] += dPijab
         dPpqrs[key][nocc:, nocc:, :nocc, :nocc] += dPijab.T
 
-#print(dPpq)
-
-
-
-# Energy and Gradient Tests
-#
-# Energy Test
-energy_test =  2.0 * np.einsum('ijab,ijab->', t2, npERI[:nocc, :nocc, nocc:, nocc:])
-energy_test -= 1.0 * np.einsum('ijab,ijba->', t2, npERI[:nocc, :nocc, nocc:, nocc:])
-#print("Energy Test: ", energy_test)
-#
-# Gradient Test
-#scf_Gradient = [[ 0.0, -0.000000000000035, -2.430230565071191],
-# [ 0.0,  1.678776347069892,  1.215115282535529],
-# [-0.0, -1.678776347069857,  1.215115282535499]]
-scf_Gradient = [[ -0.0000000000,  0.0000000000, -2.4302305633],
- [  0.0000000000,  1.6787763392,  1.2151152816],
- [ -0.0000000000, -1.6787763392,  1.2151152816]]
-#print("\nSCF Gradient:\n", np.asarray(scf_Gradient))
-
-# Calculate SCF Gradient with Densities and U matrices to check Densities and U matrices
-#testGradient = np.zeros((natoms, 3))
-#Gradient = np.zeros((natoms, 3))
-#for atom in range(natoms):
-#    for p in range(3):
-#        key = str(atom) + cart[p]
-#
-#        testGradient[atom, p] +=  1.0 * np.einsum('pq,pq->', Ppq, F_grad[key], optimize=True)
-#        testGradient[atom, p] += 1.0 * np.einsum("pqrs,prqs->", Ppqrs, deriv1_np["TEI" + key])
-#        testGradient[atom, p] -= 2.0 * np.einsum("pq,pq->", U[key], Ip)
-#
-#        Gradient[atom, p] += 1.0 * np.einsum("pq,pq->", Ppq, deriv1_np["T" + key])
-#        Gradient[atom, p] += 1.0 * np.einsum("pq,pq->", Ppq, deriv1_np["V" + key])
-#        Gradient[atom, p] += 2.0 * np.einsum("pq,pqmm->", Ppq, deriv1_np["TEI" + key][:, :, :nocc, :nocc])
-#        Gradient[atom, p] -= 1.0 * np.einsum("pq,pmmq->", Ppq, deriv1_np["TEI" + key][:, :nocc, :nocc, :])
-#        Gradient[atom, p] += 1.0 * np.einsum("pqrs,prqs->", Ppqrs, deriv1_np["TEI" + key])
-#        Gradient[atom, p] -= 2.0 * np.einsum("pq,pq->", U[key], Ip)
-#print("\nSCF Gradient:\n", Gradient)
-#print("\ntest Gradient:\n", testGradient)
-
-# Calculate MP2 Gradient with derivative of T2 amplitudes to check derivatives of T2 amplitudes
-Gradient = np.zeros((natoms, 3))
-for atom in range(natoms):
-    for p in range(3):
-        key = str(atom) + cart[p]
-
-        # dt2/dx * V Gradient Term:
-        Gradient[atom, p] +=  2.0 * np.einsum('ijab,ijab->', deriv1_np["T2" + key], npERI[:nocc, :nocc, nocc:, nocc:])
-        Gradient[atom, p] -= 1.0 * np.einsum('ijab,ijba->', deriv1_np["T2" + key], npERI[:nocc, :nocc, nocc:, nocc:])
-
-        # t2 * dV/dx Gradient Term:
-        Gradient[atom, p] += 2.0 * np.einsum('ijab,iajb->', t2, deriv1_np["TEI" + key][:nocc, nocc:, :nocc, nocc:])
-        Gradient[atom, p] += 2.0 * np.einsum('ijab,ti,tjab->', t2, U[key][:, :nocc], npERI[:, :nocc, nocc:, nocc:])
-        Gradient[atom, p] += 2.0 * np.einsum('ijab,tj,itab->', t2, U[key][:, :nocc], npERI[:nocc, :, nocc:, nocc:])
-        Gradient[atom, p] += 2.0 * np.einsum('ijab,ta,ijtb->', t2, U[key][:, nocc:], npERI[:nocc, :nocc, :, nocc:])
-        Gradient[atom, p] += 2.0 * np.einsum('ijab,tb,ijat->', t2, U[key][:, nocc:], npERI[:nocc, :nocc, nocc:, :])
-        Gradient[atom, p] -= 1.0 * np.einsum('ijab,ibja->', t2, deriv1_np["TEI" + key][:nocc, nocc:, :nocc, nocc:])
-        Gradient[atom, p] -= 1.0 * np.einsum('ijab,ti,tjba->', t2, U[key][:, :nocc], npERI[:, :nocc, nocc:, nocc:])
-        Gradient[atom, p] -= 1.0 * np.einsum('ijab,tj,itba->', t2, U[key][:, :nocc], npERI[:nocc, :, nocc:, nocc:])
-        Gradient[atom, p] -= 1.0 * np.einsum('ijab,ta,ijbt->', t2, U[key][:, nocc:], npERI[:nocc, :nocc, nocc:, :])
-        Gradient[atom, p] -= 1.0 * np.einsum('ijab,tb,ijta->', t2, U[key][:, nocc:], npERI[:nocc, :nocc, :, nocc:])
-
-#print(np.asarray(mol.nuclear_repulsion_energy_deriv1([0,0,0])))
-#print("\nGradient Test:\n", scf_Gradient + Gradient)
-
-
-#print("Unrelaxed Dpq:\n", unrelaxedPpq)
-#print("Relaxed Dpq:\n", Ppq)
-#print("TEST: ", np.allclose(Ppqrs, Ppqrs.swapaxes(2,3)))
 
 # Build the response hessian now
 for r in range(3 * natoms):
@@ -706,251 +613,164 @@ for r in range(3 * natoms):
         key2  = str(atom2) + cart[q]
 
         # Ipq Contributions to the Hessian:
-        # d^2E/dadB += P+(aB) sum_pq Ipq ( Upt^a * Uqt^B - Spt^a * Sqt^B)
+        # d^2E/dxdy += P+(xy) sum_pq Ipq ( Upt^x * Uqt^y - Spt^x * Sqt^y)
         #
         Hes["R"][r][c] +=  1.0 * np.einsum('pq,pt,qt->', I, U[key1], U[key2], optimize=True)
         Hes["R"][r][c] +=  1.0 * np.einsum('pq,pt,qt->', I, U[key2], U[key1], optimize=True)
         #
-        Hes["R"][r][c] += -1.0 * np.einsum('pq,pt,qt->', I, deriv1_np["S" + key2], deriv1_np["S" + key1], optimize=True)
-        Hes["R"][r][c] += -1.0 * np.einsum('pq,pt,qt->', I, deriv1_np["S" + key1], deriv1_np["S" + key2], optimize=True)
-        
+        Hes["R"][r][c] -= 1.0 * np.einsum('pq,pt,qt->', I, deriv1_np["S" + key2], deriv1_np["S" + key1], optimize=True)
+        Hes["R"][r][c] -= 1.0 * np.einsum('pq,pt,qt->', I, deriv1_np["S" + key1], deriv1_np["S" + key2], optimize=True)
+
 
 
         # Ppq Contributions to the Hessian:
-        # d^2E/dadB += P+(aB) sum_pq Dpq [ sum_t ( Upt^a * ftq^B + Utq^a * fpt^B ) ] 
+        # d^2E/dxdt += P+(xy) sum_pq Ppq [ sum_t ( Upt^x * ftq^y + Utq^x * fpt^y ) ] 
         #
-        Hes["R"][r][c] += 1.0 * np.einsum('pq,tp,tq->', Ppq, U[key1], F_grad[key2])
-        Hes["R"][r][c] += 1.0 * np.einsum('pq,tp,tq->', Ppq, U[key2], F_grad[key1])
-        Hes["R"][r][c] += 1.0 * np.einsum('pq,tq,pt->', Ppq, U[key1], F_grad[key2])
-        Hes["R"][r][c] += 1.0 * np.einsum('pq,tq,pt->', Ppq, U[key2], F_grad[key1])
+        Hes["R"][r][c] += 1.0 * np.einsum('pq,tp,tq->', Ppq, U[key1], F_grad[key2], optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pq,tp,tq->', Ppq, U[key2], F_grad[key1], optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pq,tq,pt->', Ppq, U[key1], F_grad[key2], optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pq,tq,pt->', Ppq, U[key2], F_grad[key1], optimize=True)
         #
-        # d^2E/dadB += P+(aB) sum_pq Dpq ( sum_tm [ Utm^a * ( <pm||qt>^B + <pt||qm>^B ) ] )
+        # d^2E/dxdy += P+(xy) sum_pq Ppq ( sum_tm [ Utm^x * ( <pm||qt>^y + <pt||qm>^y ) ] )
         #
-        Hes["R"][r][c] += 2.0 * np.einsum('pq,tm,pqmt->', Ppq, U[key1][:, :nocc], deriv1_np["TEI" + key2][:, :, :nocc, :]) 
-        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tm,ptmq->', Ppq, U[key1][:, :nocc], deriv1_np["TEI" + key2][:, :, :nocc, :]) 
-        Hes["R"][r][c] += 2.0 * np.einsum('pq,tm,pqtm->', Ppq, U[key1][:, :nocc], deriv1_np["TEI" + key2][:, :, :, :nocc]) 
-        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tm,pmtq->', Ppq, U[key1][:, :nocc], deriv1_np["TEI" + key2][:, :nocc, :, :]) 
-        Hes["R"][r][c] += 2.0 * np.einsum('pq,tm,pqmt->', Ppq, U[key2][:, :nocc], deriv1_np["TEI" + key1][:, :, :nocc, :]) 
-        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tm,ptmq->', Ppq, U[key2][:, :nocc], deriv1_np["TEI" + key1][:, :, :nocc, :]) 
-        Hes["R"][r][c] += 2.0 * np.einsum('pq,tm,pqtm->', Ppq, U[key2][:, :nocc], deriv1_np["TEI" + key1][:, :, :, :nocc]) 
-        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tm,pmtq->', Ppq, U[key2][:, :nocc], deriv1_np["TEI" + key1][:, :nocc, :, :]) 
+        Hes["R"][r][c] += 2.0 * np.einsum('pq,tm,pqmt->', Ppq, U[key1][:, :nocc], deriv1_np["TEI" + key2][:, :, :nocc, :], optimize=True)
+        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tm,ptmq->', Ppq, U[key1][:, :nocc], deriv1_np["TEI" + key2][:, :, :nocc, :], optimize=True)
+        Hes["R"][r][c] += 2.0 * np.einsum('pq,tm,pqtm->', Ppq, U[key1][:, :nocc], deriv1_np["TEI" + key2][:, :, :, :nocc], optimize=True)
+        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tm,pmtq->', Ppq, U[key1][:, :nocc], deriv1_np["TEI" + key2][:, :nocc, :, :], optimize=True)
+        Hes["R"][r][c] += 2.0 * np.einsum('pq,tm,pqmt->', Ppq, U[key2][:, :nocc], deriv1_np["TEI" + key1][:, :, :nocc, :], optimize=True)
+        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tm,ptmq->', Ppq, U[key2][:, :nocc], deriv1_np["TEI" + key1][:, :, :nocc, :], optimize=True)
+        Hes["R"][r][c] += 2.0 * np.einsum('pq,tm,pqtm->', Ppq, U[key2][:, :nocc], deriv1_np["TEI" + key1][:, :, :, :nocc], optimize=True)
+        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tm,pmtq->', Ppq, U[key2][:, :nocc], deriv1_np["TEI" + key1][:, :nocc, :, :], optimize=True)
         #
-        # d^2E/dadB += P+(aB) sum_pq Dpq ( sum_tv [ Utp^a * Uvq^B * ftv ] )
+        # d^2E/dxdy += P+(xy) sum_pq Ppq ( sum_tv [ Utp^x * Uvq^y * ftv ] )
         #
-        Hes["R"][r][c] += 1.0 * np.einsum('pq,tp,vq,tv->', Ppq, U[key1], U[key2], F)
-        Hes["R"][r][c] += 1.0 * np.einsum('pq,tp,vq,tv->', Ppq, U[key2], U[key1], F)
+        Hes["R"][r][c] += 1.0 * np.einsum('pq,tp,vq,tv->', Ppq, U[key1], U[key2], F, optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pq,tp,vq,tv->', Ppq, U[key2], U[key1], F, optimize=True)
         #
-        # d^2E/dadB += P+(aB) sum_pq Dpq ( sum_tvm [ Utp^a * Uvm^B * ( <tm||qv> + <tv||qm> ) ] )
+        # d^2E/dxdy += P+(xy) sum_pq Ppq ( sum_tvm [ Utp^x * Uvm^y * ( <tm||qv> + <tv||qm> ) ] )
         #
-        Hes["R"][r][c] += 2.0 * np.einsum('pq,tp,vm,tmqv->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :])
-        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tp,vm,tmvq->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :])
-        Hes["R"][r][c] += 2.0 * np.einsum('pq,tp,vm,tvqm->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :, :, :nocc])
-        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tp,vm,tvmq->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :, :nocc, :])
-        Hes["R"][r][c] += 2.0 * np.einsum('pq,tp,vm,tmqv->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :])
-        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tp,vm,tmvq->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :])
-        Hes["R"][r][c] += 2.0 * np.einsum('pq,tp,vm,tvqm->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :, :, :nocc])
-        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tp,vm,tvmq->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :, :nocc, :])
+        Hes["R"][r][c] += 2.0 * np.einsum('pq,tp,vm,tmqv->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :], optimize=True)
+        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tp,vm,tmvq->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :], optimize=True)
+        Hes["R"][r][c] += 2.0 * np.einsum('pq,tp,vm,tvqm->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :, :, :nocc], optimize=True)
+        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tp,vm,tvmq->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :, :nocc, :], optimize=True)
+        Hes["R"][r][c] += 2.0 * np.einsum('pq,tp,vm,tmqv->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :], optimize=True)
+        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tp,vm,tmvq->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :], optimize=True)
+        Hes["R"][r][c] += 2.0 * np.einsum('pq,tp,vm,tvqm->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :, :, :nocc], optimize=True)
+        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tp,vm,tvmq->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :, :nocc, :], optimize=True)
         #
-        # d^2E/dadB += P+(aB) sum_pq Dpq ( sum_tvm [ Utq^a * Uvm^B * ( <pm||tv> + <pv||tm> ) ] )
+        # d^2E/dxdy += P+(xy) sum_pq Ppq ( sum_tvm [ Utq^x * Uvm^y * ( <pm||tv> + <pv||tm> ) ] )
         #
-        Hes["R"][r][c] += 2.0 * np.einsum('pq,tq,vm,pmtv->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :])
-        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tq,vm,pmvt->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :])
-        Hes["R"][r][c] += 2.0 * np.einsum('pq,tq,vm,pvtm->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :, :, :nocc])
-        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tq,vm,pvmt->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :, :nocc, :])
-        Hes["R"][r][c] += 2.0 * np.einsum('pq,tq,vm,pmtv->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :])
-        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tq,vm,pmvt->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :])
-        Hes["R"][r][c] += 2.0 * np.einsum('pq,tq,vm,pvtm->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :, :, :nocc])
-        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tq,vm,pvmt->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :, :nocc, :])
+        Hes["R"][r][c] += 2.0 * np.einsum('pq,tq,vm,pmtv->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :], optimize=True)
+        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tq,vm,pmvt->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :], optimize=True)
+        Hes["R"][r][c] += 2.0 * np.einsum('pq,tq,vm,pvtm->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :, :, :nocc], optimize=True)
+        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tq,vm,pvmt->', Ppq, U[key1], U[key2][:, :nocc], npERI[:, :, :nocc, :], optimize=True)
+        Hes["R"][r][c] += 2.0 * np.einsum('pq,tq,vm,pmtv->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :], optimize=True)
+        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tq,vm,pmvt->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :], optimize=True)
+        Hes["R"][r][c] += 2.0 * np.einsum('pq,tq,vm,pvtm->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :, :, :nocc], optimize=True)
+        Hes["R"][r][c] -= 1.0 * np.einsum('pq,tq,vm,pvmt->', Ppq, U[key2], U[key1][:, :nocc], npERI[:, :, :nocc, :], optimize=True)
         #
-        # d^2E/dadB += P+(aB) sum_pq Dpq ( sum_tvm [ 1/2 * Utm^a * Uvm^B * ( <pt||qv> + <pv||qt> ) ] )
+        # d^2E/dxdy += P+(xy) sum_pq Ppq ( sum_tvm [ 1/2 * Utm^x * Uvm^y * ( <pt||qv> + <pv||qt> ) ] )
         #
-        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,vm,ptqv->', Ppq, U[key1][:, :nocc], U[key2][:, :nocc], npERI)
-        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,vm,ptvq->', Ppq, U[key1][:, :nocc], U[key2][:, :nocc], npERI)
-        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,vm,pvqt->', Ppq, U[key1][:, :nocc], U[key2][:, :nocc], npERI)
-        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,vm,pvtq->', Ppq, U[key1][:, :nocc], U[key2][:, :nocc], npERI)
-        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,vm,ptqv->', Ppq, U[key2][:, :nocc], U[key1][:, :nocc], npERI)
-        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,vm,ptvq->', Ppq, U[key2][:, :nocc], U[key1][:, :nocc], npERI)
-        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,vm,pvqt->', Ppq, U[key2][:, :nocc], U[key1][:, :nocc], npERI)
-        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,vm,pvtq->', Ppq, U[key2][:, :nocc], U[key1][:, :nocc], npERI)
-
-        #Hes["R"][r][c] += 1.0 * np.einsum('pq,tp,tq->', unrelaxedPpq, U[key1], F_grad[key2])
-        #Hes["R"][r][c] += 1.0 * np.einsum('pq,tp,tq->', unrelaxedPpq, U[key2], F_grad[key1])
-        #Hes["R"][r][c] += 1.0 * np.einsum('pq,tq,pt->', unrelaxedPpq, U[key1], F_grad[key2])
-        #Hes["R"][r][c] += 1.0 * np.einsum('pq,tq,pt->', unrelaxedPpq, U[key2], F_grad[key1])
-        ##
-        ## d^2E/dadB += P+(aB) sum_pq Dpq ( sum_tm [ Utm^a * ( <pm||qt>^B + <pt||qm>^B ) ] )
-        ##
-        #Hes["R"][r][c] += 2.0 * np.einsum('pq,tm,pqmt->', unrelaxedPpq, U[key1][:, :nocc], deriv1_np["TEI" + key2][:, :, :nocc, :]) 
-        #Hes["R"][r][c] += -1.0 * np.einsum('pq,tm,ptmq->', unrelaxedPpq, U[key1][:, :nocc], deriv1_np["TEI" + key2][:, :, :nocc, :]) 
-        #Hes["R"][r][c] += 2.0 * np.einsum('pq,tm,pqtm->', unrelaxedPpq, U[key1][:, :nocc], deriv1_np["TEI" + key2][:, :, :, :nocc]) 
-        #Hes["R"][r][c] += -1.0 * np.einsum('pq,tm,pmtq->', unrelaxedPpq, U[key1][:, :nocc], deriv1_np["TEI" + key2][:, :nocc, :, :]) 
-        #Hes["R"][r][c] += 2.0 * np.einsum('pq,tm,pqmt->', unrelaxedPpq, U[key2][:, :nocc], deriv1_np["TEI" + key1][:, :, :nocc, :]) 
-        #Hes["R"][r][c] += -1.0 * np.einsum('pq,tm,ptmq->', unrelaxedPpq, U[key2][:, :nocc], deriv1_np["TEI" + key1][:, :, :nocc, :]) 
-        #Hes["R"][r][c] += 2.0 * np.einsum('pq,tm,pqtm->', unrelaxedPpq, U[key2][:, :nocc], deriv1_np["TEI" + key1][:, :, :, :nocc]) 
-        #Hes["R"][r][c] += -1.0 * np.einsum('pq,tm,pmtq->', unrelaxedPpq, U[key2][:, :nocc], deriv1_np["TEI" + key1][:, :nocc, :, :]) 
-        ##
-        ## d^2E/dadB += P+(aB) sum_pq Dpq ( sum_tv [ Utp^a * Uvq^B * ftv ] )
-        ##
-        #Hes["R"][r][c] += 1.0 * np.einsum('pq,tp,vq,tv->', unrelaxedPpq, U[key1], U[key2], F)
-        #Hes["R"][r][c] += 1.0 * np.einsum('pq,tp,vq,tv->', unrelaxedPpq, U[key2], U[key1], F)
-        ##
-        ## d^2E/dadB += P+(aB) sum_pq Dpq ( sum_tvm [ Utp^a * Uvm^B * ( <tm||qv> + <tv||qm> ) ] )
-        ##
-        #Hes["R"][r][c] += 2.0 * np.einsum('pq,tp,vm,tmqv->', unrelaxedPpq, U[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :])
-        #Hes["R"][r][c] += -1.0 * np.einsum('pq,tp,vm,tmvq->', unrelaxedPpq, U[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :])
-        #Hes["R"][r][c] += 2.0 * np.einsum('pq,tp,vm,tvqm->', unrelaxedPpq, U[key1], U[key2][:, :nocc], npERI[:, :, :, :nocc])
-        #Hes["R"][r][c] += -1.0 * np.einsum('pq,tp,vm,tvmq->', unrelaxedPpq, U[key1], U[key2][:, :nocc], npERI[:, :, :nocc, :])
-        #Hes["R"][r][c] += 2.0 * np.einsum('pq,tp,vm,tmqv->', unrelaxedPpq, U[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :])
-        #Hes["R"][r][c] += -1.0 * np.einsum('pq,tp,vm,tmvq->', unrelaxedPpq, U[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :])
-        #Hes["R"][r][c] += 2.0 * np.einsum('pq,tp,vm,tvqm->', unrelaxedPpq, U[key2], U[key1][:, :nocc], npERI[:, :, :, :nocc])
-        #Hes["R"][r][c] += -1.0 * np.einsum('pq,tp,vm,tvmq->', unrelaxedPpq, U[key2], U[key1][:, :nocc], npERI[:, :, :nocc, :])
-        ##
-        ## d^2E/dadB += P+(aB) sum_pq Dpq ( sum_tvm [ Utq^a * Uvm^B * ( <pm||tv> + <pv||tm> ) ] )
-        ##
-        #Hes["R"][r][c] += 2.0 * np.einsum('pq,tq,vm,pmtv->', unrelaxedPpq, U[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :])
-        #Hes["R"][r][c] += -1.0 * np.einsum('pq,tq,vm,pmvt->', unrelaxedPpq, U[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :])
-        #Hes["R"][r][c] += 2.0 * np.einsum('pq,tq,vm,pvtm->', unrelaxedPpq, U[key1], U[key2][:, :nocc], npERI[:, :, :, :nocc])
-        #Hes["R"][r][c] += -1.0 * np.einsum('pq,tq,vm,pvmt->', unrelaxedPpq, U[key1], U[key2][:, :nocc], npERI[:, :, :nocc, :])
-        #Hes["R"][r][c] += 2.0 * np.einsum('pq,tq,vm,pmtv->', unrelaxedPpq, U[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :])
-        #Hes["R"][r][c] += -1.0 * np.einsum('pq,tq,vm,pmvt->', unrelaxedPpq, U[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :])
-        #Hes["R"][r][c] += 2.0 * np.einsum('pq,tq,vm,pvtm->', unrelaxedPpq, U[key2], U[key1][:, :nocc], npERI[:, :, :, :nocc])
-        #Hes["R"][r][c] += -1.0 * np.einsum('pq,tq,vm,pvmt->', unrelaxedPpq, U[key2], U[key1][:, :nocc], npERI[:, :, :nocc, :])
-        ##
-        ## d^2E/dadB += P+(aB) sum_pq Dpq ( sum_tvm [ 1/2 * Utm^a * Uvm^B * ( <pt||qv> + <pv||qt> ) ] )
-        ##
-        #Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,vm,ptqv->', unrelaxedPpq, U[key1][:, :nocc], U[key2][:, :nocc], npERI)
-        #Hes["R"][r][c] += -0.5 * 1.0 * np.einsum('pq,tm,vm,ptvq->', unrelaxedPpq, U[key1][:, :nocc], U[key2][:, :nocc], npERI)
-        #Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,vm,pvqt->', unrelaxedPpq, U[key1][:, :nocc], U[key2][:, :nocc], npERI)
-        #Hes["R"][r][c] += -0.5 * 1.0 * np.einsum('pq,tm,vm,pvtq->', unrelaxedPpq, U[key1][:, :nocc], U[key2][:, :nocc], npERI)
-        #Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,vm,ptqv->', unrelaxedPpq, U[key2][:, :nocc], U[key1][:, :nocc], npERI)
-        #Hes["R"][r][c] += -0.5 * 1.0 * np.einsum('pq,tm,vm,ptvq->', unrelaxedPpq, U[key2][:, :nocc], U[key1][:, :nocc], npERI)
-        #Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,vm,pvqt->', unrelaxedPpq, U[key2][:, :nocc], U[key1][:, :nocc], npERI)
-        #Hes["R"][r][c] += -0.5 * 1.0 * np.einsum('pq,tm,vm,pvtq->', unrelaxedPpq, U[key2][:, :nocc], U[key1][:, :nocc], npERI)
+        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,vm,ptqv->', Ppq, U[key1][:, :nocc], U[key2][:, :nocc], npERI, optimize=True)
+        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,vm,ptvq->', Ppq, U[key1][:, :nocc], U[key2][:, :nocc], npERI, optimize=True)
+        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,vm,pvqt->', Ppq, U[key1][:, :nocc], U[key2][:, :nocc], npERI, optimize=True)
+        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,vm,pvtq->', Ppq, U[key1][:, :nocc], U[key2][:, :nocc], npERI, optimize=True)
+        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,vm,ptqv->', Ppq, U[key2][:, :nocc], U[key1][:, :nocc], npERI, optimize=True)
+        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,vm,ptvq->', Ppq, U[key2][:, :nocc], U[key1][:, :nocc], npERI, optimize=True)
+        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,vm,pvqt->', Ppq, U[key2][:, :nocc], U[key1][:, :nocc], npERI, optimize=True)
+        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,vm,pvtq->', Ppq, U[key2][:, :nocc], U[key1][:, :nocc], npERI, optimize=True)
 
 
         
         # Ppqrs Contributions to the Hessian:
-        # d^2E/dadB += P+(aB) sum_pqrs ( sum_t [ Utp^a * <tq|rs>^B + Utq^a * <pt|rs>^B + Utr^a * <pq|ts>^B + Uts^a * <pq|rt>^B ] )
+        # d^2E/dxdy += P+(xy) sum_pqrs ( sum_t [ Utp^x * <tq|rs>^y + Utq^x * <pt|rs>^y + Utr^x * <pq|ts>^y + Uts^x * <pq|rt>^y ] )
         #
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,trqs->', Ppqrs, U[key1], deriv1_np["TEI" + key2])
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tq,prts->', Ppqrs, U[key1], deriv1_np["TEI" + key2])
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tr,ptqs->', Ppqrs, U[key1], deriv1_np["TEI" + key2])
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,ts,prqt->', Ppqrs, U[key1], deriv1_np["TEI" + key2])
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,trqs->', Ppqrs, U[key2], deriv1_np["TEI" + key1])
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tq,prts->', Ppqrs, U[key2], deriv1_np["TEI" + key1])
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tr,ptqs->', Ppqrs, U[key2], deriv1_np["TEI" + key1])
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,ts,prqt->', Ppqrs, U[key2], deriv1_np["TEI" + key1])
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,trqs->', Ppqrs, U[key1], deriv1_np["TEI" + key2], optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tq,prts->', Ppqrs, U[key1], deriv1_np["TEI" + key2], optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tr,ptqs->', Ppqrs, U[key1], deriv1_np["TEI" + key2], optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,ts,prqt->', Ppqrs, U[key1], deriv1_np["TEI" + key2], optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,trqs->', Ppqrs, U[key2], deriv1_np["TEI" + key1], optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tq,prts->', Ppqrs, U[key2], deriv1_np["TEI" + key1], optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tr,ptqs->', Ppqrs, U[key2], deriv1_np["TEI" + key1], optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,ts,prqt->', Ppqrs, U[key2], deriv1_np["TEI" + key1], optimize=True)
         #
-        # d^2E/dadB += P+(aB) sum_pqrs ( sum_tv [ Utp^a * Uvq^B * <tv|rs> + Utp^a * Uvr^B * <tq|vs> + Utp^a * Uvs^B * <tq|rv> + ...
-        #                                   ... + Utq^a * Uvr^B * <pt|vs> + Utq^a * Uvs^B * <pt|rv> + Utr^a * Uvs^B * <pq|tv> ] )
+        # d^2E/dxdy += P+(xy) sum_pqrs ( sum_tv [ Utp^x * Uvq^y * <tv|rs> + Utp^x * Uvr^y * <tq|vs> + Utp^x * Uvs^y * <tq|rv> + ...
+        #                                   ... + Utq^x * Uvr^y * <pt|vs> + Utq^x * Uvs^y * <pt|rv> + Utr^x * Uvs^y * <pq|tv> ] )
         #
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,vq,tvrs->', Ppqrs, U[key1], U[key2], npERI)
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,vr,tqvs->', Ppqrs, U[key1], U[key2], npERI)
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,vs,tqrv->', Ppqrs, U[key1], U[key2], npERI)
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tq,vr,ptvs->', Ppqrs, U[key1], U[key2], npERI)
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tq,vs,ptrv->', Ppqrs, U[key1], U[key2], npERI)
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tr,vs,pqtv->', Ppqrs, U[key1], U[key2], npERI)
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,vq,tvrs->', Ppqrs, U[key2], U[key1], npERI)
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,vr,tqvs->', Ppqrs, U[key2], U[key1], npERI)
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,vs,tqrv->', Ppqrs, U[key2], U[key1], npERI)
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tq,vr,ptvs->', Ppqrs, U[key2], U[key1], npERI)
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tq,vs,ptrv->', Ppqrs, U[key2], U[key1], npERI)
-        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tr,vs,pqtv->', Ppqrs, U[key2], U[key1], npERI)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,vq,tvrs->', Ppqrs, U[key1], U[key2], npERI, optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,vr,tqvs->', Ppqrs, U[key1], U[key2], npERI, optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,vs,tqrv->', Ppqrs, U[key1], U[key2], npERI, optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tq,vr,ptvs->', Ppqrs, U[key1], U[key2], npERI, optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tq,vs,ptrv->', Ppqrs, U[key1], U[key2], npERI, optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tr,vs,pqtv->', Ppqrs, U[key1], U[key2], npERI, optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,vq,tvrs->', Ppqrs, U[key2], U[key1], npERI, optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,vr,tqvs->', Ppqrs, U[key2], U[key1], npERI, optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tp,vs,tqrv->', Ppqrs, U[key2], U[key1], npERI, optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tq,vr,ptvs->', Ppqrs, U[key2], U[key1], npERI, optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tq,vs,ptrv->', Ppqrs, U[key2], U[key1], npERI, optimize=True)
+        Hes["R"][r][c] += 1.0 * np.einsum('pqrs,tr,vs,pqtv->', Ppqrs, U[key2], U[key1], npERI, optimize=True)
 
 
 
         # dPpq/da Contibutions to the Hessian:
-        # d^2E/dadB += 1/2 P+(aB) sum_pq dPpq/da ( fpq^B + Uqp^B * fqq + Upq^B * fpp + sum_tm [ Utm^B * <pm||qt> + <pt||qm> ] )
+        # d^2E/dxdy += 1/2 P+(xy) sum_pq dPpq/dx ( fpq^y + Uqp^y * fqq + Upq^y * fpp + sum_tm [ Utm^y * ( <pm||qt> + <pt||qm> ) ] )
         #
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pq,pq->', dPpq[key2], F_grad[key1])
-
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pq,qp,qq->', dPpq[key2], U[key1], F)
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pq,pq,pp->', dPpq[key2], U[key1], F)
-
-        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,pmqt->', dPpq[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :])
-        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,pmtq->', dPpq[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :])
-        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,ptqm->', dPpq[key2], U[key1][:, :nocc], npERI[:, :, :, :nocc])
-        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,ptmq->', dPpq[key2], U[key1][:, :nocc], npERI[:, :, :nocc, :])
-
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pq,pq->', dPpq[key1], F_grad[key2])
-
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pq,qp,qq->', dPpq[key1], U[key2], F)
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pq,pq,pp->', dPpq[key1], U[key2], F)
-
-        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,pmqt->', dPpq[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :])
-        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,pmtq->', dPpq[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :])
-        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,ptqm->', dPpq[key1], U[key2][:, :nocc], npERI[:, :, :, :nocc])
-        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,ptmq->', dPpq[key1], U[key2][:, :nocc], npERI[:, :, :nocc, :])
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pq,pq->', dPpq[key1], F_grad[key2], optimize=True)
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pq,pq->', dPpq[key2], F_grad[key1], optimize=True)
+        #
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pq,qp,qq->', dPpq[key1], U[key2], F, optimize=True)
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pq,pq,pp->', dPpq[key1], U[key2], F, optimize=True)
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pq,qp,qq->', dPpq[key2], U[key1], F, optimize=True)
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pq,pq,pp->', dPpq[key2], U[key1], F, optimize=True)
+        #
+        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,pmqt->', dPpq[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :], optimize=True)
+        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,pmtq->', dPpq[key1], U[key2][:, :nocc], npERI[:, :nocc, :, :], optimize=True)
+        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,ptqm->', dPpq[key1], U[key2][:, :nocc], npERI[:, :, :, :nocc], optimize=True)
+        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,ptmq->', dPpq[key1], U[key2][:, :nocc], npERI[:, :, :nocc, :], optimize=True)
+        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,pmqt->', dPpq[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :], optimize=True)
+        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,pmtq->', dPpq[key2], U[key1][:, :nocc], npERI[:, :nocc, :, :], optimize=True)
+        Hes["R"][r][c] += 0.5 * 2.0 * np.einsum('pq,tm,ptqm->', dPpq[key2], U[key1][:, :nocc], npERI[:, :, :, :nocc], optimize=True)
+        Hes["R"][r][c] -= 0.5 * 1.0 * np.einsum('pq,tm,ptmq->', dPpq[key2], U[key1][:, :nocc], npERI[:, :, :nocc, :], optimize=True)
 
 
 
         #dPpqrs/da Contributions to the Hessian:
-        #  d^2E/dadB += 1/2 P+(aB) sum_pqrs dPpqrs/da ( <pq|rs>^B + sum_t [ Utp^B * <tq|rs> + Utq^B * <pt|rs> + Utr^B * <pq|ts> + Uts^B * <pq|rt> ] )
+        #  d^2E/dxdy += 1/2 P+(xy) sum_pqrs dPpqrs/dx ( <pq|rs>^y + sum_t [ Utp^y * <tq|rs> + Utq^y * <pt|rs> + Utr^y * <pq|ts> + Uts^y * <pq|rt> ] )
         #
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,prqs->', dPpqrs[key2], deriv1_np["TEI" + key1])
-
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,tp,tqrs->', dPpqrs[key2], U[key1], npERI)
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,tq,ptrs->', dPpqrs[key2], U[key1], npERI)
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,tr,pqts->', dPpqrs[key2], U[key1], npERI)
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,ts,pqrt->', dPpqrs[key2], U[key1], npERI)
-
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,prqs->', dPpqrs[key1], deriv1_np["TEI" + key2])
-
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,tp,tqrs->', dPpqrs[key1], U[key2], npERI)
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,tq,ptrs->', dPpqrs[key1], U[key2], npERI)
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,tr,pqts->', dPpqrs[key1], U[key2], npERI)
-        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,ts,pqrt->', dPpqrs[key1], U[key2], npERI)
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,prqs->', dPpqrs[key1], deriv1_np["TEI" + key2], optimize=True)
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,prqs->', dPpqrs[key2], deriv1_np["TEI" + key1], optimize=True)
+        #
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,tp,tqrs->', dPpqrs[key1], U[key2], npERI, optimize=True)
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,tq,ptrs->', dPpqrs[key1], U[key2], npERI, optimize=True)
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,tr,pqts->', dPpqrs[key1], U[key2], npERI, optimize=True)
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,ts,pqrt->', dPpqrs[key1], U[key2], npERI, optimize=True)
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,tp,tqrs->', dPpqrs[key2], U[key1], npERI, optimize=True)
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,tq,ptrs->', dPpqrs[key2], U[key1], npERI, optimize=True)
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,tr,pqts->', dPpqrs[key2], U[key1], npERI, optimize=True)
+        Hes["R"][r][c] += 0.5 * 1.0 * np.einsum('pqrs,ts,pqrt->', dPpqrs[key2], U[key1], npERI, optimize=True)
 
 
-
+# Build Total Hessian
 for key in Hes:
-    #print("Hes[",key,"]:\n",Hes[key],"\n")
     Hessian += Hes[key]
 
 # Symmetrize Hessian
 Hessian = (Hessian + Hessian.T)/2
-#print("Hessian is symmetric: ", np.allclose(Hessian, Hessian.T))
 
 Mat = psi4.core.Matrix.from_array(Hessian)
 Mat.name = " TOTAL HESSIAN"
 Mat.print_out()
 
-
-##H_psi4 = psi4.core.Matrix.from_list([
-##[ 0.07613952484989, 0.00000000000000, 0.00000000000000,-0.03806976242497, 0.00000000000000,-0.00000000000000,-0.03806976242497,-0.00000000000000, 0.00000000000000],
-##[ 0.00000000000000, 0.48290536165172,-0.00000000000000,-0.00000000000000,-0.24145268082589, 0.15890015082364, 0.00000000000000,-0.24145268082590,-0.15890015082364],
-##[ 0.00000000000000,-0.00000000000000, 0.43734495429393,-0.00000000000000, 0.07344233387869,-0.21867247714697,-0.00000000000000,-0.07344233387869,-0.21867247714697],
-##[-0.03806976242497,-0.00000000000000,-0.00000000000000, 0.04537741867538,-0.00000000000000, 0.00000000000000,-0.00730765625041, 0.00000000000000,-0.00000000000000],
-##[ 0.00000000000000,-0.24145268082589, 0.07344233387869,-0.00000000000000, 0.25786500091002,-0.11617124235117, 0.00000000000000,-0.01641232008412, 0.04272890847247],
-##[-0.00000000000000, 0.15890015082364,-0.21867247714697, 0.00000000000000,-0.11617124235117, 0.19775197798054, 0.00000000000000,-0.04272890847247, 0.02092049916645],
-##[-0.03806976242497, 0.00000000000000,-0.00000000000000,-0.00730765625041, 0.00000000000000, 0.00000000000000, 0.04537741867538,-0.00000000000000, 0.00000000000000],
-##[-0.00000000000000,-0.24145268082590,-0.07344233387869, 0.00000000000000,-0.01641232008412,-0.04272890847247,-0.00000000000000, 0.25786500091002, 0.11617124235117],
-##[ 0.00000000000000,-0.15890015082364,-0.21867247714697,-0.00000000000000, 0.04272890847247, 0.02092049916645, 0.00000000000000, 0.11617124235117, 0.19775197798054]
-##])
-#
-#H_psi4 = psi4.core.Matrix.from_list([
-#[-3.5884988758,-0.0000000000,-0.0000000000, 1.7942494379, 0.0000000000, 0.0000000000, 1.7942494379,-0.0000000000, 0.0000000000],
-#[-0.0000000000, 8.4614335110,-0.0000000000,-0.0000000000,-4.2307167555, 4.7072194871, 0.0000000000,-4.2307167555,-4.7072194871],
-#[-0.0000000000,-0.0000000000, 3.7953179675, 0.0000000000, 4.3768046756,-1.8976589837, 0.0000000000,-4.3768046756,-1.8976589837],
-#[ 1.7942494379,-0.0000000000, 0.0000000000,-1.8654873342,-0.0000000000,-0.0000000000, 0.0712378963, 0.0000000000,-0.0000000000],
-#[ 0.0000000000,-4.2307167555, 4.3768046756,-0.0000000000, 4.3786082939,-4.5420120813,-0.0000000000,-0.1478915384, 0.1652074058],
-#[ 0.0000000000, 4.7072194871,-1.8976589837,-0.0000000000,-4.5420120813, 1.8193083397,-0.0000000000,-0.1652074058, 0.0783506441],
-#[ 1.7942494379, 0.0000000000, 0.0000000000, 0.0712378963,-0.0000000000,-0.0000000000,-1.8654873342, 0.0000000000,-0.0000000000],
-#[-0.0000000000,-4.2307167555,-4.3768046756, 0.0000000000,-0.1478915384,-0.1652074058, 0.0000000000, 4.3786082939, 4.5420120813],
-#[ 0.0000000000,-4.7072194871,-1.8976589837,-0.0000000000, 0.1652074058, 0.0783506441,-0.0000000000, 4.5420120813, 1.8193083397]
-#])
-#
 H_psi4 = psi4.core.Matrix.from_list([
-[-3.6130997069,        0.0000000000,       -0.0000000000,        1.8065498534,       -0.0000000000,       -0.0000000000,         1.8065498534,       -0.0000000000,        0.0000000000],
-[ 0.0000000000,        8.4484978087,        0.0000000000,        0.0000000000,       -4.2242489044,       -4.7117763858,        -0.0000000000,       -4.2242489044,        4.7117763858],
-[-0.0000000000,        0.0000000000,        3.7558758537,       -0.0000000000,       -4.3809411904,       -1.8779379269,         0.0000000000,        4.3809411904,       -1.8779379269],
-[ 1.8065498534,        0.0000000000,       -0.0000000000,       -1.8756582109,        0.0000000000,        0.0000000000,         0.0691083575,       -0.0000000000,        0.0000000000],
-[-0.0000000000,       -4.2242489044,       -4.3809411905,        0.0000000000,        4.3722044686,        4.5463587881,         0.0000000000,       -0.1479555643,       -0.1654175977],
-[-0.0000000000,       -4.7117763859,       -1.8779379269,        0.0000000000,        4.5463587881,        1.8072072621,         0.0000000000,        0.1654175978,        0.0707306648],
-[ 1.8065498534,       -0.0000000000,        0.0000000000,        0.0691083575,        0.0000000000,        0.0000000000,        -1.8756582109,        0.0000000000,       -0.0000000000],
-[-0.0000000000,       -4.2242489044,        4.3809411905,       -0.0000000000,       -0.1479555643,        0.1654175977,         0.0000000000,        4.3722044686,       -4.5463587881],
-[ 0.0000000000,        4.7117763859,       -1.8779379269,        0.0000000000,       -0.1654175978,        0.0707306648,        -0.0000000000,       -4.5463587881,        1.8072072621]
+[-3.6130997071,        0.0000000000,       -0.0000000000,        1.8065498535,       -0.0000000000,       -0.0000000000,        1.8065498535,        0.0000000000,        0.0000000000],
+[ 0.0000000000,        8.4484978101,        0.0000000000,       -0.0000000000,       -4.2242489050,       -4.7117763859,        0.0000000000,       -4.2242489050,        4.7117763859],
+[-0.0000000000,        0.0000000000,        3.7558758529,       -0.0000000000,       -4.3809411905,       -1.8779379264,        0.0000000000,        4.3809411905,       -1.8779379264],
+[ 1.8065498535,       -0.0000000000,       -0.0000000000,       -1.8756582110,        0.0000000000,        0.0000000000,        0.0691083574,        0.0000000000,        0.0000000000],
+[-0.0000000000,       -4.2242489050,       -4.3809411906,        0.0000000000,        4.3722044693,        4.5463587882,       -0.0000000000,       -0.1479555642,       -0.1654175976],
+[-0.0000000000,       -4.7117763860,       -1.8779379264,        0.0000000000,        4.5463587882,        1.8072072616,        0.0000000000,        0.1654175977,        0.0707306648],
+[ 1.8065498535,        0.0000000000,        0.0000000000,        0.0691083574,       -0.0000000000,        0.0000000000,       -1.8756582110,       -0.0000000000,       -0.0000000000],
+[ 0.0000000000,       -4.2242489050,        4.3809411906,        0.0000000000,       -0.1479555642,        0.1654175976,       -0.0000000000,        4.3722044693,       -4.5463587882],
+[ 0.0000000000,        4.7117763860,       -1.8779379264,        0.0000000000,       -0.1654175977,        0.0707306648,       -0.0000000000,       -4.5463587882,        1.8072072616]
 ])
-
 H_python_mat = psi4.core.Matrix.from_array(Hessian)
-psi4.compare_matrices(H_psi4, H_python_mat, 8, "RHF-HESSIAN-TEST")
+psi4.compare_matrices(H_psi4, H_python_mat, 9, "RHF-HESSIAN-TEST")

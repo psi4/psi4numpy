@@ -15,6 +15,7 @@ ontop of this result.
  - `MP3-SO.py`: MP3 in spin-orbital formalism that simplifies the equations and provides contrast to the spin-summed version above.
  - `MPn.py`: An example on how to automate the contraction of higher order MP theory.
  - `MP2_Gradient.py`: Calculation of a nuclear gradient at the MP2 level of theory.
+ - `MP2_Hessian.py`: Calculation of a nuclear hessian at the MP2 level of theory.
 
 ### References
  1) The original paper that started it all: "Note on an Approximation Treatment for Many-Electron Systems"
