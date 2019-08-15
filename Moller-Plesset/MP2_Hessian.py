@@ -36,7 +36,7 @@ np.set_printoptions(
     precision=15, 
     linewidth=200, 
     suppress=True, 
-    threshold=np.nan
+    threshold=np.maxsize
 )
 
 psi4.set_memory(int(1e9), False)
@@ -773,4 +773,4 @@ H_psi4 = psi4.core.Matrix.from_list([
 [ 0.0000000000,        4.7117763860,       -1.8779379264,        0.0000000000,       -0.1654175977,        0.0707306648,       -0.0000000000,       -4.5463587882,        1.8072072616]
 ])
 H_python_mat = psi4.core.Matrix.from_array(Hessian)
-psi4.compare_matrices(H_psi4, H_python_mat, 8, "RHF-HESSIAN-TEST")
+psi4.compare_matrices(H_psi4, H_python_mat, 9, "RHF-HESSIAN-TEST")
