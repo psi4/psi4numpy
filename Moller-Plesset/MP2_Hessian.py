@@ -36,11 +36,11 @@ np.set_printoptions(
     precision=15, 
     linewidth=200, 
     suppress=True, 
-    threshold=np.maxsize
+    threshold=sys.maxsize
 )
 
 psi4.set_memory(int(1e9), False)
-#psi4.core.set_output_file('output.dat', False)
+psi4.core.set_output_file('output.dat', False)
 psi4.core.set_num_threads(4)
 
 # Specify Molecule
