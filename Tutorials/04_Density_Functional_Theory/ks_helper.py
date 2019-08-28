@@ -9,22 +9,22 @@ if parse_version(psi4.__version__) >= parse_version('1.3a1'):
     build_superfunctional = psi4.driver.dft.build_superfunctional
 else:
     build_superfunctional = psi4.driver.dft_funcs.build_superfunctional
-    
+
 # Diagonalize routine
 def build_orbitals(diag, A, ndocc):
-    Fp = psi4.core.Matrix.triplet(A, diag, A, True, False, True)
+    Fp = psi4.core.triplet(A, diag, A, True, False, True)
 
     nbf = A.shape[0]
     Cp = psi4.core.Matrix(nbf, nbf)
     eigvecs = psi4.core.Vector(nbf)
     Fp.diagonalize(Cp, eigvecs, psi4.core.DiagonalizeOrder.Ascending)
 
-    C = psi4.core.Matrix.doublet(A, Cp, False, False)
+    C = psi4.core.doublet(A, Cp, False, False)
 
     Cocc = psi4.core.Matrix(nbf, ndocc)
     Cocc.np[:] = C.np[:, :ndocc]
 
-    D = psi4.core.Matrix.doublet(Cocc, Cocc, False, True)
+    D = psi4.core.doublet(Cocc, Cocc, False, True)
     return C, Cocc, D, eigvecs
 
 def ks_solver(alias, mol, options, V_builder, jk_type="DF", output="output.dat", restricted=True):
@@ -132,9 +132,9 @@ def ks_solver(alias, mol, options, V_builder, jk_type="DF", output="output.dat",
         F.axpy(1.0, V)
 
         # DIIS error build and update
-        diis_e = psi4.core.Matrix.triplet(F, D, S, False, False, False)
-        diis_e.subtract(psi4.core.Matrix.triplet(S, D, F, False, False, False))
-        diis_e = psi4.core.Matrix.triplet(A, diis_e, A, False, False, False)
+        diis_e = psi4.core.triplet(F, D, S, False, False, False)
+        diis_e.subtract(psi4.core.triplet(S, D, F, False, False, False))
+        diis_e = psi4.core.triplet(A, diis_e, A, False, False, False)
     
         diis_obj.add(F, diis_e)
     
