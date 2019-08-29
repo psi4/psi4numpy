@@ -272,12 +272,9 @@ I[:nocc, nocc:] += (Z * F_occ).T
 # where
 #
 # G'pqrs = Gpqrs + (2 * Ppr * kroecker_delta(q,occ) * kronecker_delta(q,s)) - (Pps * kronecker_delta(q,occ) * kronecker_delta(q,r))  
-for p in range(nmo):
-    for q in range(nmo):
-        for r in range(nmo):
-            for s in range(nmo):
-                Ppqrs[p][q][r][s] += 2.0 * Ppq[p][r] * (q in range(nocc)) * (q==s)
-                Ppqrs[p][q][r][s] -= 1.0 * Ppq[p][s] * (q in range(nocc)) * (q==r)
+#for p in range(nmo):
+Ppqrs[:, :nocc, :, :nocc] += 2.0 * np.einsum('pr,qs->pqrs', Ppq, np.eye(nocc))
+Ppqrs[:, :nocc, :nocc, :] -= 1.0 * np.einsum('ps,qr->pqrs', Ppq, np.eye(nocc))
 
 
 Gradient = {}
