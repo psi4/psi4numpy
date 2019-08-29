@@ -40,7 +40,7 @@ np.set_printoptions(
 )
 
 psi4.set_memory(int(1e9), False)
-#psi4.core.set_output_file('output.dat', False)
+psi4.core.set_output_file('output.dat', False)
 psi4.core.set_num_threads(4)
 
 # Specify Molecule
