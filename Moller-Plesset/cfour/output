@@ -1,0 +1,1596 @@
+ --invoking executable xjoda
+
+
+   *************************************************************************
+         <<<     CCCCCC     CCCCCC   |||     CCCCCC     CCCCCC   >>>
+       <<<      CCC        CCC       |||    CCC        CCC         >>>
+      <<<      CCC        CCC        |||   CCC        CCC            >>>
+    <<<        CCC        CCC        |||   CCC        CCC              >>>
+      <<<      CCC        CCC        |||   CCC        CCC            >>>
+       <<<      CCC        CCC       |||    CCC        CCC         >>>
+         <<<     CCCCCC     CCCCCC   |||     CCCCCC     CCCCCC   >>>
+   *************************************************************************
+
+     ****************************************************************
+     * CFOUR Coupled-Cluster techniques for Computational Chemistry *
+     ****************************************************************
+ 
+
+   Department of Chemistry                Institut fuer Physikalische Chemie
+   University of Texas at Austin          Universitaet Mainz
+   Austin, TX  78712, USA                 D-55099 Mainz, Germany
+ 
+                       Version 1.0
+ 
+                     dtlogin2                                          
+                     Thu Aug 29 11:04:11 EDT 2019                      
+                     integer*8 version is running
+ 
+    -------------------------------------------------------------------
+                    Input from ZMAT file
+    -------------------------------------------------------------------
+ 
+ Water MP2/STO-3G Hessian Test                                                  
+ O   0.0000000000     0.0000000000     0.0757918437                             
+ H   0.0000000000    -0.8668118290    -0.6014357791                             
+ H   0.0000000000     0.8668118290    -0.6014357791                             
+                                                                                
+ *CFOUR(CALC_LEVEL=MP2                                                          
+ VIB=ANALYTIC                                                                   
+ BASIS= STO-3G                                                                  
+ COORD=CARTESIAN                                                                
+ UNITS=BOHR                                                                     
+ SYMMETRY=OFF                                                                   
+ SCF_CONV=14)                                                                   
+                                                                                
+                                                                                
+                                                                                
+ 
+    -------------------------------------------------------------------
+                    CFOUR Control Parameters 
+    -------------------------------------------------------------------
+        External           Internal           Value            Units
+          Name               Name
+    -------------------------------------------------------------------
+       PRINT                IPRNT               0               ***   
+       CALCLEVEL            ICLLVL           MBPT(2)    [  1]   ***   
+       DERIV_LEV            IDRLVL            SECOND    [  2]   ***   
+       CC_CONV              ICCCNV          10D-  7             ***   
+       SCF_CONV             ISCFCV          10D- 14             ***   
+       XFORM_TOL            IXFTOL          10D- 11             ***   
+       CC_MAXCYC            ICCCYC              0              cycles 
+       LINDEP_TOL           ILINDP              8               ***   
+       RDO                  IRDOFM              ON      [  1]   ***   
+  
+       SCF_EXTRAPO          IRPP                ON      [  1]   ***   
+       REFERENCE            IREFNC             RHF      [  0]   ***   
+       CC_EXPORDER          ICCEOR              0               ***   
+       TAMP_SUM             IEVERY              0               ***   
+       NTOP_TAMP            ITOPT2             15               ***   
+       CCORBOPT             ICCORB             OFF      [  0] x 0.01  
+       SCF_MAXCYC           ISCFCY            150              cycles 
+       OCCUPATION           IOCCU   ESTIMATED BY SCF 
+       PROPS                IPROPS             OFF      [  0]   ***   
+       RELAX_DENS           IRDENS              ON      [  1]   ***   
+  
+       SCF_EXPORDE          IRPPOR              6               ***   
+       CC_EXTRAPOL          ICCEXT             DIIS     [  1]   ***   
+       BRUECKNER            IBRKNR             OFF      [  0]   ***   
+       XFIELD               IXEFLD              0             x 10-6  
+       YFIELD               IYEFLD              0             x 10-6  
+       ZFIELD               IZEFLD              0             x 10-6  
+       SAVE_INTS            ISVINT             OFF      [  0]   ***   
+       DROPMO               IDRPMO      NONE         
+       CHARGE               ICHRGE              0               ***   
+       MULTIPLICTY          IMULTP              1               ***   
+  
+       CPHF_CONVER          ICPHFT          10D- 16             ***   
+       CPHF_MAXCYC          ICPHFC             64              cycles 
+       INCORE               INCORE             OFF      [  0]   ***   
+       MEMORY_SIZE          IMEMSZ         100000000           words  
+       FILE_RECSIZ          IFLREC              4096           words  
+       NON-HF               INONHF             OFF      [  0]   ***   
+       ORBITALS             IORBTP           STANDARD   [  0]   ***   
+  
+       SCF_EXPSTAR          IRPPLS              8               ***   
+       LOCK_ORBOCC          ILOCOC             OFF      [  0]   ***   
+       HBAR                 IHBAR              OFF      [  0]   ***   
+       CACHE_RECS           ICHREC             10               ***   
+       GUESS                IGUESS            MOREAD    [  0]   ***   
+       JODA_PRINT           IJPRNT              0               ***   
+       GEO_METHOD           INR            SINGLE_POINT [  5]   ***   
+       GEO_CONV             ICONTL              5              H/bohr 
+       EIGENVECTOR          IVEC                1               ***   
+  
+       NEGEVAL              IDIE             ABORT      [  0]   ***   
+       CURVILINEAR          ICURVY            OFF       [  0]   ***   
+       SCALE_ON             ISTCRT              0               ***   
+       GEO_MAXSTEP          IMXSTP            300            millibohr
+       VIBRATION            IVIB             ANALYTIC   [  1]   ***   
+       EVAL_HESS            IRECAL              0            # of cyc.
+       INTEGRALS            INTTYP             VMOL     [  1]   ***   
+       FD_STEPSIZE          IDISFD              0            10-4 bohr
+       POINTS               IGRDFD              0               ***   
+       CONTRACTION          ICNTYP          GENERAL     [  1]   ***   
+  
+       SYMMETRY             ISYM            OFF         [  1]   ***   
+       BASIS                IBASIS         STO-3G       [  2]   ***   
+       SPHERICAL            IDFGHI             ON       [  1]   ***   
+       RESET_FLAGS          IRESET             OFF      [  0]   ***   
+       PERT_ORB             IPTORB         STANDARD     [  0]   ***   
+       GENBAS_1             IGNBS1              0               ***   
+       GENBAS_2             IGNBS2              0               ***   
+       GENBAS_3             IGNBS3              0               ***   
+       COORDINATES          ICOORD         CARTESIAN    [  1]   ***   
+       SYM_CHECK            ISYMCK         OVERRIDE     [  1]   ***   
+  
+       SCF_PRINT            ISCFPR              0               ***   
+       ECP                  IECP           OFF          [  0]   ***   
+       RESTART_CC           ICCRES         OFF          [  0]   ***   
+       TRANS_INV            ITRAIN         USE          [  0]   ***   
+       HFSTABILITY          ISTABL         OFF          [  0]   ***   
+       ROT_EVEC             ROTVEC              0               ***   
+       BRUCK_CONV           IBRTOL          10D-  4             ***   
+       UNITS                IUNITS         BOHR         [  1]   ***   
+       FD_USEGROUP          IFDGRP         FULL         [  0]   ***   
+  
+       FD_PROJECT           IFDPRJ         ON           [  0]   ***   
+       FD_CALTYPE           IFDCAL         GRADONLY     [  0]   ***   
+       VTRAN                IVTRAN         FULL/PARTIAL [  0]   ***   
+       HF2_FILE             IHF2Fl         USE          [  1]   ***   
+       SUBGROUP             ISUBGP         DEFAULT      [  0]   ***   
+       SUBGRPAXIS           ISBXYZ         X            [  0]   ***   
+       EXCITE               IEXCIT         NONE         [  0]   ***   
+       LINEQ_CONV           IZTACN          10D-  7           cycles  
+  
+       TREAT_PERT           ITREAT         SIMULTANEOUS [  0]   ***   
+       ESTATE_PROP          IEXPRP         OFF          [  0]   ***   
+       GEO_MAXCYC           IOPTCY             50               ***   
+       ABCDTYPE             IABCDT         STANDARD     [  0]   ***   
+       AO_LADDERS           IAOLAD         SINGLEPASS   [  1]   ***   
+       FOCK                 IFOCK          AO           [  1]   ***   
+       ESTATE_MAXC          IEXMXC             20               ***   
+       ESTATE_CONV          IEXTOL          10D-  5             ***   
+       DIRECT               IDIRCT         OFF          [  0]   ***   
+  
+       GAMMA_ABCD           IGABCD         STORE        [  0]   ***   
+       LINEQ_TYPE           ILTYPE         DIIS         [  1]   ***   
+       LINEQ_MAXCY          ILMAXC             50               ***   
+       TRANGRAD             IRESRM         OFF          [  0]   ***   
+       PSI                  IPSI           OFF          [  0]   ***   
+       GAMMA_ABCI           IGABCI         STORE        [  0]   ***   
+       ESTATE_DIAG          IEXDIG         ITERATIVE    [  0]   ***   
+       FC_FIELD             IFINFC              0             x 10-6  
+       SD_FIELD             IFINSD              0             x 10-6  
+       DIFF_TYPE            IDIFTY         RELAXED      [  0]   ***   
+  
+       LINEQ_EXPOR          ILMAXD              5               ***   
+       FINITE_PERT          IFIPER              0             x 10-6  
+       ANHARMONIC           IANHAR         OFF          [  0]   ***   
+       CC_PROGRAM           ICCPRO         VCC          [  0]   ***   
+       OPEN-SHELL           IOPEN          SPIN-ORBITAL [  0]   ***   
+       UIJ_THRESHO          IUIJTH             25               ***   
+       SCF_DAMPING          IDAMP               0             x 10-3  
+       PROP_INTEGR          IINTYP         INTERNAL     [  0]   ***   
+       ANH_SYMMETR          IANHSM         ABELIAN      [  0]   ***   
+       ANH_ALGORIT          IANALG         STANDARD     [  0]   ***   
+  
+       EOM_NONIT            EOMNON         OFF          [  0]   ***   
+       VIB_ALGORIT          IGEALG         STANDARD     [  0]   ***   
+       ANH_DERIVAT          IANDER         SECOND       [  1]   ***   
+       SPINROTATIO          ISRCON         OFF          [  0]   ***   
+       CIS_CONV             ICISTL              5               ***   
+       ANH_STEPSIZ          ICUBST             50000          x 10-6  
+       SPIN_FLIP            ISPFLP         OFF          [  0]   ***   
+       GRID                 IGRID          OFF          [  0]   ***   
+  
+       DBOC                 IDBOC          OFF          [  0]   ***   
+       EOMFOLLOW            IEOMSR         ENERGY       [  0]   ***   
+       T3_EXTRAPOL          IT3EXT         OFF          [  0]   ***   
+       ESTATE_LOCK          IESLOC         OFF          [  0]   ***   
+       UNOS                 IUNOS          OFF          [  0]   ***   
+       FREQ_ALGORI          IVIALG         STANDARD     [  0]   ***   
+       RELATIVIST           IRELAT         OFF          [  0]   ***   
+       FROZEN_CORE          IFROCO         OFF          [  0]   ***   
+       EXCITATION           IEXCIT              0               ***   
+       INPUT_MRCC           IMRCC          ON           [  1]   ***   
+  
+       GIAO                 IGIAO          OFF          [  1]   ***   
+       EOM_NSING            IEOMSI          10D-  0             ***   
+       EOM_NTRIP            IEOMTR          10D-  0             ***   
+       EOM_NSTATES          IMRCCD         DAVIDSON     [  0]   ***   
+       DIAG_MRCC            IEOMST          10D-  0             ***   
+       NEWNORM              INEWNO         OFF          [  0]   ***   
+       TESTSUITE            ITESTS         OFF          [  0]   ***   
+       BUFFERSIZE           IBUFFS            600               ***   
+       SPINORBIT            ISOCAL         OFF          [  0]   ***   
+       DCT                  IDCT           OFF          [  0]   ***   
+  
+       PARALLEL             IPARAL         ON           [  1]   ***   
+       PARA_PRINT           IPPRIN              0               ***   
+       COMM_SIZE            IPSIZE            ***               ***   
+       PARA_INT             IPINTS         ON           [  1]   ***   
+       RAMAN_INT            IRAMIN         OFF          [  0]   ***   
+       RAMAN_ORB            IRAMRE         UNRELAXED    [  0]   ***   
+       BREIT                IBREIT         OFF          [  0]   ***   
+       MEM_UNIT             IMEMU          INTEGERWORDS [  0]   ***   
+       SPIN_ORBIT           ISPORB         OFF          [  0]   ***   
+       GENBAS_4             IGNBS4              0               ***   
+  
+       SPIN_SCAL            ISCSMP         OFF          [  0]   ***   
+       GRID_ALGO            IGALGO         SERIAL       [  0]   ***   
+       VIBPHASE             ISETPH         STANDARD     [  0]   ***   
+       SEQUENCE             ISEQUE         OFF          [  0]   ***   
+       HESS_TYPE            IHESTP         SCF          [  0]   ***   
+       CONTINUUM            ICONTU         NONE         [  0]   ***   
+       SCF_NOSTOP           ISCFST         OFF          [  0]   ***   
+       CONSTANT             ICONST         OLD          [  1]   ***   
+  
+       EOM_MRCC             IMRCCE         OLD          [  0]   ***   
+       EOM_ORDER            IEXORD         ENERGY       [  0]   ***   
+       GIMIC                IGIMIC         OFF          [  0]   ***   
+    -------------------------------------------------------------------
+  @GETXYZ-I,     3 atoms read from ZMAT.
+  1  O          8    15.99491
+  2  H          1     1.00783
+  3  H          1     1.00783
+  1  O          8    15.99491
+  2  H          1     1.00783
+  3  H          1     1.00783
+   Rotational constants (in cm-1): 
+         25.7762030951            39.7493173640            73.3255634750
+   Rotational constants (in MHz): 
+     772751.2366390346       1191654.7225843086       2198245.3988078553
+********************************************************************************
+   The full molecular point group is C2v .
+   The largest Abelian subgroup of the full molecular point group is C2v .
+   The computational point group is C1  .
+********************************************************************************
+ ----------------------------------------------------------------
+ Z-matrix   Atomic            Coordinates (in bohr)
+  Symbol    Number           X              Y              Z
+ ----------------------------------------------------------------
+     O         8         0.00000000     0.00000000     0.07579184
+     H         1         0.00000000    -0.86681183    -0.60143578
+     H         1         0.00000000     0.86681183    -0.60143578
+ ----------------------------------------------------------------
+   Interatomic distance matrix (Angstroms) 
+ 
+                 O             H             H    
+                [ 1]        [ 2]        [ 3]
+  O    [ 1]     0.00000
+  H    [ 2]     0.58209     0.00000
+  H    [ 3]     0.58209     0.91739     0.00000
+   Rotational constants (in cm-1): 
+         25.7762030951            73.3255634750            39.7493173640
+   Rotational constants (in MHz): 
+     772751.2366390346       2198245.3988078553       1191654.7225843086
+  There are    7 basis functions.
+                0.75 seconds walltime passed
+ --executable xjoda finished with status            0
+ --invoking executable xvmol
+ Serial version of molecule started
+ 
+    -------------------------------------------------------------------
+                    Input from MOL file
+    -------------------------------------------------------------------
+ INTGRL        1    0    1    0    0    0    0    0    0                        
+          *** CFOUR Program System (Release V0.1) ***                           
+ Water MP2/STO-3G Hessian Test                                                  
+     3    0            0.10E-08              0    0                             
+    9999.00      3.00                                                           
+           8.00000000    1    2    1    1                                       
+ O #1   0.000000000000000   0.000000000000000   0.075791843733959               
+     6    2                                                                     
+    130.709321400000       0.154329000000000       0.000000000000000E+000       
+    23.8088661000000       0.535328100000000       0.000000000000000E+000       
+    6.44360830000000       0.444634500000000       0.000000000000000E+000       
+    5.03315130000000       0.000000000000000E+000 -9.996720000000001E-002       
+    1.16959610000000       0.000000000000000E+000  0.399512800000000            
+   0.380389000000000       0.000000000000000E+000  0.700115500000000            
+     3    1                                                                     
+    5.03315130000000       0.155916300000000                                    
+    1.16959610000000       0.607683700000000                                    
+   0.380389000000000       0.391957400000000                                    
+           1.00000000    1    1    1                                            
+ H #2   0.000000000000000  -0.866811829000000  -0.601435779066041               
+     3    1                                                                     
+    3.42525090000000       0.154329000000000                                    
+   0.623913700000000       0.535328100000000                                    
+   0.168855400000000       0.444634500000000                                    
+           1.00000000    1    1    1                                            
+ H #3   0.000000000000000   0.866811829000000  -0.601435779066041               
+     3    1                                                                     
+    3.42525090000000       0.154329000000000                                    
+   0.623913700000000       0.535328100000000                                    
+   0.168855400000000       0.444634500000000                                    
+ FINISH                                                                         
+ 
+    -------------------------------------------------------------------
+ 
+ One- and two-electron integrals over symmetry-adapted AOs are calculated.
+
+  Spherical harmonics are used.
+  
+  Integrals less than  0.10E-13 are neglected.
+
+  Nuclear repulsion energy :   15.1222810070 a.u.
+  required memory for a1 array                5002609  words 
+  required memory for a2 array                2009140  words 
+ basis number:   8     5
+ basis number:   1     1
+ basis number:   1     1
+  @GETMEM-I,   Allocated      68 MB of main memory.
+  @MOLECU-I, One electron integrals required         0.00000 seconds.
+  @TWOEL-I,        228 integrals of symmetry type  I I I I
+  @TWOEL-I, Total number of 2-e integrals        228.
+  @MOLECU-I, Two electron integrals required         0.00000 seconds.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xvmol finished with status            0
+ --invoking executable xvmol2ja
+  @GETMEM-I,   Allocated     762 MB of main memory.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xvmol2ja finished with status            0
+ --invoking executable xvscf
+ NSOSCF                     0
+  There are    7 functions in the AO basis.
+
+  There are 1 irreducible representations.
+
+       Irrep        # of functions
+         1                  7
+
+
+  Parameters for SCF calculation: 
+        SCF reference function:  RHF  
+  Maximum number of iterations:  150
+     Full symmetry point group: C2v 
+     Computational point group: C1  
+        Initial density matrix: MOREAD                 
+     SCF convergence tolerance: 10**(-14)
+  DIIS convergence acceleration:  ON
+          Latest start for DIIS:   8
+                     DIIS order:   6
+
+  Memory information:      43509 words required.
+  Fock matrices are constructed from AO integral file.
+  @GETMEM-I,   Allocated       0 MB of main memory.
+  Initialization and symmetry analysis required      0.000 seconds.
+
+  @INITGES-I, Occupancies from core Hamiltonian:
+
+          Alpha population by irrep:   5
+           Beta population by irrep:   5
+
+
+ total no. of electrons in initial guess :  0.000000000000000E+000
+  --------------------------------------------------------------------
+  Iteration         Total Energy            Largest Density Difference
+  --------------------------------------------------------------------
+       0            15.122281006963725              0.0000000000D+00
+       1           -72.466846857199357              0.4536355487D+01
+       2           -73.986089835185709              0.2576899463D+01
+       3           -73.995249526039515              0.1424683709D+00
+       4           -73.995284648978782              0.9459911292D-02
+       5           -73.995284767725906              0.5147792547D-03
+       6           -73.995284769399092              0.8050667074D-04
+       7           -73.995284769425894              0.2046146602D-04
+       8           -73.995284769425950              0.3897579748D-07
+       9           -73.995284769426036              0.2476907568D-11
+      10           -73.995284769426036              0.6663558594D-12
+      11           -73.995284769425922              0.2420286194D-13
+
+  SCF has converged.
+
+ save density matrix on hard disk
+ total electron number:   9.99999999999999     
+     E(SCF)=       -73.995284769425950              0.5329070518D-14
+
+  Eigenvector printing suppressed.
+
+ @PUTMOS-I, Writing converged MOs to NEWMOS. 
+ @PUTMOS-I, Symmetry   1 Full   1 Partial   3
+
+
+ 
+  ORBITAL EIGENVALUES (ALPHA)  (1H = 27.2113838 eV)
+
+       MO #        E(hartree)               E(eV)           FULLSYM    COMPSYM
+       ----   --------------------   --------------------   -------   ---------
+    1     1         -20.3404081656        -553.4906536420      A1         A (1)
+    2     2          -1.5921834319         -43.3255144755      A1         A (1)
+    3     3          -0.8746864485         -23.8014286708      B2         A (1)
+    4     4          -0.5416849889         -14.7399981410      A1         A (1)
+    5     5          -0.4951278204         -13.4731131610      B1         A (1)
+  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    6     6           0.9808229395          26.6895494668      A1         A (1)
+    7     7           1.3355503671          36.3421736491      B2         A (1)
+
+
+  VSCF finished.
+
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xvscf finished with status            0
+ --invoking executable xvtran
+  @GETMEM-I,   Allocated     762 MB of main memory.
+  Full RHF integral transformation
+  Transformation of IIII integrals :
+  1 pass through the AO integral file was required.
+         228 AO integrals were read.
+         369 MO integrals were written to HF2.
+  Summary of active molecular orbitals: 
+------------------------------------------------------------------------
+ 
+  Index      Eigenvalue    Symmetry    Index      Eigenvalue    Symmetry
+------------------------------------------------------------------------
+     1       -20.3404082        1         5        -0.4951278        1
+     2        -1.5921834        1         6         0.9808229        1
+     3        -0.8746864        1         7         1.3355504        1
+     4        -0.5416850        1
+------------------------------------------------------------------------
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xvtran finished with status            0
+ --invoking executable xintprc
+  @GETMEM-I,   Allocated     762 MB of main memory.
+  Processing integrals for MBPT(2) calculation.
+  @GMOIAA-I, Processing MO integrals for spin case AA.
+  @GMOIAA-I, Generation of integral list completed.
+                      TYPE                NUMBER
+                      ----               --------
+                      PPPP                     6
+                      PPPH                    30
+                      PPHH                    47
+                      PHPH                    43
+                      PHHH                   135
+                      HHHH                   108
+
+                     TOTAL                   369
+
+  @FORMT2-I, Second-order MP correlation energies:
+              ----------------------------------------------
+              E(SCF)                =  -73.995284769426 a.u.
+              E2(AA)                =   -0.000318121539 a.u.
+              E2(AB)                =   -0.013454784257 a.u.
+              E2(TOT)               =   -0.014091027336 a.u.
+              Total MP2 energy      =  -74.009375796762 a.u.
+              ----------------------------------------------
+   Largest T2 amplitudes for spin case AB:
+       _       _                 _       _                 _       _
+   i   j   a   b             i   j   a   b             i   j   a   b
+-----------------------------------------------------------------------------
+[  3   3   7   7]-0.03106 [  2   2   6   6]-0.01995 [  4   4   7   7]-0.01766
+[  5   5   6   6]-0.01624 [  3   2   7   6]-0.01549 [  2   3   6   7]-0.01549
+[  3   3   6   6]-0.01279 [  4   2   6   6] 0.00855 [  2   4   6   6] 0.00855
+[  2   2   7   7]-0.00812 [  3   2   6   7]-0.00753 [  2   3   7   6]-0.00753
+[  4   4   6   6]-0.00702 [  5   5   7   7]-0.00577 [  4   3   6   7] 0.00503
+-----------------------------------------------------------------------------
+   Norm of T2AB vector (      100 symmetry allowed elements):  0.0555896870.
+-----------------------------------------------------------------------------
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.25 seconds walltime passed
+ --executable xintprc finished with status            0
+ --invoking executable xvcc
+  @GETMEM-I,   Allocated     762 MB of main memory.
+   MBPT(2) energy will be calculated.
+   The total correlation energy is -0.014091027336 a.u.
+  -----------------------------------------------------------
+       Correction         Increment           Cumulative
+  -----------------------------------------------------------
+        D-MBPT(2)       -0.014091027336   -74.009375796762
+  -----------------------------------------------------------
+  Total MBPT(2)       energy:   -74.009375796762 a.u.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+ --executable xvcc finished with status            0
+ --invoking executable xlambda
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ --executable xlambda finished with status            0
+ --invoking executable xdens
+  @GETMEM-I,   Allocated     762 MB of main memory.
+  MBPT(2) density and intermediates are calculated.
+  The iterative expansion of D(ai) converged after   4 iterations.
+  ----------------------------------------------------------------------
+                 Natural orbital occupation numbers
+  ----------------------------------------------------------------------
+  1.99999  1.99941  1.99932  1.99791  1.99694  0.00358  0.00285
+  Trace of density matrix :  10.0000000000.
+  ----------------------------------------------------------------------
+  Density calculation successfully completed.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xdens finished with status            0
+ --invoking executable xvdint
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ One- and two-electron integral derivatives are calculated
+ for RHF-CC/MBPT hessians and dipole derivatives.
+ Spherical gaussians are used.
+  Evaluation of 1e integral derivatives required    0.01 seconds.
+  Evaluation of 2el integral derivatives
+  Evaluation of 2e integral derivatives required    0.00 seconds.
+  @CHECKOUT-I, Total execution time :       0.0100 seconds.
+                0.00 seconds walltime passed
+ --executable xvdint finished with status            0
+ --invoking executable xcphf
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ Coupled-perturbed HF (CPHF) equations 
+ are solved for RHF-CC/MBPT hessian and dipole derivatives.
+  efields on                    10
+  efields on                    11
+  efields on                    12
+ There are 12 perturbations within irrep 1.
+ CPHF converged after   8 iterations.
+  Calculation of total derivative of f                    12
+
+                     SCF static dipole polarizability
+                     --------------------------------
+
+                         Ex          Ey          Ez
+
+            Ex       0.004784   -0.000000    0.000000
+            Ey      -0.000000    1.498759   -0.000000
+            Ez       0.000000   -0.000000    0.707349
+
+
+
+                  SCF static dipole hyperpolarizability
+                  -------------------------------------
+
+                         Ex          Ey          Ez
+
+            xx      -0.000000   -0.000000    0.003134
+            xy      -0.000000    0.000000    0.000000
+            xz       0.003134    0.000000    0.000000
+            yy       0.000000   -0.000000    1.556386
+            yz       0.000000    1.556386   -0.000000
+            zz       0.000000   -0.000000    0.562999
+
+
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.25 seconds walltime passed
+ --executable xcphf finished with status            0
+ --invoking executable xsdcc
+  @GETMEM-I,   Allocated     762 MB of main memory.
+  relativistic                     0
+ Vibrational frequencies and infrared intensities are calculated
+ at the MBPT(2) level within the harmonic approximation.
+ AO based algorithm is used.
+ CPHF coefficients for occ-occ block: U^x(i,j) = -1/2 S^x(i,j)
+ CPHF coefficients for vrt-vrt block: U^x(a,b) = -1/2 S^x(a,b)
+ Transformation of derivative integrals from AO to MO basis:
+ RHF transformation
+ Transformation of DIIII integral derivatives.
+ 1 pass through the AO integral derivative file was needed.
+        52 AO integral derivatives were read from file DIIII.
+ Transformation of first index required    0.0 seconds.
+ Transformation of remaining indices required    0.0 seconds.
+      1215 MO integral derivatives were written to file DERINT.
+ Formation of <ab||ci>^chi using AO integrals:
+ Transformation of IIII integrals:
+ 1 pass through the AO integral file was needed.
+       228 AO integrals were read from file IIII.
+ Tranformation of first (perturbed) index required   0.0 seconds.
+ Tranformation of remaining (unperturbed) indices required   0.0 seconds.
+        MO basis integral derivatives are being calculated
+             (Symmetry block 1, perturbation   4)
+        First derivative of the wavefunction is calculated
+             (Symmetry block 1, perturbation   4)
+        The first-order density matrix is being calculated 
+             (Symmetry block 1, perturbation   4)
+ Calculation of the contributions of <pq||rs> to dI(i,j)/dx
+ required   0.0 seconds.
+ Calculation of the contributions of <pq||rs> to dI(a,b)/dx
+ required   0.0 seconds.
+ Calculation of the contributions of <pq||rs> to dI(i,a)/dx
+ required   0.0 seconds.
+ First-order Z-vector equations are solved for 1 perturbation.
+ Convergence reached after   2 iterations.
+        U*G(pq,rs) contribution is being calculated for MBPT(2)
+             (Symmetry block 1, perturbation   4)
+
+ MBPT(2) contribution to force constants 
+
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0136202774       -0.0000000000       -0.0000000000
+       -0.0162463282        0.0000000000       -0.0000000000
+        0.0026260509        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+
+ MBPT(2) contribution to dipole derivatives 
+
+        0.0000000000        0.0000000000        0.0000000000
+        0.0019676101        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+       -0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+       -0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xsdcc finished with status            0
+ --invoking executable xanti
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ MBPT(2) MO derivative gammas will be sorted to Mulliken order.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xanti finished with status            0
+ --invoking executable xbcktrn
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ MBPT(2) MO derivative gammas will be transformed to the AO basis.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xbcktrn finished with status            0
+ --invoking executable xvdint
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ One- and two-electron integral derivatives are calculated
+ for RHF-CC/MBPT hessians and dipole derivatives.
+ Spherical gaussians are used.
+  Evaluation of 2el integral derivatives
+
+                      Two-electron integral gradient
+                      ------------------------------
+
+ O #1      -0.0522542678            0.0000000000            0.0000000000
+ H #2       0.0448630951           -0.0000000000            0.0000000000
+ H #3       0.0073911727            0.0000000000           -0.0000000000
+
+
+  Evaluation of 2e integral derivatives required    0.01 seconds.
+  contribution to Hessian
+       -0.0522542678        0.0000000000        0.0000000000
+        0.0448630951       -0.0000000000        0.0000000000
+        0.0073911727        0.0000000000       -0.0000000000
+  @CHECKOUT-I, Total execution time :       0.0100 seconds.
+                0.00 seconds walltime passed
+ --executable xvdint finished with status            0
+ --invoking executable xsdcc
+  @GETMEM-I,   Allocated     762 MB of main memory.
+  relativistic                     0
+ Vibrational frequencies and infrared intensities are calculated
+ at the MBPT(2) level within the harmonic approximation.
+ AO based algorithm is used.
+ CPHF coefficients for occ-occ block: U^x(i,j) = -1/2 S^x(i,j)
+ CPHF coefficients for vrt-vrt block: U^x(a,b) = -1/2 S^x(a,b)
+ Transformation of derivative integrals from AO to MO basis:
+ RHF transformation
+ Transformation of DIIII integral derivatives.
+ 1 pass through the AO integral derivative file was needed.
+       122 AO integral derivatives were read from file DIIII.
+ Transformation of first index required    0.0 seconds.
+ Transformation of remaining indices required    0.0 seconds.
+      1215 MO integral derivatives were written to file DERINT.
+ Formation of <ab||ci>^chi using AO integrals:
+ Transformation of IIII integrals:
+ 1 pass through the AO integral file was needed.
+       228 AO integrals were read from file IIII.
+ Tranformation of first (perturbed) index required   0.0 seconds.
+ Tranformation of remaining (unperturbed) indices required   0.0 seconds.
+        MO basis integral derivatives are being calculated
+             (Symmetry block 1, perturbation   5)
+        First derivative of the wavefunction is calculated
+             (Symmetry block 1, perturbation   5)
+        The first-order density matrix is being calculated 
+             (Symmetry block 1, perturbation   5)
+ Calculation of the contributions of <pq||rs> to dI(i,j)/dx
+ required   0.0 seconds.
+ Calculation of the contributions of <pq||rs> to dI(a,b)/dx
+ required   0.0 seconds.
+ Calculation of the contributions of <pq||rs> to dI(i,a)/dx
+ required   0.0 seconds.
+ First-order Z-vector equations are solved for 1 perturbation.
+ Convergence reached after   8 iterations.
+        U*G(pq,rs) contribution is being calculated for MBPT(2)
+             (Symmetry block 1, perturbation   5)
+
+ MBPT(2) contribution to force constants 
+
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+       -0.0000000000        0.0139659622        0.0145368854
+        0.0000000000       -0.0083721086       -0.0050040207
+       -0.0000000000       -0.0055938536       -0.0095328647
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+
+ MBPT(2) contribution to dipole derivatives 
+
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000       -0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0020951794        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0013645419        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xsdcc finished with status            0
+ --invoking executable xanti
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ MBPT(2) MO derivative gammas will be sorted to Mulliken order.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.25 seconds walltime passed
+ --executable xanti finished with status            0
+ --invoking executable xbcktrn
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ MBPT(2) MO derivative gammas will be transformed to the AO basis.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xbcktrn finished with status            0
+ --invoking executable xvdint
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ One- and two-electron integral derivatives are calculated
+ for RHF-CC/MBPT hessians and dipole derivatives.
+ Spherical gaussians are used.
+  Evaluation of 2el integral derivatives
+
+                      Two-electron integral gradient
+                      ------------------------------
+
+ O #1       0.0000000000           -0.0443252599           -0.0152849643
+ H #2      -0.0000000000            0.0403465838            0.0132204166
+ H #3       0.0000000000            0.0039786761            0.0020645477
+
+
+  Evaluation of 2e integral derivatives required    0.01 seconds.
+  contribution to Hessian
+        0.0000000000       -0.0443252599       -0.0152849643
+       -0.0000000000        0.0403465838        0.0132204166
+        0.0000000000        0.0039786761        0.0020645477
+  @CHECKOUT-I, Total execution time :       0.0100 seconds.
+                0.00 seconds walltime passed
+ --executable xvdint finished with status            0
+ --invoking executable xsdcc
+  @GETMEM-I,   Allocated     762 MB of main memory.
+  relativistic                     0
+ Vibrational frequencies and infrared intensities are calculated
+ at the MBPT(2) level within the harmonic approximation.
+ AO based algorithm is used.
+ CPHF coefficients for occ-occ block: U^x(i,j) = -1/2 S^x(i,j)
+ CPHF coefficients for vrt-vrt block: U^x(a,b) = -1/2 S^x(a,b)
+ Transformation of derivative integrals from AO to MO basis:
+ RHF transformation
+ Transformation of DIIII integral derivatives.
+ 1 pass through the AO integral derivative file was needed.
+       118 AO integral derivatives were read from file DIIII.
+ Transformation of first index required    0.0 seconds.
+ Transformation of remaining indices required    0.0 seconds.
+      1215 MO integral derivatives were written to file DERINT.
+ Formation of <ab||ci>^chi using AO integrals:
+ Transformation of IIII integrals:
+ 1 pass through the AO integral file was needed.
+       228 AO integrals were read from file IIII.
+ Tranformation of first (perturbed) index required   0.0 seconds.
+ Tranformation of remaining (unperturbed) indices required   0.0 seconds.
+        MO basis integral derivatives are being calculated
+             (Symmetry block 1, perturbation   6)
+        First derivative of the wavefunction is calculated
+             (Symmetry block 1, perturbation   6)
+        The first-order density matrix is being calculated 
+             (Symmetry block 1, perturbation   6)
+ Calculation of the contributions of <pq||rs> to dI(i,j)/dx
+ required   0.0 seconds.
+ Calculation of the contributions of <pq||rs> to dI(a,b)/dx
+ required   0.0 seconds.
+ Calculation of the contributions of <pq||rs> to dI(i,a)/dx
+ required   0.0 seconds.
+ First-order Z-vector equations are solved for 1 perturbation.
+ Convergence reached after   8 iterations.
+        U*G(pq,rs) contribution is being calculated for MBPT(2)
+             (Symmetry block 1, perturbation   6)
+
+ MBPT(2) contribution to force constants 
+
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000       -0.0030388511        0.0272249433
+       -0.0000000000       -0.0016587832       -0.0207830267
+       -0.0000000000        0.0046976344       -0.0064419166
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+
+ MBPT(2) contribution to dipole derivatives 
+
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000       -0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0019482577
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000       -0.0003564818
+        0.0000000000        0.0000000000        0.0000000000
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xsdcc finished with status            0
+ --invoking executable xanti
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ MBPT(2) MO derivative gammas will be sorted to Mulliken order.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xanti finished with status            0
+ --invoking executable xbcktrn
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ MBPT(2) MO derivative gammas will be transformed to the AO basis.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xbcktrn finished with status            0
+ --invoking executable xvdint
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ One- and two-electron integral derivatives are calculated
+ for RHF-CC/MBPT hessians and dipole derivatives.
+ Spherical gaussians are used.
+  Evaluation of 2el integral derivatives
+
+                      Two-electron integral gradient
+                      ------------------------------
+
+ O #1       0.0000000000           -0.0126458617           -0.0392798498
+ H #2      -0.0000000000            0.0098751791            0.0494207672
+ H #3      -0.0000000000            0.0027706825           -0.0101409175
+
+
+  Evaluation of 2e integral derivatives required    0.01 seconds.
+  contribution to Hessian
+        0.0000000000       -0.0126458617       -0.0392798498
+       -0.0000000000        0.0098751791        0.0494207672
+       -0.0000000000        0.0027706825       -0.0101409175
+  @CHECKOUT-I, Total execution time :       0.0100 seconds.
+                0.25 seconds walltime passed
+ --executable xvdint finished with status            0
+ --invoking executable xsdcc
+  @GETMEM-I,   Allocated     762 MB of main memory.
+  relativistic                     0
+ Vibrational frequencies and infrared intensities are calculated
+ at the MBPT(2) level within the harmonic approximation.
+ AO based algorithm is used.
+ CPHF coefficients for occ-occ block: U^x(i,j) = -1/2 S^x(i,j)
+ CPHF coefficients for vrt-vrt block: U^x(a,b) = -1/2 S^x(a,b)
+ Transformation of derivative integrals from AO to MO basis:
+ RHF transformation
+ Transformation of DIIII integral derivatives.
+ 1 pass through the AO integral derivative file was needed.
+        52 AO integral derivatives were read from file DIIII.
+ Transformation of first index required    0.0 seconds.
+ Transformation of remaining indices required    0.0 seconds.
+      1215 MO integral derivatives were written to file DERINT.
+ Formation of <ab||ci>^chi using AO integrals:
+ Transformation of IIII integrals:
+ 1 pass through the AO integral file was needed.
+       228 AO integrals were read from file IIII.
+ Tranformation of first (perturbed) index required   0.0 seconds.
+ Tranformation of remaining (unperturbed) indices required   0.0 seconds.
+        MO basis integral derivatives are being calculated
+             (Symmetry block 1, perturbation   7)
+        First derivative of the wavefunction is calculated
+             (Symmetry block 1, perturbation   7)
+        The first-order density matrix is being calculated 
+             (Symmetry block 1, perturbation   7)
+ Calculation of the contributions of <pq||rs> to dI(i,j)/dx
+ required   0.0 seconds.
+ Calculation of the contributions of <pq||rs> to dI(a,b)/dx
+ required   0.0 seconds.
+ Calculation of the contributions of <pq||rs> to dI(i,a)/dx
+ required   0.0 seconds.
+ First-order Z-vector equations are solved for 1 perturbation.
+ Convergence reached after   2 iterations.
+        U*G(pq,rs) contribution is being calculated for MBPT(2)
+             (Symmetry block 1, perturbation   7)
+
+ MBPT(2) contribution to force constants 
+
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0136202774        0.0000000000        0.0000000000
+        0.0026260509       -0.0000000000        0.0000000000
+       -0.0162463282       -0.0000000000       -0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+
+ MBPT(2) contribution to dipole derivatives 
+
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0019676101        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+       -0.0000000000        0.0000000000        0.0000000000
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xsdcc finished with status            0
+ --invoking executable xanti
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ MBPT(2) MO derivative gammas will be sorted to Mulliken order.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xanti finished with status            0
+ --invoking executable xbcktrn
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ MBPT(2) MO derivative gammas will be transformed to the AO basis.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xbcktrn finished with status            0
+ --invoking executable xvdint
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ One- and two-electron integral derivatives are calculated
+ for RHF-CC/MBPT hessians and dipole derivatives.
+ Spherical gaussians are used.
+  Evaluation of 2el integral derivatives
+
+                      Two-electron integral gradient
+                      ------------------------------
+
+ O #1      -0.0522542678           -0.0000000000           -0.0000000000
+ H #2       0.0073911727           -0.0000000000           -0.0000000000
+ H #3       0.0448630951            0.0000000000            0.0000000000
+
+
+  Evaluation of 2e integral derivatives required    0.01 seconds.
+  contribution to Hessian
+       -0.0522542678       -0.0000000000       -0.0000000000
+        0.0073911727       -0.0000000000       -0.0000000000
+        0.0448630951        0.0000000000        0.0000000000
+  @CHECKOUT-I, Total execution time :       0.0100 seconds.
+                0.25 seconds walltime passed
+ --executable xvdint finished with status            0
+ --invoking executable xsdcc
+  @GETMEM-I,   Allocated     762 MB of main memory.
+  relativistic                     0
+ Vibrational frequencies and infrared intensities are calculated
+ at the MBPT(2) level within the harmonic approximation.
+ AO based algorithm is used.
+ CPHF coefficients for occ-occ block: U^x(i,j) = -1/2 S^x(i,j)
+ CPHF coefficients for vrt-vrt block: U^x(a,b) = -1/2 S^x(a,b)
+ Transformation of derivative integrals from AO to MO basis:
+ RHF transformation
+ Transformation of DIIII integral derivatives.
+ 1 pass through the AO integral derivative file was needed.
+       122 AO integral derivatives were read from file DIIII.
+ Transformation of first index required    0.0 seconds.
+ Transformation of remaining indices required    0.0 seconds.
+      1215 MO integral derivatives were written to file DERINT.
+ Formation of <ab||ci>^chi using AO integrals:
+ Transformation of IIII integrals:
+ 1 pass through the AO integral file was needed.
+       228 AO integrals were read from file IIII.
+ Tranformation of first (perturbed) index required   0.0 seconds.
+ Tranformation of remaining (unperturbed) indices required   0.0 seconds.
+        MO basis integral derivatives are being calculated
+             (Symmetry block 1, perturbation   8)
+        First derivative of the wavefunction is calculated
+             (Symmetry block 1, perturbation   8)
+        The first-order density matrix is being calculated 
+             (Symmetry block 1, perturbation   8)
+ Calculation of the contributions of <pq||rs> to dI(i,j)/dx
+ required   0.0 seconds.
+ Calculation of the contributions of <pq||rs> to dI(a,b)/dx
+ required   0.0 seconds.
+ Calculation of the contributions of <pq||rs> to dI(i,a)/dx
+ required   0.0 seconds.
+ First-order Z-vector equations are solved for 1 perturbation.
+ Convergence reached after   8 iterations.
+        U*G(pq,rs) contribution is being calculated for MBPT(2)
+             (Symmetry block 1, perturbation   8)
+
+ MBPT(2) contribution to force constants 
+
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+       -0.0000000000        0.0139659622       -0.0145368854
+        0.0000000000       -0.0055938536        0.0095328647
+       -0.0000000000       -0.0083721086        0.0050040207
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+
+ MBPT(2) contribution to dipole derivatives 
+
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0020951794        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000       -0.0013645419        0.0000000000
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xsdcc finished with status            0
+ --invoking executable xanti
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ MBPT(2) MO derivative gammas will be sorted to Mulliken order.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xanti finished with status            0
+ --invoking executable xbcktrn
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ MBPT(2) MO derivative gammas will be transformed to the AO basis.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xbcktrn finished with status            0
+ --invoking executable xvdint
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ One- and two-electron integral derivatives are calculated
+ for RHF-CC/MBPT hessians and dipole derivatives.
+ Spherical gaussians are used.
+  Evaluation of 2el integral derivatives
+
+                      Two-electron integral gradient
+                      ------------------------------
+
+ O #1      -0.0000000000           -0.0443252599            0.0152849643
+ H #2      -0.0000000000            0.0039786761           -0.0020645477
+ H #3       0.0000000000            0.0403465838           -0.0132204166
+
+
+  Evaluation of 2e integral derivatives required    0.01 seconds.
+  contribution to Hessian
+       -0.0000000000       -0.0443252599        0.0152849643
+       -0.0000000000        0.0039786761       -0.0020645477
+        0.0000000000        0.0403465838       -0.0132204166
+  @CHECKOUT-I, Total execution time :       0.0100 seconds.
+                0.00 seconds walltime passed
+ --executable xvdint finished with status            0
+ --invoking executable xsdcc
+  @GETMEM-I,   Allocated     762 MB of main memory.
+  relativistic                     0
+ Vibrational frequencies and infrared intensities are calculated
+ at the MBPT(2) level within the harmonic approximation.
+ AO based algorithm is used.
+ CPHF coefficients for occ-occ block: U^x(i,j) = -1/2 S^x(i,j)
+ CPHF coefficients for vrt-vrt block: U^x(a,b) = -1/2 S^x(a,b)
+ Transformation of derivative integrals from AO to MO basis:
+ RHF transformation
+ Transformation of DIIII integral derivatives.
+ 1 pass through the AO integral derivative file was needed.
+       118 AO integral derivatives were read from file DIIII.
+ Transformation of first index required    0.0 seconds.
+ Transformation of remaining indices required    0.0 seconds.
+      1215 MO integral derivatives were written to file DERINT.
+ Formation of <ab||ci>^chi using AO integrals:
+ Transformation of IIII integrals:
+ 1 pass through the AO integral file was needed.
+       228 AO integrals were read from file IIII.
+ Tranformation of first (perturbed) index required   0.0 seconds.
+ Tranformation of remaining (unperturbed) indices required   0.0 seconds.
+        MO basis integral derivatives are being calculated
+             (Symmetry block 1, perturbation   9)
+        First derivative of the wavefunction is calculated
+             (Symmetry block 1, perturbation   9)
+        The first-order density matrix is being calculated 
+             (Symmetry block 1, perturbation   9)
+ Calculation of the contributions of <pq||rs> to dI(i,j)/dx
+ required   0.0 seconds.
+ Calculation of the contributions of <pq||rs> to dI(a,b)/dx
+ required   0.0 seconds.
+ Calculation of the contributions of <pq||rs> to dI(i,a)/dx
+ required   0.0 seconds.
+ First-order Z-vector equations are solved for 1 perturbation.
+ Convergence reached after   8 iterations.
+        U*G(pq,rs) contribution is being calculated for MBPT(2)
+             (Symmetry block 1, perturbation   9)
+
+ MBPT(2) contribution to force constants 
+
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0030388511        0.0272249433
+       -0.0000000000       -0.0046976344       -0.0064419166
+       -0.0000000000        0.0016587832       -0.0207830267
+
+ MBPT(2) contribution to dipole derivatives 
+
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000       -0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000       -0.0019482577
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000        0.0000000000
+        0.0000000000        0.0000000000       -0.0003564818
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.25 seconds walltime passed
+ --executable xsdcc finished with status            0
+ --invoking executable xanti
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ MBPT(2) MO derivative gammas will be sorted to Mulliken order.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xanti finished with status            0
+ --invoking executable xbcktrn
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ MBPT(2) MO derivative gammas will be transformed to the AO basis.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xbcktrn finished with status            0
+ --invoking executable xvdint
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ One- and two-electron integral derivatives are calculated
+ for RHF-CC/MBPT hessians and dipole derivatives.
+ Spherical gaussians are used.
+  Evaluation of 2el integral derivatives
+
+                      Two-electron integral gradient
+                      ------------------------------
+
+ O #1      -0.0000000000            0.0126458617           -0.0392798498
+ H #2      -0.0000000000           -0.0027706825           -0.0101409175
+ H #3       0.0000000000           -0.0098751791            0.0494207672
+
+
+  Evaluation of 2e integral derivatives required    0.01 seconds.
+  contribution to Hessian
+       -0.0000000000        0.0126458617       -0.0392798498
+       -0.0000000000       -0.0027706825       -0.0101409175
+        0.0000000000       -0.0098751791        0.0494207672
+  @CHECKOUT-I, Total execution time :       0.0100 seconds.
+                0.00 seconds walltime passed
+ --executable xvdint finished with status            0
+ --invoking executable xanti
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ --executable xanti finished with status            0
+ --invoking executable xbcktrn
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ MBPT(2) MO gammas will be transformed to the AO basis.
+  @CHECKOUT-I, Total execution time :       0.0000 seconds.
+                0.00 seconds walltime passed
+ --executable xbcktrn finished with status            0
+ --invoking executable xvdint
+  @GETMEM-I,   Allocated     762 MB of main memory.
+ One- and two-electron integral derivatives are calculated
+ for RHF-CC/MBPT hessians and dipole derivatives.
+ Spherical gaussians are used.
+
+                     Kinetic energy integral gradient
+                     --------------------------------
+
+ O #1      -0.0000000000           -0.0000000000           -0.9522657014
+ H #2       0.0000000000            0.1633499539            0.4761328507
+ H #3       0.0000000000           -0.1633499539            0.4761328507
+
+
+
+                   Nuclear attraction integral gradient
+                   ------------------------------------
+
+ O #1       0.0000000000           -0.0000000000            9.2842657850
+ H #2      -0.0000000000           -2.8688418926           -4.6421328925
+ H #3      -0.0000000000            2.8688418926           -4.6421328925
+
+
+
+                      Reorthonormalization gradient
+                      -----------------------------
+
+ O #1       0.0000000000            0.0000000000           -0.0822854597
+ H #2      -0.0000000000           -0.3061557730            0.0411427299
+ H #3       0.0000000000            0.3061557730            0.0411427299
+
+
+
+                     Kinetic energy integral Hessian
+                     -------------------------------
+
+           O #1 x      O #1 y      O #1 z      H #2 x      H #2 y      H #2 z
+
+ O #1 x   -2.067542
+ O #1 y    0.000000   -2.044895
+ O #1 z    0.000000   -0.000000   -1.081866
+
+ H #2 x    1.033771   -0.000000   -0.000000   -0.955793
+ H #2 y   -0.000000    1.022447   -0.319825    0.000000   -1.163218
+ H #2 z   -0.000000   -0.319825    0.540933    0.000000    0.319825   -0.462955
+
+ H #3 x    1.033771    0.000000   -0.000000   -0.077978    0.000000    0.000000
+ H #3 y    0.000000    1.022447    0.319825    0.000000    0.140771    0.000000
+ H #3 z   -0.000000    0.319825    0.540933    0.000000    0.000000   -0.077978
+
+
+           H #3 x      H #3 y      H #3 z
+
+ H #3 x   -0.955793
+ H #3 y   -0.000000   -1.163218
+ H #3 z    0.000000   -0.319825   -0.462955
+
+
+
+
+                   Nuclear attraction integral Hessian
+                   -----------------------------------
+
+           O #1 x      O #1 y      O #1 z      H #2 x      H #2 y      H #2 z
+
+ O #1 x   17.525450
+ O #1 y   -0.000000    9.504411
+ O #1 z   -0.000000    0.000000    9.413662
+
+ H #2 x   -8.762725    0.000000    0.000000    8.061680
+ H #2 y    0.000000   -4.752205    3.861030   -0.000000    5.624543
+ H #2 z    0.000000    4.640423   -4.706831   -0.000000   -4.250726    3.835556
+
+ H #3 x   -8.762725   -0.000000    0.000000    0.701045   -0.000000   -0.000000
+ H #3 y   -0.000000   -4.752205   -3.861030    0.000000   -0.872338   -0.389696
+ H #3 z    0.000000   -4.640423   -4.706831   -0.000000    0.389696    0.871275
+
+
+           H #3 x      H #3 y      H #3 z
+
+ H #3 x    8.061680
+ H #3 y    0.000000    5.624543
+ H #3 z   -0.000000    4.250726    3.835556
+
+
+
+
+                Highest order reorthonormalization Hessian
+                ------------------------------------------
+
+           O #1 x      O #1 y      O #1 z      H #2 x      H #2 y      H #2 z
+
+ O #1 x   -0.506812
+ O #1 y   -0.000000   -1.287303
+ O #1 z   -0.000000   -0.000000   -0.664024
+
+ H #2 x    0.253406    0.000000    0.000000   -0.165599
+ H #2 y    0.000000    0.643651    0.202752   -0.000000   -0.684427
+ H #2 z    0.000000    0.202752    0.332012   -0.000000   -0.202752   -0.244205
+
+ H #3 x    0.253406    0.000000   -0.000000   -0.087807    0.000000    0.000000
+ H #3 y    0.000000    0.643651   -0.202752    0.000000    0.040775    0.000000
+ H #3 z   -0.000000   -0.202752    0.332012    0.000000    0.000000   -0.087807
+
+
+           H #3 x      H #3 y      H #3 z
+
+ H #3 x   -0.165599
+ H #3 y   -0.000000   -0.684427
+ H #3 z    0.000000    0.202752   -0.244205
+
+
+
+
+                Electronic contributions to dipole moment
+                -----------------------------------------
+
+                               au             Debye
+
+                    x     -0.00000000     -0.00000000
+                    y     -0.00000000     -0.00000000
+                    z     -0.20368206     -0.51770826
+
+  Conversion factor used: 1 a.u. =   2.54174691 Debye 
+
+
+
+   Electronic contributions to static part of dipole moment derivatives
+   --------------------------------------------------------------------
+
+
+                     Total dipole moment derivatives
+                     -------------------------------
+
+                              Ex             Ey             Ez
+
+               O #1 x    -9.03091235    -0.00000000    -0.00000000
+               O #1 y     0.00000000    -9.40092766    -0.00000000
+               O #1 z     0.00000000     0.00000000    -9.22253564
+
+               H #2 x    -0.48454383     0.00000000     0.00000000
+               H #2 y    -0.00000000    -0.29953617    -0.04617625
+               H #2 z    -0.00000000     0.21722661    -0.38873218
+
+               H #3 x    -0.48454383    -0.00000000     0.00000000
+               H #3 y     0.00000000    -0.29953617     0.04617625
+               H #3 z    -0.00000000    -0.21722661    -0.38873218
+
+
+
+  Evaluation of 1e integral derivatives required    0.00 seconds.
+  Evaluation of 2el integral derivatives
+
+                      Two-electron integral gradient
+                      ------------------------------
+
+ O #1      -0.0000000000           -0.0000000000           -2.5556273639
+ H #2       0.0000000000           -0.8453228427            1.2778136819
+ H #3       0.0000000000            0.8453228427            1.2778136819
+
+
+  Evaluation of 2e integral derivatives required    0.01 seconds.
+
+                            Molecular gradient
+                            ------------------
+
+ O #1      -0.0000000000            0.0000000000           -2.4468909256
+ H #2       0.0000000000            1.6857466661            1.2234454628
+ H #3       0.0000000000           -1.6857466661            1.2234454628
+
+
+  Molecular gradient norm 0.383E+01
+
+                            Molecular hessian
+                            -----------------
+
+           O #1 x      O #1 y      O #1 z      H #2 x      H #2 y      H #2 z
+
+ O #1 x   -3.613100
+ O #1 y    0.000000    8.448498
+ O #1 z   -0.000000    0.000000    3.755876
+
+ H #2 x    1.806550   -0.000000   -0.000000   -1.875658
+ H #2 y   -0.000000   -4.224249   -4.380941    0.000000    4.372204
+ H #2 z   -0.000000   -4.711776   -1.877938    0.000000    4.546359    1.807207
+
+ H #3 x    1.806550    0.000000    0.000000    0.069108   -0.000000    0.000000
+ H #3 y    0.000000   -4.224249    4.380941    0.000000   -0.147956    0.165418
+ H #3 z    0.000000    4.711776   -1.877938    0.000000   -0.165418    0.070731
+
+
+           H #3 x      H #3 y      H #3 z
+
+ H #3 x   -1.875658
+ H #3 y   -0.000000    4.372204
+ H #3 z   -0.000000   -4.546359    1.807207
+
+
+
+
+                           Total dipole moment
+                           -------------------
+
+                               au             Debye
+
+                    x     -0.00000000     -0.00000000
+                    y     -0.00000000     -0.00000000
+                    z     -0.80021887     -2.03395385
+
+  Conversion factor used: 1 a.u. =   2.54174691 Debye 
+
+
+
+                     Total dipole moment derivatives
+                     -------------------------------
+
+                              Ex             Ey             Ez
+
+               O #1 x    -1.18160991    -0.00000000    -0.00000000
+               O #1 y     0.00000000    -0.66289891    -0.00000000
+               O #1 z     0.00000000     0.00000000    -0.51015641
+
+               H #2 x     0.59080496     0.00000000     0.00000000
+               H #2 y    -0.00000000     0.33144945    -0.22334564
+               H #2 z    -0.00000000    -0.20263073     0.25507821
+
+               H #3 x     0.59080496    -0.00000000     0.00000000
+               H #3 y     0.00000000     0.33144945     0.22334564
+               H #3 z    -0.00000000     0.20263073     0.25507821
+
+
+
+  @CHECKOUT-I, Total execution time :       0.0100 seconds.
+                0.25 seconds walltime passed
+ --executable xvdint finished with status            0
+ --invoking executable xjoda
+  masses used (in AMU) in vibrational analysis: 
+  15.994914630      1.007825035      1.007825035
+                     Normal Coordinate Analysis
+  ----------------------------------------------------------------
+    Irreducible         Harmonic       Infrared        Type 
+   Representation       Frequency      Intensity 
+  ----------------------------------------------------------------
+                       (cm-1)         (km/mol)
+  ----------------------------------------------------------------
+      ----              7303.1357i      760.3689       ROTATION  
+      ----              7198.5861i      268.2484       ROTATION  
+      ----              7140.7764i        0.0000       ROTATION  
+        A1              6238.7980i      238.0109       VIBRATION 
+      ----                 0.0121i        0.0000      TRANSLATION
+      ----                 0.0000i        0.0000      TRANSLATION
+      ----                 0.0121         0.0000      TRANSLATION
+        A1             14590.4791         0.2300       VIBRATION 
+        B2             14901.8109        50.5000       VIBRATION 
+  ----------------------------------------------------------------
+ 
+ 
+                                   Normal Coordinates 
+
+                A1                        A1                        B2
+              6238.80i                  *******                   ******* 
+             VIBRATION                 VIBRATION                 VIBRATION 
+ O     -0.000 0.0000  0.2645    0.0000  0.0000  0.2048    0.0000  0.2686 -0.0000
+ H      0.000 0.4329 -0.5269   -0.0000 -0.5591 -0.4079   -0.0000 -0.5350 -0.4216
+ H      0.000-0.4329 -0.5269    0.0000  0.5591 -0.4079    0.0000 -0.5350  0.4216
+            Gradient vector in normal coordinate representation
+         ----------------------------------------------------------
+   i    W(I)     dE/dQ(i)     dE/dq      dE/dq     [dE/dQ(i)]/w(i)
+                              (cm-1)      (eV)        (relative)
+         ----------------------------------------------------------
+    4  6238.80  0.0076357795    232.80870      0.02886  -0.0000000178
+    8 14590.48 -2.9973346529 -59758.09524     -7.40912  -0.0011738300
+    9 14901.81  0.0000000000      0.00000      0.00000  -0.0000000000
+         ----------------------------------------------------------
+  ----------------------------------------------------------------
+                    Dipole Moment Function
+                   (Normal Coordinate Basis)
+  ----------------------------------------------------------------
+    Mode     Symmetry    d(Mu(x))/dQ   d(Mu(y))/dQ   d(Mu(z))/dQ
+  ----------------------------------------------------------------
+     Q4          A1        0.000000      0.000000     -0.494112
+     Q8          A1        0.000000     -0.000000      0.015361
+     Q9          B2        0.000000     -0.227600     -0.000000
+  ----------------------------------------------------------------
+---------------------------------------------------------------------------
+------------------------------------------------------------
+        Parameter                (MHz)                 (CM-1)
+------------------------------------------------------------
+ 
+           R6                -.159627E+00           -.532458E-05
+           R5                -.224230E+02           -.747949E-03
+           SI                            0.580350E+01
+ 
+  A-reduced centrifugal distortion parameters 
+ 
+           DJ                0.155625E+02           0.519109E-03
+           DK                -.537950E+02           -.179441E-02
+           DJK               0.121465E+03           0.405163E-02
+           DELJ              0.158817E+02           0.529758E-03
+           DELK              -.521988E+02           -.174116E-02
+           DELJK             0.119549E+03           0.398773E-02
+           delJ              0.311976E+01           0.104064E-03
+           delK              0.485515E+02           0.161950E-02
+ 
+  S-reduced centrifugal distortion parameters 
+ 
+           DJ                0.116988E+02           0.390230E-03
+           DK                -.731135E+02           -.243880E-02
+           DJK               0.144647E+03           0.482490E-02
+           D1                -.311976E+01           -.104064E-03
+           D2                -.209147E+01           -.697640E-04
+------------------------------------------------------------
+   Vibrational frequencies after rotational projection  of 
+   Cartesian force constants: 
+            1            6238.7980i
+            2               0.0258i
+            3               0.0001i
+            4               0.0001i
+            5               0.0000i
+            6               0.0000 
+            7               0.0088 
+            8           14590.4791 
+            9           14901.6573 
+  Zero-point vibrational energy:   42.1611 kcal/mol =  176.4023 kJ/mol.
+                0.00 seconds walltime passed
+ --executable xjoda finished with status            0

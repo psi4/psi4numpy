@@ -35,3 +35,6 @@ def test_MPn(workspace):
 
 def test_MP2_Gradient(workspace):
     exe_py(workspace, tdir, 'MP2_Gradient')
+
+def test_MP2_Hessian(workspace):
+    exe_py(workspace, tdir, 'MP2_Hessian')
