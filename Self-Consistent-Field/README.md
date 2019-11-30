@@ -56,7 +56,7 @@ Helper HF methods:
     1. [[Shewchuk:1994](http://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf)] J. R. Shewchuk, "An Introduction to the Conjugate Gradient Method Without the Agonizing Pain," web. (1994)
 
 - Effective Fragment Potneitals & LIBEFP
-    1. [[Kaliman:2013:2284](http://dx.doi.org/10.1002/jcc.23375)] I. Kaliman and L. Slipchenko, "LIBEFP: A New Parallel Implementation of the Effective Fragment Potential Method as a Portable Software Library." *J. Comput. Chem.*, **34**, 2284 (2013).
+    1. [[Kaliman:2013:2284](https://doi.org/10.1002/jcc.23375)] I. Kaliman and L. Slipchenko, "LIBEFP: A New Parallel Implementation of the Effective Fragment Potential Method as a Portable Software Library." *J. Comput. Chem.*, **34**, 2284 (2013).
      
 - Hartree-Fock Gradients & Hessians
     1. [[Pople:1979:225](https://onlinelibrary.wiley.com/doi/abs/10.1002/qua.560160825)] J. A. Pople, R. Krishnan, H. B. Schlegel, and J. S. Binkley. *Int. J. Quantum Chem. Symp.* **13**, 225 (1979)

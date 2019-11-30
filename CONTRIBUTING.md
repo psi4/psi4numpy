@@ -239,7 +239,7 @@ implemented within the script.  In this case, a Python comment containing this
 publication's citation key and the equation number for the expression
 beingimplemented should be given nearby.  For example, to implement a function
 which builds the `Wmnij` intermediate from equation 6 of [J. F.  Stanton *et
-al.*'s paper](http://dx.doi.org/10.1063/1.460620), 
+al.*'s paper](https://doi.org/10.1063/1.460620), 
 ```python
 def build_Wmnij():
     """Implements [Stanton:1991:4334] Eqn. 6"""
