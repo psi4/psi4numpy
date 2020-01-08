@@ -71,19 +71,11 @@ va = slice(nalpha,nmo)
 ob = slice(0,nbeta)
 vb = slice(nbeta,nmo)
 
-# AO->MO coefficients, all
-Ca = wfn.Ca().np
-Cb = wfn.Cb().np
-
 # AO->MO coefficients, occ and vir subsets
 _Coa = wfn.Ca_subset("AO","OCC")
 _Cob = wfn.Cb_subset("AO","OCC")
 _Cva = wfn.Ca_subset("AO","VIR")
 _Cvb = wfn.Cb_subset("AO","VIR")
-
-# Transform h to MO basis
-ha = np.einsum('mq,np,mn->pq',Ca,Ca,h)
-hb = np.einsum('mq,np,mn->pq',Cb,Cb,h)
 
 # Build MO basis TEI
 t = time()
