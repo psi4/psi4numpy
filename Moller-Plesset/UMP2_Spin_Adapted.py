@@ -82,9 +82,10 @@ Cvb = wfn.Cb_subset("AO", "VIR")
 # Build MO basis TEI
 t = time()
 print('Transforming TEI from AO -> MO.')
-mo_ijab = mints.mo_eri(Coa, Cva, Coa, Cva).np
-mo_iJaB = mints.mo_eri(Coa, Cva, Cob, Cvb).np
-mo_IJAB = mints.mo_eri(Cob, Cvb, Cob, Cvb).np
+I = mints.ao_eri()
+mo_ijab = mints.mo_transform(I, Coa, Cva, Coa, Cva).np
+mo_iJaB = mints.mo_transform(I, Coa, Cva, Cob, Cvb).np
+mo_IJAB = mints.mo_transform(I, Cob, Cvb, Cob, Cvb).np
 t = time() - t
 print(f'Transformed TEI in {t:4.6f} s.\n')
 
