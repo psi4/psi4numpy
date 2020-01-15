@@ -84,6 +84,8 @@ class helper_CPHF(object):
         self.form_polarizability()
 
     def solve_static_direct(self):
+        self.x = None
+        self.rhsvecs = None
         # Run a quick check to make sure everything will fit into memory
         I_Size = (self.nbf ** 4) * 8.e-9
         oNNN_Size = (self.nocc * self.nbf ** 3) * 8.e-9
@@ -137,6 +139,8 @@ class helper_CPHF(object):
             self.rhsvecs.append(rhsvec)
 
     def solve_dynamic_direct(self, omega=0.0):
+        self.x = None
+        self.rhsvecs = None
         # Adapted completely from TDHF.py
 
         eps_v = self.epsilon[self.nocc:]
@@ -197,6 +201,8 @@ class helper_CPHF(object):
             self.x.append(xcomp)
 
     def solve_static_iterative(self, maxiter=20, conv=1.e-9, use_diis=True):
+        self.x = None
+        self.rhsvecs = None
 
         # Init JK object
         jk = psi4.core.JK.build(self.scf_wfn.basisset())
@@ -274,6 +280,8 @@ class helper_CPHF(object):
                   (CPHF_ITER, avg_RMS, max_RMS))
 
     def solve_dynamic_iterative(self, omega=0.0, maxiter=20, conv=1.e-9, use_diis=True):
+        self.x = None
+        self.rhsvecs = None
 
         # Init JK object
         jk = psi4.core.JK.build(self.scf_wfn.basisset())
