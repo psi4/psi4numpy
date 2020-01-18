@@ -370,24 +370,26 @@ class helper_CPHF(object):
                 print('CPHF converged in %d iterations and %.2f seconds.' % (CPHF_ITER, time.time() - t))
                 self.rhsvecs = []
                 self.x = []
-                # do one last perturbed density build in the AO basis
-                for i, rhsmat in enumerate(rhsmats):
-                    l = C[:, :self.nocc] @ C.dot(x[i].T)[:, :self.nocc].T - C.dot(x[i])[:, :self.nocc] @ C[:, :self.nocc].T
-                    r = self.tmp_dipoles[i].np
-                    self.rhsvecs.append(-2 * l.reshape(-1))
-                    self.x.append(r.reshape(-1))
-                # res = l.reshape(-1).dot(r.reshape(-1)) * -2
-                #     self.rhsvecs = []
-                #     self.x = []
-                #     for numx in range(3):
-                #         rhsvec = self.dipoles_xyz[numx].reshape(-1)
-                #         self.rhsvecs.append(np.concatenate((rhsvec, -rhsvec)))
-                #         self.x.append(np.concatenate((x_l[numx].reshape(-1),
-                #                                       x_r[numx].reshape(-1))))
+                for numx in range(3):
+                    self.rhsvecs.append(
+                        np.concatenate(
+                            (
+                                self.dipoles_xyz[numx].reshape(-1),
+                                -self.dipoles_xyz[numx].T.reshape(-1),
+                            )
+                        )
+                    )
+                    self.x.append(
+                        np.concatenate(
+                            (
+                                x[numx][: self.nocc, self.nocc :].reshape(-1),
+                                x[numx][self.nocc :, : self.nocc].reshape(-1),
+                            )
+                        )
+                    )
                 break
 
-            print('CPHF Iteration %3d: Average RMS = %3.8f  Maximum RMS = %3.8f' %
-                  (CPHF_ITER, avg_RMS, max_RMS))
+            print('CPHF Iteration %3d: Average RMS = %3.8f  Maximum RMS = %3.8f' % (CPHF_ITER, avg_RMS, max_RMS))
 
     def form_polarizability(self):
         self.polar = np.empty((3, 3))
