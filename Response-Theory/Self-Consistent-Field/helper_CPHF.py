@@ -304,17 +304,23 @@ class helper_CPHF(object):
         jk = psi4.core.JK.build(self.scf_wfn.basisset())
         jk.initialize()
 
-        npCx_l = []
-        npCx_r = []
+        # Add blank matrices to the jk object and NumPy hooks to C_right,
+        # which will contain MO coefficients contracted with the response
+        # matrix. 1 and 2 refer to the first and second terms in the perturbed
+        # density build:
+        #   P^{x} = C @ U^{x}.T @ C.T - C @ U^{x} @ C.T
+        #         = C @ C^{x}_1.T + C^{x}_2 @ C.T
+        npCx_1 = []
+        npCx_2 = []
         for _ in range(len(rhsmats)):
-            mCx_l = psi4.core.Matrix(self.nbf, self.nocc)
-            npCx_l.append(np.asarray(mCx_l))
+            mCx_1 = psi4.core.Matrix(self.nbf, self.nocc)
+            npCx_1.append(np.asarray(mCx_1))
             jk.C_left_add(self.Co)
-            jk.C_right_add(mCx_l)
+            jk.C_right_add(mCx_1)
         for _ in range(len(rhsmats)):
-            mCx_r = psi4.core.Matrix(self.nbf, self.nocc)
-            npCx_r.append(np.asarray(mCx_r))
-            jk.C_left_add(mCx_r)
+            mCx_2 = psi4.core.Matrix(self.nbf, self.nocc)
+            npCx_2.append(np.asarray(mCx_2))
+            jk.C_left_add(mCx_2)
             jk.C_right_add(self.Co)
 
         print('\nStarting CPHF iterations:')
@@ -322,23 +328,25 @@ class helper_CPHF(object):
         for CPHF_ITER in range(1, maxiter + 1):
 
             for xyz in range(len(rhsmats)):
-                npCx_l[xyz][:] = C.dot(x[xyz].T)[:, :self.nocc]
-                npCx_r[xyz][:] = (-C).dot(x[xyz])[:, :self.nocc]
+                npCx_1[xyz][:] = C.dot(x[xyz].T)[:, :self.nocc]
+                npCx_2[xyz][:] = (-C).dot(x[xyz])[:, :self.nocc]
 
             # Perform generalized J/K build
             jk.compute()
-
             # Update amplitudes
             for xyz in range(len(rhsmats)):
                 # Build J and K objects
-                J_l = np.asarray(jk.J()[xyz])
-                K_l = np.asarray(jk.K()[xyz])
-                J_r = np.asarray(jk.J()[xyz + len(rhsmats)])
-                K_r = np.asarray(jk.K()[xyz + len(rhsmats)])
+                J_1 = np.asarray(jk.J()[xyz])
+                K_1 = np.asarray(jk.K()[xyz])
+                J_2 = np.asarray(jk.J()[xyz + len(rhsmats)])
+                K_2 = np.asarray(jk.K()[xyz + len(rhsmats)])
 
-                # Bulid new guess
+                # Build new guess: work in the full [norb, norb] space, then
+                # select only those parameters corresponding to
+                # occ->virt/virt->occ rotation, leaving the occ-occ and
+                # virt-virt parameters zero.
                 U = x[xyz].copy()
-                upd = (rhsmats[xyz] - (x[xyz] * all_denom - (C.T).dot(2 * J_l - K_l + 2 * J_r - K_r).dot(C))) / all_denom
+                upd = (rhsmats[xyz] - (x[xyz] * all_denom - (C.T).dot(2 * J_1 - K_1 + 2 * J_2 - K_2).dot(C))) / all_denom
                 U[:self.nocc, self.nocc:] += upd[:self.nocc, self.nocc:]
                 U[self.nocc:, :self.nocc] += upd[self.nocc:, :self.nocc]
                 # DIIS for good measure
