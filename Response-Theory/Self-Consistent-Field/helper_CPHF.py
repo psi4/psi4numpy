@@ -321,7 +321,7 @@ class helper_CPHF(object):
         t = time.time()
         for CPHF_ITER in range(1, maxiter + 1):
 
-            for xyz in range(3):
+            for xyz in range(len(rhsmats)):
                 npCx_l[xyz][:] = C.dot(x[xyz].T)[:, :self.nocc]
                 npCx_r[xyz][:] = (-C).dot(x[xyz])[:, :self.nocc]
 
@@ -329,12 +329,12 @@ class helper_CPHF(object):
             jk.compute()
 
             # Update amplitudes
-            for xyz in range(3):
+            for xyz in range(len(rhsmats)):
                 # Build J and K objects
                 J_l = np.asarray(jk.J()[xyz])
                 K_l = np.asarray(jk.K()[xyz])
-                J_r = np.asarray(jk.J()[xyz + 3])
-                K_r = np.asarray(jk.K()[xyz + 3])
+                J_r = np.asarray(jk.J()[xyz + len(rhsmats)])
+                K_r = np.asarray(jk.K()[xyz + len(rhsmats)])
 
                 # Bulid new guess
                 U = x[xyz].copy()
