@@ -283,10 +283,6 @@ class helper_CPHF(object):
         self.x = None
         self.rhsvecs = None
 
-        # Convert Co and Cv to numpy arrays
-        Co = np.asarray(self.Co)
-        Cv = np.asarray(self.Cv)
-
         # Build initial guess, previous vectors, and DIIS objects
         norb = self.scf_wfn.nmo()
         C = np.asarray(self.C)
@@ -294,12 +290,12 @@ class helper_CPHF(object):
         x = []
         x_old = []
         diis = []
+        ia_denom = self.epsilon[self.nocc:] - self.epsilon[:self.nocc].reshape(-1, 1) - omega
+        all_denom = self.epsilon.reshape(-1, 1) - self.epsilon - omega
         for rhsmat in rhsmats:
             U = np.zeros((norb, norb))
-            for i in range(self.nocc):
-                for a in range(self.nocc, norb):
-                    U[i, a] = rhsmat[i, a] / (self.epsilon[i] - self.epsilon[a] - omega)
-                    U[a, i] = rhsmat[a, i] / (self.epsilon[a] - self.epsilon[i] - omega)
+            U[:self.nocc, self.nocc:] = rhsmat[:self.nocc, self.nocc:] / ia_denom
+            U[self.nocc:, :self.nocc] = rhsmat[self.nocc:, :self.nocc] / -ia_denom.T
             x.append(U)
             x_old.append(np.zeros_like(U))
             diis.append(DIIS_helper())
@@ -342,11 +338,7 @@ class helper_CPHF(object):
 
                 # Bulid new guess
                 U = x[xyz].copy()
-                GPxMO = (C.T).dot(2 * J_l - K_l + 2 * J_r - K_r).dot(C)
-                AU = np.zeros_like(GPxMO)
-                for p in range(norb):
-                    for q in range(norb):
-                        AU[p, q] = x[xyz][p, q] * (self.epsilon[p] - self.epsilon[q] - omega) - GPxMO[p, q]
+                AU = x[xyz] * all_denom - (C.T).dot(2 * J_l - K_l + 2 * J_r - K_r).dot(C)
                 for i in range(self.nocc):
                     for a in range(self.nocc, norb):
                         U[i, a] += (rhsmats[xyz][i, a] - AU[i, a]) / (self.epsilon[i] - self.epsilon[a] - omega)
@@ -389,7 +381,8 @@ class helper_CPHF(object):
                     )
                 break
 
-            print('CPHF Iteration %3d: Average RMS = %3.8f  Maximum RMS = %3.8f' % (CPHF_ITER, avg_RMS, max_RMS))
+            print('CPHF Iteration %3d: Average RMS = %3.8f  Maximum RMS = %3.8f' %
+                  (CPHF_ITER, avg_RMS, max_RMS))
 
     def form_polarizability(self):
         self.polar = np.empty((3, 3))
