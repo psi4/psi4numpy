@@ -338,11 +338,9 @@ class helper_CPHF(object):
 
                 # Bulid new guess
                 U = x[xyz].copy()
-                AU = x[xyz] * all_denom - (C.T).dot(2 * J_l - K_l + 2 * J_r - K_r).dot(C)
-                for i in range(self.nocc):
-                    for a in range(self.nocc, norb):
-                        U[i, a] += (rhsmats[xyz][i, a] - AU[i, a]) / (self.epsilon[i] - self.epsilon[a] - omega)
-                        U[a, i] += (rhsmats[xyz][a, i] - AU[a, i]) / (self.epsilon[a] - self.epsilon[i] - omega)
+                upd = (rhsmats[xyz] - (x[xyz] * all_denom - (C.T).dot(2 * J_l - K_l + 2 * J_r - K_r).dot(C))) / all_denom
+                U[:self.nocc, self.nocc:] += upd[:self.nocc, self.nocc:]
+                U[self.nocc:, :self.nocc] += upd[self.nocc:, :self.nocc]
                 # DIIS for good measure
                 if use_diis:
                     diis[xyz].add(U, U - x_old[xyz])
