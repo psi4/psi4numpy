@@ -283,6 +283,10 @@ class helper_CPHF(object):
         self.x = None
         self.rhsvecs = None
 
+        # Init JK object
+        jk = psi4.core.JK.build(self.scf_wfn.basisset())
+        jk.initialize()
+
         # Build initial guess, previous vectors, and DIIS objects
         norb = self.scf_wfn.nmo()
         C = np.asarray(self.C)
@@ -299,10 +303,6 @@ class helper_CPHF(object):
             x.append(U)
             x_old.append(np.zeros_like(U))
             diis.append(DIIS_helper())
-
-        # Init JK object
-        jk = psi4.core.JK.build(self.scf_wfn.basisset())
-        jk.initialize()
 
         # Add blank matrices to the jk object and NumPy hooks to C_right,
         # which will contain MO coefficients contracted with the response
