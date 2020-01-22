@@ -279,7 +279,7 @@ class helper_CPHF(object):
         # Build initial guess, previous vectors, and DIIS objects
         norb = self.scf_wfn.nmo()
         C = np.asarray(self.C)
-        rhsmats = [C.T @ np.asarray(dipmat) @ C for dipmat in self.tmp_dipoles]
+        rhsmats = [(C.T).dot(np.asarray(dipmat)).dot(C) for dipmat in self.tmp_dipoles]
         x = []
         x_old = []
         diis = []
