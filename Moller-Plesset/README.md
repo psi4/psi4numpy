@@ -16,6 +16,7 @@ ontop of this result.
  - `MPn.py`: An example on how to automate the contraction of higher order MP theory.
  - `MP2_Gradient.py`: Calculation of a nuclear gradient at the MP2 level of theory.
  - `MP2_Hessian.py`: Calculation of a nuclear hessian at the MP2 level of theory.
+ - `LT-MP2.py`: Laplaced-transformed MP2 for a restricted reference.
 
 ### References
  1) The original paper that started it all: "Note on an Approximation Treatment for Many-Electron Systems"
@@ -26,3 +27,5 @@ ontop of this result.
     - [[Szabo:1996](https://books.google.com/books?id=KQ3DAgAAQBAJ&printsec=frontcover&dq=szabo+%26+ostlund&hl=en&sa=X&ved=0ahUKEwiYhv6A8YjUAhXLSCYKHdH5AJ4Q6AEIJjAA#v=onepage&q=szabo%20%26%20ostlund&f=false)] A. Szabo and N. S. Ostlund, *Modern Quantum Chemistry: Introduction to Advanced Electronic Structure Theory.* Courier Corporation, 1996.
  4) sDF-MP2 reference:
     - [[Takeshita:2017:4605](https://pubs.acs.org/doi/abs/10.1021/acs.jctc.7b00343)] T.Y. Takeshita, W.A. de Jong, D. Neuhauser, R. Baer and E. Rabani, *J. chem. Theory Comput.* **13**, 4605 (2017)
+ 5) Laplaced-transformed MP2 reference:
+    - [[Almlof:1991](https://doi.org/10.1016/0009-2614(91)80078-C)] J. Almlöf, *Chem. Phys. Lett.* **181**, 319 (1991)
