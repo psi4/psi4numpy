@@ -3,7 +3,7 @@ A reference implementation of MP2 using the Laplace transformation for a restric
 This is performed in an MO basis for demonstration, but LT-MP2 can be extended to AO-LT-MP2.
 
 References:
-    M. Haser, J. Almlof, and G. E. Scuseria, Chem. Phys. Lett. 181, 497 (1991).
+    J. Almlof, Chem. Phys. Lett. 181, 319 (1991).
     P. Y. Ayala and G. E. Scuseria, J. Chem. Phys., 110, 3660 (1999).
 """
 
@@ -63,14 +63,16 @@ e_mp2_corr_ss = 0.0
 print('Looping over %d grid points...' % grid_size)
 t_start = time.time()
 for t, w in zip(grid, weights):
-    # Transform the two-electron integrals into the time-dependent form
-    t_occ = np.exp( t * 0.5 * e_occ)
-    t_vir = np.exp(-t * 0.5 * e_vir)
-    iajb_t = np.einsum('p,q,r,s,pqrs->pqrs', t_occ, t_vir, t_occ, t_vir, iajb)
+    # Build the amplitudes, including the contribution from the Laplace-transformed term
+    # In some equations, this is combined with the next einsum for the energy contributions,
+    # instead we contract the amplitudes with the MO integrals to get the energies.
+    t_occ = np.exp( t * e_occ)
+    t_vir = np.exp(-t * e_vir)
+    iajb_t = np.einsum('i,a,j,b,iajb->iajb', t_occ, t_vir, t_occ, t_vir, iajb)
 
     # Calculate MP2 energy for spin cases
-    e_mp2_corr_os_contr = np.einsum('ijkl,ijkl->', iajb_t, iajb_t)
-    e_mp2_corr_ss_contr = np.einsum('ijkl,ijkl->', iajb_t, iajb_t - iajb_t.swapaxes(1, 3))
+    e_mp2_corr_os_contr = np.einsum('iajb,iajb->', iajb_t, iajb)
+    e_mp2_corr_ss_contr = np.einsum('iajb,iajb->', iajb_t, iajb - iajb.swapaxes(1, 3))
 
     # Add to total including weights
     e_mp2_corr_os -= w * e_mp2_corr_os_contr
