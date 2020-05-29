@@ -15,8 +15,6 @@ def integrals(mol):
     wfn = psi4.energy('scf', return_wfn=True)[1]
 
     ### Orbitals
-    ea = wfn.epsilon_a().np
-    eb = wfn.epsilon_b().np
     CA_O = wfn.Ca_subset("AO", "ACTIVE_OCC")
     CB_O = wfn.Cb_subset("AO", "ACTIVE_OCC")
     C_O = np.block([
@@ -47,8 +45,8 @@ def integrals(mol):
         }
 
     ### One-Electron Integrals
-    Fa = wfn.Fb()
-    Fb = wfn.Fa()
+    Fa = wfn.Fa()
+    Fb = wfn.Fb()
     F = np.block([
           [Fa, np.zeros(Fb.shape)],
           [np.zeros(Fa.shape), Fb]
