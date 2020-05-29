@@ -11,7 +11,7 @@ __license__   = "BSD-3-Clause"
 import numpy as np
 import psi4
 
-def integrals(mol):
+def integrals(mol, singles=False):
     wfn = psi4.energy('scf', return_wfn=True)[1]
 
     ### Orbitals
@@ -47,12 +47,18 @@ def integrals(mol):
     ### One-Electron Integrals
     Fa = wfn.Fa()
     Fb = wfn.Fb()
-    F = np.block([
+    FI = np.block([
           [Fa, np.zeros(Fb.shape)],
           [np.zeros(Fa.shape), Fb]
         ])
     F = {
-        "oo": np.einsum('pP,qQ,pq->PQ', C_O, C_O, F, optimize = True),
-        "vv": np.einsum('pP,qQ,pq->PQ', C_V, C_V, F, optimize = True)
+        "oo": np.einsum('pP,qQ,pq->PQ', C_O, C_O, FI, optimize = True),
+        "vv": np.einsum('pP,qQ,pq->PQ', C_V, C_V, FI, optimize = True)
         }
+
+    if singles:
+        F["ov"] = np.einsum('pP, qQ, pq -> PQ', C_O, C_V, FI, optimize = True)
+        I["ovvv"] = np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_O, C_V, C_V, C_V, TEI, optimize = True)
+        I["ooov"] = np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_O, C_O, C_O, C_V, TEI, optimize = True)
+
     return I, F
