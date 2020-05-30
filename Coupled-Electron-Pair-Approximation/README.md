@@ -8,6 +8,8 @@ The following codes are available:
 This is also commonly known as CEPA(0) without singles and also DMBPT(infinity), among other names.
 - `LCCSD.py`: An implementation of linearized CCSD theory with DIIS.
 This is also commonly known as CEPA(0) with singles.
+- `OLCCD.py`: An implementation of orbital optimized linearized CCD theory with DIIS.
+- `DF-LCCD.py`: An implementation of linearized CCD theory with DIIS and the density-fitting approximation.
 
 Helper programs:
 - `DSD.py`: DIIS code capable of doing a combined extrapolation of multiply vectors.

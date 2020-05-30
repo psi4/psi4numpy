@@ -20,3 +20,5 @@ def test_LCCSD(workspace):
 def test_OLCCD(workspace):
     exe_py(workspace, tdir, 'OLCCD')
 
+def test_DFLCCD(workspace):
+    exe_py(workspace, tdir, 'DF-LCCD')
