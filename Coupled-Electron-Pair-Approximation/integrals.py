@@ -11,7 +11,7 @@ __license__   = "BSD-3-Clause"
 import numpy as np
 import psi4
 
-def integrals(mol, singles=False):
+def integrals(mol, singles=False, return_intermediates=False):
     wfn = psi4.energy('scf', return_wfn=True)[1]
 
     ### Orbitals
@@ -61,4 +61,8 @@ def integrals(mol, singles=False):
         I["ovvv"] = np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_O, C_V, C_V, C_V, TEI, optimize = True)
         I["ooov"] = np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_O, C_O, C_O, C_V, TEI, optimize = True)
 
-    return I, F
+    if not return_intermediates:
+        return I, F
+    else:
+        intermed = {"TEI": TEI, "O": C_O, "V": C_V, "OEI": np.kron(np.eye(2), mints.ao_kinetic().np + mints.ao_potential().np)}
+        return I, F, intermed

@@ -1,5 +1,6 @@
 from addons import *
 from utils import *
+import pytest
 
 
 tdir = 'Self-Consistent-Field'
@@ -33,6 +34,9 @@ def test_RHF_EFP(workspace):
     exe_py(workspace, tdir, 'RHF_EFP')
 
 
+# The below test requires so_overlap with a default argument, which requires a newer version of Psi
+# then the Psi4Numpy test suite uses. Remove the xfail upon Psi update.
+@pytest.mark.xfail
 def test_RHF_symmetry(workspace):
     exe_py(workspace, tdir, 'RHF_symmetry')
 

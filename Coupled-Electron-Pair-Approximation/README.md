@@ -20,3 +20,5 @@ Helper programs:
     1. [[Taube:2009:144112](https://aip.scitation.org/doi/10.1063/1.3115467)] A. G. Taube, R. J. Bartlett, *J. Chem. Phys.* **130** 144112 (2009).
 - Coupled Cluster Equations:
     1. [[Crawford:2000:33](https://onlinelibrary.wiley.com/doi/10.1002/9780470125915.ch2)] T. D. Crawford, H. F. Schaefer III, *Reviews in Computational Chemistry* **14**, 33 (2000)
+- Orbital-Optimized LCCD:
+    1. [[Bozkaya:2013:054104](https://aip.scitation.org/doi/10.1063/1.4816628)] U. Bozkaya, C. D. Sherrill, *J. Chem. Phys.* **139** 054104 (2013).
