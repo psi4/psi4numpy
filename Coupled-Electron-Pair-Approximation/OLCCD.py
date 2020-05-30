@@ -36,6 +36,15 @@ t2 = np.zeros(I["oovv"].shape)
 dsd = DirectSumDiis(3, 8)
 num_occ, num_vir = t1.shape
 
+# We need the initial one-electron integrals as well for orbital-optimized methods.
+# The orbital gradient expression requires these instead of the Fock integrals that our amplitude expressions need.
+H = {
+    "oo": np.einsum('pP, qQ, pq -> PQ', intermed["O"], intermed["O"], intermed["OEI"], optimize = True),
+    "ov": np.einsum('pP, qQ, pq -> PQ', intermed["O"], intermed["V"], intermed["OEI"], optimize = True),
+    "vv": np.einsum('pP, qQ, pq -> PQ', intermed["V"], intermed["V"], intermed["OEI"], optimize = True)
+    }
+Escf = mol.nuclear_repulsion_energy() + np.trace(H["oo"]) + 0.5 * np.einsum("ijij ->", I["oooo"], optimize = True)
+
 ### Main Loop
 for i in range(1, maxiter + 1):
 
@@ -67,14 +76,7 @@ for i in range(1, maxiter + 1):
             "ov": H["ov"] + np.einsum('iP iQ -> PQ', I["ooov"], optimize = True),
             "vv": H["vv"] - np.einsum('Pi iQ -> PQ', I["voov"], optimize = True)
             }
-    else:
-        # In addition to the usual integral operations, we also need to get the core integrals and the SCF energy.
-        H = {
-            "oo": np.einsum('pP, qQ, pq -> PQ', intermed["O"], intermed["O"], intermed["OEI"], optimize = True),
-            "ov": np.einsum('pP, qQ, pq -> PQ', intermed["O"], intermed["V"], intermed["OEI"], optimize = True),
-            "vv": np.einsum('pP, qQ, pq -> PQ', intermed["V"], intermed["V"], intermed["OEI"], optimize = True)
-            }
-        Escf = mol.nuclear_repulsion_energy() + np.trace(H["oo"]) + 0.5 * np.einsum("ijij ->", I["oooo"], optimize = True)
+
     Fo = F["oo"].diagonal()
     Fv = F["vv"].diagonal()
     D1 = Fo.reshape(-1, 1) - Fv
