@@ -1,3 +1,4 @@
+import pytest
 from addons import *
 from utils import *
 
@@ -33,6 +34,7 @@ def test_RHF_EFP(workspace):
     exe_py(workspace, tdir, 'RHF_EFP')
 
 
+@pytest.mark.xfail
 def test_RHF_symmetry(workspace):
     exe_py(workspace, tdir, 'RHF_symmetry')
 
