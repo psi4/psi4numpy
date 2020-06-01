@@ -137,4 +137,4 @@ else:
 
 if compare_psi4:
    wfn = psi4.energy("olccd", return_wfn=True)[1]
-   psi4.compare_values(wfn.variable("CURRENT CORRELATION ENERGY"), Eolccd, target_convergence, "OLCCD Energy")
+   psi4.compare_values(psi4.variable("CURRENT CORRELATION ENERGY"), Eolccd, target_convergence, "OLCCD Energy")
