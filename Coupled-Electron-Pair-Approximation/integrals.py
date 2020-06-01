@@ -12,7 +12,7 @@ import numpy as np
 import psi4
 
 
-def OEI(mol, singles):
+def orbitals_fock(mol, singles):
     wfn = psi4.energy('scf', molecule=mol, return_wfn=True)[1]
 
     ### Orbitals
@@ -40,7 +40,7 @@ def OEI(mol, singles):
 
 def integrals(mol, singles=False, return_intermediates=False):
 
-    C_O, C_V, mints, F = OEI(mol, singles)
+    C_O, C_V, mints, F = orbitals_fock(mol, singles)
 
     ### Two-Electron Integrals
     TEI = mints.ao_eri().np
@@ -71,7 +71,7 @@ def integrals(mol, singles=False, return_intermediates=False):
 
 def integrals_DF(mol, singles=False):
 
-    C_O, C_V, mints, F = OEI(mol, singles)
+    C_O, C_V, mints, F = orbitals_fock(mol, singles)
 
     ### Two-Electron Integrals
     basis = mints.basisset()

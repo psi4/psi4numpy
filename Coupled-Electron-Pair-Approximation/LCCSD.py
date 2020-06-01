@@ -45,7 +45,7 @@ for i in range(1, maxiter + 1):
     ## Two Electron Terms
     r1 = 0.5 * np.einsum("iAab, iIab -> IA", I["ovvv"], t2, optimize=True)
     r1 -= 0.5 * np.einsum("jkIa, jkAa -> IA", I["ooov"], t2, optimize=True)
-    r1 += np.einsum("aI iA, ia -> IA", I["voov"], t1, optimize=True)
+    r1 += np.einsum("aIiA, ia -> IA", I["voov"], t1, optimize=True)
     ## One Electron Terms
     r1 += 0.5 * np.einsum("ia, IiAa -> IA", F["ov"], t2, optimize=True)
     r1 += F["ov"] # This term is zero by Brillouin's Theorem for UHF or closed-shell RHF references
