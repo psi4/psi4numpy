@@ -24,6 +24,7 @@ __date__ = "2020-05-29"
 
 import time
 import numpy as np
+import math
 import copy
 import psi4
 from psi4 import *
@@ -40,6 +41,13 @@ psi4.set_memory(int(1e9), False)
 psi4.core.set_output_file('output.dat', False)
 psi4.core.set_num_threads(4)
 
+# Unit Conversions
+hartree2joule = psi4.constants.get("Atomic unit of energy")     # Eh -> J
+sqbohr2sqmeter = 5.29177e-11 * 5.29177e-11                      # bohr^2 -> m^2
+amu2kg = psi4.constants.get("Atomic mass constant")             # amu -> kg
+c_ = psi4.constants.get("Natural unit of velocity") * 100       # speed of light in cm/s
+omega2nu = 1./(c_*2*np.pi)                                      # w -> nu
+
 # Specify Molecule
 mol = psi4.geometry("""
     O            0.000000000000     0.000000000000    -0.075791843897
@@ -49,6 +57,14 @@ mol = psi4.geometry("""
     units ang
     noreorient
 """)
+#mol = psi4.geometry("""
+#    O     0.000000000000     0.000000000000    -0.134503695264
+#    H     0.000000000000    -1.684916670000     1.067335684736
+#    H     0.000000000000     1.684916670000     1.067335684736
+#    symmetry c1
+#    units bohr
+#    noreorient
+#""")
 
 psi4.core.set_active_molecule(mol)
 
@@ -515,21 +531,68 @@ for key in Hes:
 
 # Symmetrize Hessian
 Hessian = (Hessian + Hessian.T)/2
+print("\nMolecular Hessian (au):\n", Hessian)
 
 Mat = psi4.core.Matrix.from_array(Hessian)
 Mat.name = " TOTAL HESSIAN"
 Mat.print_out()
 
-H_psi4 = psi4.core.Matrix.from_list([
-[ 0.07613952484989, 0.00000000000000, 0.00000000000000,-0.03806976242497, 0.00000000000000,-0.00000000000000,-0.03806976242497,-0.00000000000000, 0.00000000000000], 
-[ 0.00000000000000, 0.48290536165172,-0.00000000000000,-0.00000000000000,-0.24145268082589, 0.15890015082364, 0.00000000000000,-0.24145268082590,-0.15890015082364],
-[ 0.00000000000000,-0.00000000000000, 0.43734495429393,-0.00000000000000, 0.07344233387869,-0.21867247714697,-0.00000000000000,-0.07344233387869,-0.21867247714697],
-[-0.03806976242497,-0.00000000000000,-0.00000000000000, 0.04537741867538,-0.00000000000000, 0.00000000000000,-0.00730765625041, 0.00000000000000,-0.00000000000000],
-[ 0.00000000000000,-0.24145268082589, 0.07344233387869,-0.00000000000000, 0.25786500091002,-0.11617124235117, 0.00000000000000,-0.01641232008412, 0.04272890847247],
-[-0.00000000000000, 0.15890015082364,-0.21867247714697, 0.00000000000000,-0.11617124235117, 0.19775197798054, 0.00000000000000,-0.04272890847247, 0.02092049916645],
-[-0.03806976242497, 0.00000000000000,-0.00000000000000,-0.00730765625041, 0.00000000000000, 0.00000000000000, 0.04537741867538,-0.00000000000000, 0.00000000000000],
-[-0.00000000000000,-0.24145268082590,-0.07344233387869, 0.00000000000000,-0.01641232008412,-0.04272890847247,-0.00000000000000, 0.25786500091002, 0.11617124235117],
-[ 0.00000000000000,-0.15890015082364,-0.21867247714697,-0.00000000000000, 0.04272890847247, 0.02092049916645, 0.00000000000000, 0.11617124235117, 0.19775197798054]
+H_DALTON = psi4.core.Matrix.from_list([
+[ 0.07613952,     0.00000000,    -0.00000000,    -0.03806976,    -0.00000000,     0.00000000,    -0.03806976,     0.00000000,     0.00000000],
+[ 0.00000000,     0.48290536,     0.00000000,    -0.00000000,    -0.24145268,     0.15890015,     0.00000000,    -0.24145268,    -0.15890015],
+[-0.00000000,     0.00000000,     0.43734495,     0.00000000,     0.07344234,    -0.21867248,     0.00000000,    -0.07344234,    -0.21867248],
+[-0.03806976,    -0.00000000,     0.00000000,     0.04537742,     0.00000000,    -0.00000000,    -0.00730766,    -0.00000000,    -0.00000000],
+[-0.00000000,    -0.24145268,     0.07344234,     0.00000000,     0.25786500,    -0.11617124,    -0.00000000,    -0.01641232,     0.04272891],
+[ 0.00000000,     0.15890015,    -0.21867248,    -0.00000000,    -0.11617124,     0.19775198,    -0.00000000,    -0.04272891,     0.02092050],
+[-0.03806976,     0.00000000,     0.00000000,    -0.00730766,    -0.00000000,    -0.00000000,     0.04537742,    -0.00000000,    -0.00000000],
+[ 0.00000000,    -0.24145268,    -0.07344234,    -0.00000000,    -0.01641232,    -0.04272891,    -0.00000000,     0.25786500,     0.11617124],
+[ 0.00000000,    -0.15890015,    -0.21867248,    -0.00000000,     0.04272891,     0.02092050,    -0.00000000,     0.11617124,     0.19775198]
 ])
 H_python_mat = psi4.core.Matrix.from_array(Hessian)
-psi4.compare_matrices(H_psi4, H_python_mat, 9, "RHF-HESSIAN-TEST")
+psi4.compare_matrices(H_DALTON, H_python_mat, 9, "RHF-HESSIAN-TEST")
+
+# Mass Weight the Hessian Matrix:
+masses = np.array([mol.mass(i) for i in range(mol.natom())])
+M = np.diag(1/np.sqrt(np.repeat(masses, 3)))
+mH = M.T.dot(Hessian).dot(M)
+print("\nMass-weighted Hessian:\n", M.T.dot(Hessian).dot(M))
+
+mwH_DALTON = H_DALTON.copy()
+for i in range(np.size(H_DALTON, 0)):
+    for j in range(np.size(H_DALTON, 1)):
+        mwH_DALTON[i][j] /= np.sqrt(mol.mass(i//3) * mol.mass(j//3))
+#print(mwH_DALTON)
+#print(np.allclose(mH, mwH_DALTON))
+
+
+# Mass-weighted Normal modes from Hessian
+k2, Lxm = np.linalg.eigh(mH)
+#print(k2)
+#print(Lxm)
+e_vals, e_vecs = np.linalg.eig(mwH_DALTON)
+#print(e_vals)
+#print(e_vecs)
+
+freq = k2 * hartree2joule / (sqbohr2sqmeter * amu2kg) # conversion factor for (hartree/amu*bohr^2) to (J/kg*m^2) giving units of s^-2
+
+normal_modes = []
+mode = 3 * natoms - 1
+print("\nNormal Modes (cm^-1):")
+while mode >= 6:
+    if freq[mode] >= 0.0:
+        print("%.2f" % (np.sqrt(freq[mode]) * omega2nu))
+        normal_modes.append(np.sqrt(freq[mode]) * omega2nu)
+    else:
+        print("%.2fi" % (np.sqrt(abs(freq[mode])) * omega2nu))
+        normal_modes.append(np.sqrt(abs(freq[mode])) * omega2nu + "i")
+    mode -= 1
+
+# Un-mass-weight the normal modes
+Lx = M.dot(Lxm)
+#print(Lx)
+
+# Normal Coordinates
+S = np.flip(Lx, 1)[:,:3]
+print(S)
+
+# Read in dipole derivatives
