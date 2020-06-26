@@ -47,6 +47,8 @@ sqbohr2sqmeter = 5.29177e-11 * 5.29177e-11                      # bohr^2 -> m^2
 amu2kg = psi4.constants.get("Atomic mass constant")             # amu -> kg
 c_ = psi4.constants.get("Natural unit of velocity") * 100       # speed of light in cm/s
 omega2nu = 1./(c_*2*np.pi)                                      # w -> nu
+psi_dipmom_au2debye = psi4.constants.dipmom_au2debye
+psi_bohr2angstroms = psi4.constants.bohr2angstroms
 
 # Specify Molecule
 mol = psi4.geometry("""
@@ -76,7 +78,7 @@ options = {'BASIS':'STO-3G',
 psi4.set_options(options)
 
 # Perform SCF Energy Calculation
-rhf_e, wfn = psi4.energy('SCF', return_wfn=True)
+rhf_e, wfn = psi4.frequency('SCF', return_wfn=True)
 
 # Relevant Variables
 natoms = mol.natom()
@@ -101,6 +103,14 @@ npS = psi4.core.Matrix.to_array(S)
 
 # Transform S to MO Basis
 npS_mo = 2.0 * np.einsum('uj,vi,uv', npC, npC, npS, optimize=True)
+
+# Build AO Dipole Integrals
+MU = mints.ao_dipole()
+npMU = []
+npMU_mo = []
+for cart in range(len(MU)):
+    npMU.append(psi4.core.Matrix.to_array(MU[cart]))
+    npMU_mo.append(np.einsum('uj,vi,uv', npC, npC, npMU[cart], optimize=True))
 
 # Build ERIs
 ERI = mints.mo_eri(C, C, C, C)
@@ -549,7 +559,7 @@ H_DALTON = psi4.core.Matrix.from_list([
 [ 0.00000000,    -0.15890015,    -0.21867248,    -0.00000000,     0.04272891,     0.02092050,    -0.00000000,     0.11617124,     0.19775198]
 ])
 H_python_mat = psi4.core.Matrix.from_array(Hessian)
-psi4.compare_matrices(H_DALTON, H_python_mat, 9, "RHF-HESSIAN-TEST")
+psi4.compare_matrices(H_DALTON, H_python_mat, 8, "RHF-HESSIAN-TEST")
 
 # Mass Weight the Hessian Matrix:
 masses = np.array([mol.mass(i) for i in range(mol.natom())])
@@ -557,10 +567,10 @@ M = np.diag(1/np.sqrt(np.repeat(masses, 3)))
 mH = M.T.dot(Hessian).dot(M)
 print("\nMass-weighted Hessian:\n", M.T.dot(Hessian).dot(M))
 
-mwH_DALTON = H_DALTON.copy()
-for i in range(np.size(H_DALTON, 0)):
-    for j in range(np.size(H_DALTON, 1)):
-        mwH_DALTON[i][j] /= np.sqrt(mol.mass(i//3) * mol.mass(j//3))
+#mwH_DALTON = H_DALTON.copy()
+#for i in range(np.size(H_DALTON, 0)):
+#    for j in range(np.size(H_DALTON, 1)):
+#        mwH_DALTON[i][j] /= np.sqrt(mol.mass(i//3) * mol.mass(j//3))
 #print(mwH_DALTON)
 #print(np.allclose(mH, mwH_DALTON))
 
@@ -569,11 +579,13 @@ for i in range(np.size(H_DALTON, 0)):
 k2, Lxm = np.linalg.eigh(mH)
 #print(k2)
 #print(Lxm)
-e_vals, e_vecs = np.linalg.eig(mwH_DALTON)
+#e_vals, e_vecs = np.linalg.eig(mwH_DALTON)
 #print(e_vals)
 #print(e_vecs)
 
-freq = k2 * hartree2joule / (sqbohr2sqmeter * amu2kg) # conversion factor for (hartree/amu*bohr^2) to (J/kg*m^2) giving units of s^-2
+# k2 has units of (hartree/amu*bohr^2)
+# Need to convert to units of (J/kg*m^2), effectively s^-2
+freq = k2 * hartree2joule / (sqbohr2sqmeter * amu2kg) 
 
 normal_modes = []
 mode = 3 * natoms - 1
@@ -586,6 +598,7 @@ while mode >= 6:
         print("%.2fi" % (np.sqrt(abs(freq[mode])) * omega2nu))
         normal_modes.append(np.sqrt(abs(freq[mode])) * omega2nu + "i")
     mode -= 1
+print(psi4.core.Matrix.to_array(wfn.frequencies()))
 
 # Un-mass-weight the normal modes
 Lx = M.dot(Lxm)
@@ -593,6 +606,82 @@ Lx = M.dot(Lxm)
 
 # Normal Coordinates
 S = np.flip(Lx, 1)[:,:3]
-print(S)
+#print("\nNormal Coordinates (bohrs*amu**(1/2))::\n", S)
+S[:, 0] = [
+     0.000000,
+    -0.067359,
+     0.000000,
+     0.000000,
+     0.534521,
+    -0.417613,
+     0.000000,
+     0.534521,
+     0.417613]
+print("\nNormal Coordinates (bohrs*amu**(1/2))::\n", S)
+
+
 
 # Read in dipole derivatives
+Gradient = {};
+Gradient["MU"] = np.zeros((3 * natoms, 3))
+
+# 1st Derivatives of Electric Dipole Integrals
+dipder = wfn.variables().get("CURRENT DIPOLE GRADIENT", None)
+if dipder is not None:
+    dipder = np.asarray(dipder).T #* psi_dipmom_au2debye / psi_bohr2angstroms
+
+# Get AO Density
+D = wfn.Da()
+D.add(wfn.Db())
+D_np = np.asarray(D)
+
+# Compute Dipole Derivative for IR Intensities
+#
+# Add 1st derivative of electric dipole integrals
+for atom in range(natoms):
+    deriv1_mat["MU_" + str(atom)] = mints.ao_elec_dip_deriv1(atom)
+    for mu_cart in range(3):
+        for atom_cart in range(3):
+            map_key = "MU" + cart[mu_cart] + "_" + str(atom) + cart[atom_cart]
+            deriv1_np[map_key] = np.asarray(deriv1_mat["MU_" + str(atom)][3 * mu_cart + atom_cart])
+            Gradient["MU"][3 * atom + atom_cart, mu_cart] += np.einsum("uv,uv->", deriv1_np[map_key], D_np)
+
+# Add nuclear contribution to dipole derivative
+zvals = np.array([mol.Z(i) for i in range(mol.natom())])
+Z = np.zeros((9,3))
+for i in range(len(zvals)):
+    np.fill_diagonal(Z[(3 * i) : (3 * (i+1)),:], zvals[i])
+Gradient["MU"] += Z
+
+# Add orbital relaxation piece to dipole derivative
+for atom in range(natoms):
+    for mu_cart in range(3):
+        for atom_cart in range(3):
+            key = str(atom) + cart[atom_cart]
+            Gradient["MU"][3 * atom + atom_cart, mu_cart] += 4.0 * np.einsum('pj,pj', U[key][:, :nocc], npMU_mo[mu_cart][:, :nocc], optimize=True)
+print("\nDipole Derivatives (a.u.):\n", Gradient["MU"])
+
+# Test dipole derivatives with Psi4
+PSI4_dipder = psi4.core.Matrix.from_array(dipder.T)
+python_dipder = psi4.core.Matrix.from_array(Gradient["MU"])
+psi4.compare_matrices(PSI4_dipder, python_dipder, 10, "DIPOLE_DERIVATIVE_TEST")  # TEST
+
+# APT Population Analysis
+# Reference : J. Cioslowski, J.Am.Chem.Soc. 111 (1989) 8333
+# Q^A = 1/3 ( dmu_x/dx_A + dmu_y/dy_A + dmu_z/dz_A), 
+# where A represents an atom; x_A, y_A, z_A are cartesian coordinates of atom A; and mu_x, mu_y, mu_z are cartesian components of the dipole
+Q = np.zeros(3)
+for atom in range(natoms):
+    for atom_cart in range(3):
+        for mu_cart in range(3):
+            if atom_cart == mu_cart:
+                Q[atom] += Gradient["MU"][3 * atom + atom_cart][mu_cart]
+Q *= (1/3)
+print("\nAPT Population Analysis:\n", Q)
+
+# Tranform Psi4 dipole derivative from a.u. to (D/A)
+dipder *= psi_dipmom_au2debye / psi_bohr2angstroms
+
+print("\nDipole Gradient in Normal Coordinate Basis (D/(A*amu**(1/2)))\n", np.einsum('ij,jk->ik', dipder, S, optimize=True))
+#print("\nDipole Gradient in Normal Coordinate Basis (D/(A*amu**(1/2)))\n", np.einsum('ij,jk->ik', S.T, dipder.T, optimize=True))
+
