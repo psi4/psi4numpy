@@ -43,12 +43,19 @@ psi4.core.set_num_threads(4)
 
 # Unit Conversions
 hartree2joule = psi4.constants.get("Atomic unit of energy")     # Eh -> J
-sqbohr2sqmeter = 5.29177e-11 * 5.29177e-11                      # bohr^2 -> m^2
+#sqbohr2sqmeter = 5.29177e-11 * 5.29177e-11                      # bohr^2 -> m^2
+sqbohr2sqmeter = psi4.constants.bohr2m * psi4.constants.bohr2m  # bohr^2 -> m^2
+psi_bohr2m = psi4.constants.bohr2m
+psi_bohr2angstroms = psi4.constants.bohr2angstroms
 amu2kg = psi4.constants.get("Atomic mass constant")             # amu -> kg
+psi_au2amu = psi4.constants.au2amu
 c_ = psi4.constants.get("Natural unit of velocity") * 100       # speed of light in cm/s
 omega2nu = 1./(c_*2*np.pi)                                      # w -> nu
 psi_dipmom_au2debye = psi4.constants.dipmom_au2debye
 psi_bohr2angstroms = psi4.constants.bohr2angstroms
+psi_au2amu = psi4.constants.au2amu
+psi_na = psi4.constants.na
+psi_alpha = qcel.constants.get("fine-structure constant")
 
 # Specify Molecule
 mol = psi4.geometry("""
@@ -67,6 +74,7 @@ mol = psi4.geometry("""
 #    units bohr
 #    noreorient
 #""")
+geom = psi4.core.Matrix.to_array(mol.geometry())
 
 psi4.core.set_active_molecule(mol)
 
@@ -106,11 +114,17 @@ npS_mo = 2.0 * np.einsum('uj,vi,uv', npC, npC, npS, optimize=True)
 
 # Build AO Dipole Integrals
 MU = mints.ao_dipole()
+AM = mints.ao_angular_momentum()
 npMU = []
+npAM = []
 npMU_mo = []
-for cart in range(len(MU)):
+npAM_mo = []
+for cart in range(3):
     npMU.append(psi4.core.Matrix.to_array(MU[cart]))
+    npAM.append(psi4.core.Matrix.to_array(AM[cart]))
+    npAM[cart] *= -0.5
     npMU_mo.append(np.einsum('uj,vi,uv', npC, npC, npMU[cart], optimize=True))
+    npAM_mo.append(np.einsum('uj,vi,uv', npC, npC, npAM[cart], optimize=True))
 
 # Build ERIs
 ERI = mints.mo_eri(C, C, C, C)
@@ -598,7 +612,7 @@ while mode >= 6:
         print("%.2fi" % (np.sqrt(abs(freq[mode])) * omega2nu))
         normal_modes.append(np.sqrt(abs(freq[mode])) * omega2nu + "i")
     mode -= 1
-print(psi4.core.Matrix.to_array(wfn.frequencies()))
+#print(psi4.core.Matrix.to_array(wfn.frequencies()))
 
 # Un-mass-weight the normal modes
 Lx = M.dot(Lxm)
@@ -681,7 +695,146 @@ print("\nAPT Population Analysis:\n", Q)
 
 # Tranform Psi4 dipole derivative from a.u. to (D/A)
 dipder *= psi_dipmom_au2debye / psi_bohr2angstroms
-
-print("\nDipole Gradient in Normal Coordinate Basis (D/(A*amu**(1/2)))\n", np.einsum('ij,jk->ik', dipder, S, optimize=True))
+dip_grad = np.einsum('ij,jk->ik', dipder, S, optimize=True)
+print("\nDipole Gradient in Normal Coordinate Basis (D/(A*amu**(1/2))):\n", dip_grad)
 #print("\nDipole Gradient in Normal Coordinate Basis (D/(A*amu**(1/2)))\n", np.einsum('ij,jk->ik', S.T, dipder.T, optimize=True))
 
+IR_ints = [0] * len(normal_modes)
+for i in range(3):
+    for j in range(len(normal_modes)):
+        IR_ints[j] += dip_grad[i][j] * dip_grad[i][j]
+#print("\nIR Intensities (D/A)^2/amu:\n", IR_ints)
+
+# Convert IR intensities from (D/A)^2/amu to km/mol
+#
+# Conversion factor for taking IR intensities from ((D/A)^2 / amu) to a.u. ((e a0 / a0)^2 / me)
+conv_kmmol = (1 / psi_dipmom_au2debye)**2 * psi_bohr2angstroms**2 * psi_au2amu
+#
+# Multiply by (1 / (4 pi eps_0)) in a.u. (1 / (e^2 / a0 Eh)) to get to units of (Eh a0 / me)
+conv_kmmol *= 1
+#
+# Multiply by (Na pi / 3 c^2) in a.u. (Na = mol^-1; c = Eh / alpha^2 me) to get to units of a0/mol
+conv_kmmol *= psi_na * np.pi * (1 / 3) * psi_alpha**2
+#
+# Convert to units of km/mol
+conv_kmmol *= psi_bohr2m * (1 / 1000)
+#
+#print(conv_kmmol)
+IR_ints_kmmol = [ x * conv_kmmol for x in IR_ints ]
+
+#print("\nIR Intensities km/mol:\n", IR_ints_kmmol)
+
+
+# Convert dipole strengths from (D/A)^2/amu to a.u. to cgs (esu^2 * cm^2)
+#
+# Conversion factor for taking IR intensities from ((D/A)^2 / amu) to a.u. ((e a0 / a0)^2 / me)
+conv_cgs = (1 / psi_dipmom_au2debye)**2 * psi_bohr2angstroms**2 * psi_au2amu
+#
+# Convert to units of esu^2 * cm^2
+conv_cgs *= 6.46047502185 * (10**(-36))
+#
+dip_str = [ x * conv_cgs for x in IR_ints ]
+
+print("\nDipole Strengths (esu^2 cm^2):\n", dip_str)
+
+
+print("\n\nVibrational Frequencies and IR Intensities:\n------------------------------------------\n")
+print(" mode       frequency             IR intensity\n=====================================================")
+print("        cm-1       hartrees     km/mol   (D/A)**2/amu \n-----------------------------------------------------")
+   #1      A      3250.95    0.014812     37.266   0.8819
+   #2      A      2983.26    0.013593     40.509   0.9587
+   #3      A      2178.88    0.009928      5.109   0.1209
+for i in range(len(normal_modes)):
+    print("  %d    %6.2f     %7.6f     %6.3f      %6.4f" % (i + 1, normal_modes[i], normal_modes[i] * (4.55633e-6), IR_ints_kmmol[i], IR_ints[i]))
+
+
+
+# Solve the first-order CPHF equations here,  G_aibj Ubj^x = Bai^x (Einstein summation),
+# where G is the electronic hessian,
+# G_aibj = delta_ij * delta_ab * epsilon_ij * epsilon_ab + 4 <ij|ab> - <ij|ba> - <ia|jb>,
+# where epsilon_ij = epsilon_i - epsilon_j, (epsilon -> orbital energies),
+# x refers to the *magnetic field* perturbation, Ubj^x are the corresponsing CPHF coefficients
+# and Bai^x = - Fai^x n> = - m_ai, where, F^x =  del(F)/del(x).
+
+#psi4.core.print_out("\n\n CPHF Coefficentsn:\n")
+
+# Build epsilon_a - epsilon_i matrix
+eps_m = np.asarray(wfn.epsilon_a())
+eps_diag_m = - eps[nocc:].reshape(-1, 1) - eps[:nocc]
+print(eps)
+print(eps_diag_m)
+
+# Build the electronic hessian, G, where
+# G_m = ((-epsilon_a - epsilon_i) * kronecker_delta(a,b) * kronecker_delta(i,j)) * (<ia|jb> - <ij|ba>)
+
+# G_m += <ia|jb> - <ij|ba>
+G_m  = 1.0 * npERI[:nocc, nocc:, :nocc, nocc:].swapaxes(1, 2)
+G_m -= 1.0 * npERI[:nocc, :nocc, nocc:, nocc:].swapaxes(2, 3)
+
+# Change shape of G_m from ij,ab to ia,jb
+G_m = G_m.swapaxes(1, 2)
+
+# G_m += (-epsilon_a - epsilon_i) * kronecker_delta(a,b) * kronecker delta(i,j)
+G_m += np.einsum('ai,ij,ab->iajb', eps_diag_m, I_occ, I_vir, optimize=True)
+
+# Inverse of G_m
+Ginv_m = np.linalg.inv(G_m.reshape(nocc * nvir, -1))
+Ginv_m = Ginv_m.reshape(nocc, nvir, nocc, nvir)
+
+B_m = {}
+U_m = {}
+# Build Bai^x
+for p in range(3):
+    key = cart[p]
+
+    B_m[key] = - 1.0 * npAM_mo[p][nocc:, :nocc]
+
+    # Compute U^x, where
+    U_m[key] = np.zeros((nmo, nmo))
+    # U_ai^x = G^(-1)_aibj * B_bj^x
+    U_m[key][nocc:, :nocc] = np.einsum("iajb,bj->ai", Ginv_m, B_m[key], optimize=True)
+    # U_ia^x = U_ai^x
+    U_m[key][:nocc, nocc:] = U_m[key][nocc:, :nocc].T
+
+print(U_m)
+
+# Get overlap half derivative integrals for AAT computation
+for atom in range(natoms):
+    deriv1_mat["S_LEFT_HALF_" + str(atom)] = mints.mo_overlap_half_deriv1("LEFT", atom, C, C)
+    for atom_cart in range(3):
+        map_key1 = "S_LEFT_HALF_" + str(atom) + cart[atom_cart]
+        deriv1_np[map_key1] = np.asarray(deriv1_mat["S_LEFT_HALF_" + str(atom)][atom_cart])
+        print("deriv1_np[",map_key1,"]:\n", deriv1_np[map_key1])
+
+# Compute AAT
+AAT1 = np.zeros((3 * natoms, 3))
+AAT2 = np.zeros((3 * natoms, 3))
+for atom in range(natoms):
+    for atom_cart in range(3):
+        for mu_cart in range(3):
+            key1 = str(atom) + cart[atom_cart]
+            key2 = cart[mu_cart]
+            AAT1[3 * atom + atom_cart][mu_cart] += 1.0 * np.einsum("ai,ai", U[key1][nocc:, :nocc], U_m[key2][nocc:, :nocc], optimize=True)
+            AAT2[3 * atom + atom_cart][mu_cart] += 1.0 * np.einsum("ai,ia", U_m[key2][nocc:, :nocc], deriv1_np["S_LEFT_HALF_" + key1][:nocc, nocc:], optimize=True)
+
+            #AAT[3 * atom + atom_cart][mu_cart] += 1.0 * np.einsum("ji,ji", U[key1][:nocc, :nocc], U_m[key2][:nocc, :nocc], optimize=True)
+            #AAT[3 * atom + atom_cart][mu_cart] += 1.0 * np.einsum("ji,ij", U_m[key2][:nocc, :nocc], deriv1_np["S_LEFT_HALF_" + key1][:nocc, :nocc], optimize=True)
+
+levi_civit = np.zeros((3,3,3))
+levi_civit[0][1][2] = levi_civit[1][2][0] = levi_civit[2][0][1] = 1
+levi_civit[0][2][1] = levi_civit[1][0][2] = levi_civit[2][1][0] = -1
+AAT3 = np.zeros((3 * natoms, 3))
+# Nuclear contribution to AAT
+for atom in range(natoms):
+    for atom_cart in range(3):
+        for mu_cart in range(3):
+            for gamma in range(3):
+                AAT3[3 * atom + atom_cart][mu_cart] += 0.5 * levi_civit[atom_cart][mu_cart][gamma] * geom[atom][gamma] * (zvals[atom] / 2)
+
+print("\nAAT1:\n", AAT1)
+print("\nAAT2:\n", AAT2)
+print("\nAAT2:\n", AAT3)
+print("\nTotal AAT:\n", AAT1 + AAT2 + AAT3)
+
+#print(S)
+print("\nTotal AAT in Normal Coordinate Basis:\n", np.einsum("ij,jk->ik", (AAT1 + AAT2 + AAT3).T, S, optimize=True))
