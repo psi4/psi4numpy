@@ -760,7 +760,8 @@ for i in range(len(normal_modes)):
 
 # Build epsilon_a - epsilon_i matrix
 eps_m = np.asarray(wfn.epsilon_a())
-eps_diag_m = - eps[nocc:].reshape(-1, 1) - eps[:nocc]
+#eps_diag_m = - eps[nocc:].reshape(-1, 1) - eps[:nocc]
+eps_diag_m = eps[nocc:].reshape(-1, 1) - eps[:nocc]
 print(eps)
 print(eps_diag_m)
 
@@ -768,8 +769,10 @@ print(eps_diag_m)
 # G_m = ((-epsilon_a - epsilon_i) * kronecker_delta(a,b) * kronecker_delta(i,j)) * (<ia|jb> - <ij|ba>)
 
 # G_m += <ia|jb> - <ij|ba>
-G_m  = 1.0 * npERI[:nocc, nocc:, :nocc, nocc:].swapaxes(1, 2)
-G_m -= 1.0 * npERI[:nocc, :nocc, nocc:, nocc:].swapaxes(2, 3)
+#G_m  = 1.0 * npERI[:nocc, nocc:, :nocc, nocc:].swapaxes(1, 2)
+#G_m -= 1.0 * npERI[:nocc, :nocc, nocc:, nocc:].swapaxes(2, 3)
+G_m  = -1.0 * npERI[:nocc, nocc:, :nocc, nocc:].swapaxes(1, 2)
+G_m += 1.0 * npERI[:nocc, :nocc, nocc:, nocc:].swapaxes(2, 3)
 
 # Change shape of G_m from ij,ab to ia,jb
 G_m = G_m.swapaxes(1, 2)
@@ -814,8 +817,10 @@ for atom in range(natoms):
         for mu_cart in range(3):
             key1 = str(atom) + cart[atom_cart]
             key2 = cart[mu_cart]
-            AAT1[3 * atom + atom_cart][mu_cart] += 1.0 * np.einsum("ai,ai", U[key1][nocc:, :nocc], U_m[key2][nocc:, :nocc], optimize=True)
-            AAT2[3 * atom + atom_cart][mu_cart] += 1.0 * np.einsum("ai,ia", U_m[key2][nocc:, :nocc], deriv1_np["S_LEFT_HALF_" + key1][:nocc, nocc:], optimize=True)
+            #AAT1[3 * atom + atom_cart][mu_cart] += 1.0 * np.einsum("ai,ai", U[key1][nocc:, :nocc], U_m[key2][nocc:, :nocc], optimize=True)
+            #AAT2[3 * atom + atom_cart][mu_cart] += 1.0 * np.einsum("ai,ia", U_m[key2][nocc:, :nocc], deriv1_np["S_LEFT_HALF_" + key1][:nocc, nocc:], optimize=True)
+            AAT1[3 * atom + atom_cart][mu_cart] += 4.0 * np.einsum("ai,ai", U[key1][nocc:, :nocc], U_m[key2][nocc:, :nocc], optimize=True)
+            AAT2[3 * atom + atom_cart][mu_cart] += 4.0 * np.einsum("ai,ia", U_m[key2][nocc:, :nocc], deriv1_np["S_LEFT_HALF_" + key1][:nocc, nocc:], optimize=True)
 
             #AAT[3 * atom + atom_cart][mu_cart] += 1.0 * np.einsum("ji,ji", U[key1][:nocc, :nocc], U_m[key2][:nocc, :nocc], optimize=True)
             #AAT[3 * atom + atom_cart][mu_cart] += 1.0 * np.einsum("ji,ij", U_m[key2][:nocc, :nocc], deriv1_np["S_LEFT_HALF_" + key1][:nocc, :nocc], optimize=True)
@@ -829,7 +834,11 @@ for atom in range(natoms):
     for atom_cart in range(3):
         for mu_cart in range(3):
             for gamma in range(3):
-                AAT3[3 * atom + atom_cart][mu_cart] += 0.5 * levi_civit[atom_cart][mu_cart][gamma] * geom[atom][gamma] * (zvals[atom] / 2)
+                AAT3[3 * atom + atom_cart][mu_cart] += 1.0 * levi_civit[atom_cart][mu_cart][gamma] * geom[atom][gamma] * (zvals[atom] / 2)
+
+AAT1 *= 0.5
+AAT2 *= 0.5
+AAT3 *= 0.5
 
 print("\nAAT1:\n", AAT1)
 print("\nAAT2:\n", AAT2)
