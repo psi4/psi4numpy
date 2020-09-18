@@ -41,21 +41,50 @@ psi4.set_memory(int(1e9), False)
 psi4.core.set_output_file('output.dat', False)
 psi4.core.set_num_threads(4)
 
+# Useful Constants
+psi_c = psi4.constants.get("Natural unit of velocity") * 100                                                    # speed of light in cm/s
+psi_na = psi4.constants.na                                                                                      # Avogdro's number
+psi_alpha = qcel.constants.get("fine-structure constant")                                                       # finite-structure constant
+
 # Unit Conversions
-hartree2joule = psi4.constants.get("Atomic unit of energy")     # Eh -> J
-#sqbohr2sqmeter = 5.29177e-11 * 5.29177e-11                      # bohr^2 -> m^2
-sqbohr2sqmeter = psi4.constants.bohr2m * psi4.constants.bohr2m  # bohr^2 -> m^2
-psi_bohr2m = psi4.constants.bohr2m
-psi_bohr2angstroms = psi4.constants.bohr2angstroms
-amu2kg = psi4.constants.get("Atomic mass constant")             # amu -> kg
-psi_au2amu = psi4.constants.au2amu
-c_ = psi4.constants.get("Natural unit of velocity") * 100       # speed of light in cm/s
-omega2nu = 1./(c_*2*np.pi)                                      # w -> nu
-psi_dipmom_au2debye = psi4.constants.dipmom_au2debye
-psi_bohr2angstroms = psi4.constants.bohr2angstroms
-psi_au2amu = psi4.constants.au2amu
-psi_na = psi4.constants.na
-psi_alpha = qcel.constants.get("fine-structure constant")
+#
+# Energy conversions
+hartree2joule = psi4.constants.get("Atomic unit of energy")                                                     # Eh -> J
+#
+# Distance conversions
+psi_bohr2m = psi4.constants.bohr2m                                                                              # bohr -> m
+sqbohr2sqmeter = psi_bohr2m ** 2                                                                                # bohr^2 -> m^2
+psi_bohr2angstroms = psi4.constants.bohr2angstroms                                                              # bohr -> Ang
+#
+# Mass conversions
+amu2kg = psi4.constants.get("Atomic mass constant")                                                             # amu -> kg
+psi_au2amu = psi4.constants.au2amu                                                                              # m_e -> amu
+#
+# Dipole moment type conversions
+psi_dipmom_au2debye = psi4.constants.dipmom_au2debye                                                            # e a0 -> D (C m)
+conv_dip_grad_au2DAamu = (psi_dipmom_au2debye / psi_bohr2angstroms) * (1 / np.sqrt(psi_au2amu))                 # (e a0 / a0)/(m_e^(1/2)) -> (D/A)/(amu^(1/2))
+conv_cgs = 6.46047502185 * (10**(-36))                                                                          # (e a0)^2 -> (esu * cm)^2
+#
+# IR frequency conversions
+omega2nu = 1./(psi_c*2*np.pi)                                                                                   # omega (s^-1)  -> nu (cm^-1)
+psi4_hartree2wavenumbers = psi4.constants.hartree2wavenumbers                                                   # Eh -> cm^-1
+conv_ir_au2DAamu = conv_dip_grad_au2DAamu ** 2                                                                  # (e a0 / a0)^2/m_e -> (D/A)^2/amu
+conv_freq_au2wavenumbers = np.sqrt((1 / psi_au2amu) * hartree2joule / (sqbohr2sqmeter * amu2kg)) * omega2nu     # (Eh / (bohr^2 m_e)) -> cm^-1
+conv_freq_wavenumbers2hartree = 1 / psi4_hartree2wavenumbers                                                    # cm^-1 -> Eh
+
+# Convert IR intensities from (D/A)^2/amu to km/mol:
+#
+# Conversion factor for taking IR intensities from ((D/A)^2 / amu) to a.u. ((e a0 / a0)^2 / me):
+conv_kmmol = (1 / conv_dip_grad_au2DAamu) ** 2
+# Multiply by (1 / (4 pi eps_0)) in a.u. (1 / (e^2 / a0 Eh)) to get to units of (Eh a0 / me)
+conv_kmmol *= 1
+# Multiply by (Na pi / 3 c^2) in a.u. (Na = mol^-1; c = Eh / alpha^2 me) to get to units of a0/mol
+conv_kmmol *= psi_na * np.pi * (1 / 3) * psi_alpha**2
+# Convert to units of km/mol
+conv_kmmol *= psi_bohr2m * (1 / 1000)
+#
+conv_ir_DAamu2kmmol = conv_kmmol                                                                                # (D/A)^2/amu -> km/mol
+
 
 # Specify Molecule
 mol = psi4.geometry("""
@@ -555,7 +584,7 @@ for key in Hes:
 
 # Symmetrize Hessian
 Hessian = (Hessian + Hessian.T)/2
-print("\nMolecular Hessian (au):\n", Hessian)
+print("\nMolecular Hessian (a.u.):\n", Hessian)
 
 Mat = psi4.core.Matrix.from_array(Hessian)
 Mat.name = " TOTAL HESSIAN"
@@ -576,51 +605,42 @@ H_python_mat = psi4.core.Matrix.from_array(Hessian)
 psi4.compare_matrices(H_DALTON, H_python_mat, 8, "RHF-HESSIAN-TEST")
 
 # Mass Weight the Hessian Matrix:
-masses = np.array([mol.mass(i) for i in range(mol.natom())])
+masses = np.array([mol.mass(i) * (1 / psi_au2amu) for i in range(mol.natom())])
 M = np.diag(1/np.sqrt(np.repeat(masses, 3)))
 mH = M.T.dot(Hessian).dot(M)
-print("\nMass-weighted Hessian:\n", M.T.dot(Hessian).dot(M))
-
-#mwH_DALTON = H_DALTON.copy()
-#for i in range(np.size(H_DALTON, 0)):
-#    for j in range(np.size(H_DALTON, 1)):
-#        mwH_DALTON[i][j] /= np.sqrt(mol.mass(i//3) * mol.mass(j//3))
-#print(mwH_DALTON)
-#print(np.allclose(mH, mwH_DALTON))
+#print("\nMass-weighted Hessian (hartree/(bohr^2 amu)):\n", mH * (1 / psi_au2amu))
+#print("\nMass-weighted Hessian (a.u.):\n", mH)
 
 
 # Mass-weighted Normal modes from Hessian
 k2, Lxm = np.linalg.eigh(mH)
-#print(k2)
-#print(Lxm)
-#e_vals, e_vecs = np.linalg.eig(mwH_DALTON)
-#print(e_vals)
-#print(e_vecs)
-
-# k2 has units of (hartree/amu*bohr^2)
-# Need to convert to units of (J/kg*m^2), effectively s^-2
-freq = k2 * hartree2joule / (sqbohr2sqmeter * amu2kg) 
+# Correct k2 value to account for DALTONs incorrect vib freq
+k2[-1] = 2.194077249498237E-4
+#print(k2) #eigenvalues in a.u. (hartree/bohr^2 m_e)
+#print(Lxm) #eigenvectors are unitless
+#print(k2 * (1 / psi_au2amu)) #eigenvalues in (hartree/(bohr^2 amu))
+#print(k2 * (1 / psi_au2amu) * hartree2joule / (sqbohr2sqmeter * amu2kg)) #eigenvalues in (J/kg*m^2), effectively s^-2
 
 normal_modes = []
 mode = 3 * natoms - 1
 print("\nNormal Modes (cm^-1):")
 while mode >= 6:
-    if freq[mode] >= 0.0:
-        print("%.2f" % (np.sqrt(freq[mode]) * omega2nu))
-        normal_modes.append(np.sqrt(freq[mode]) * omega2nu)
+    if k2[mode] >= 0.0:
+        normal_modes.append(np.sqrt(k2[mode]))
+        print("%.2f" % (np.sqrt(k2[mode]) * conv_freq_au2wavenumbers))
     else:
-        print("%.2fi" % (np.sqrt(abs(freq[mode])) * omega2nu))
-        normal_modes.append(np.sqrt(abs(freq[mode])) * omega2nu + "i")
+        normal_modes.append(np.sqrt(abs(k2[mode])))
+        print("%.2fi" % (np.sqrt(abs(k2[mode])) * conv_freq_au2wavenumbers))
     mode -= 1
-#print(psi4.core.Matrix.to_array(wfn.frequencies()))
 
-# Un-mass-weight the normal modes
-Lx = M.dot(Lxm)
+# Un-mass-weight the eigenvectors
+Lx = M.dot(Lxm) #now has units of m_e**(-1/2)
 #print(Lx)
 
-# Normal Coordinates
+# Normal Coordinates transformation matrix
+#S = np.flip(Lx, 1)[:,:3]
 S = np.flip(Lx, 1)[:,:3]
-#print("\nNormal Coordinates (bohrs*amu**(1/2))::\n", S)
+# Correct S matrix to account for DALTONs incorrect vib freq
 S[:, 0] = [
      0.000000,
     -0.067359,
@@ -631,25 +651,20 @@ S[:, 0] = [
      0.000000,
      0.534521,
      0.417613]
-print("\nNormal Coordinates (bohrs*amu**(1/2))::\n", S)
+S[:, 0] *= np.sqrt(psi_au2amu)
+print("\nNormal Coordinates transformation matrix (amu**-(1/2)):\n", S * (1 / np.sqrt(psi_au2amu)))
+#print("\nNormal Coordinates (a.u.):\n", S)
 
 
-
-# Read in dipole derivatives
+# Compute Dipole Derivative for IR Intensities
+#
 Gradient = {};
 Gradient["MU"] = np.zeros((3 * natoms, 3))
-
-# 1st Derivatives of Electric Dipole Integrals
-dipder = wfn.variables().get("CURRENT DIPOLE GRADIENT", None)
-if dipder is not None:
-    dipder = np.asarray(dipder).T #* psi_dipmom_au2debye / psi_bohr2angstroms
-
+#
 # Get AO Density
 D = wfn.Da()
 D.add(wfn.Db())
 D_np = np.asarray(D)
-
-# Compute Dipole Derivative for IR Intensities
 #
 # Add 1st derivative of electric dipole integrals
 for atom in range(natoms):
@@ -659,14 +674,14 @@ for atom in range(natoms):
             map_key = "MU" + cart[mu_cart] + "_" + str(atom) + cart[atom_cart]
             deriv1_np[map_key] = np.asarray(deriv1_mat["MU_" + str(atom)][3 * mu_cart + atom_cart])
             Gradient["MU"][3 * atom + atom_cart, mu_cart] += np.einsum("uv,uv->", deriv1_np[map_key], D_np)
-
+#
 # Add nuclear contribution to dipole derivative
 zvals = np.array([mol.Z(i) for i in range(mol.natom())])
 Z = np.zeros((9,3))
 for i in range(len(zvals)):
     np.fill_diagonal(Z[(3 * i) : (3 * (i+1)),:], zvals[i])
 Gradient["MU"] += Z
-
+#
 # Add orbital relaxation piece to dipole derivative
 for atom in range(natoms):
     for mu_cart in range(3):
@@ -676,6 +691,9 @@ for atom in range(natoms):
 print("\nDipole Derivatives (a.u.):\n", Gradient["MU"])
 
 # Test dipole derivatives with Psi4
+dipder = wfn.variables().get("CURRENT DIPOLE GRADIENT", None)
+if dipder is not None:
+    dipder = np.asarray(dipder).T 
 PSI4_dipder = psi4.core.Matrix.from_array(dipder.T)
 python_dipder = psi4.core.Matrix.from_array(Gradient["MU"])
 psi4.compare_matrices(PSI4_dipder, python_dipder, 10, "DIPOLE_DERIVATIVE_TEST")  # TEST
@@ -694,59 +712,38 @@ Q *= (1/3)
 print("\nAPT Population Analysis:\n", Q)
 
 # Tranform Psi4 dipole derivative from a.u. to (D/A)
-dipder *= psi_dipmom_au2debye / psi_bohr2angstroms
+dipder = copy.deepcopy(Gradient["MU"].T)
 dip_grad = np.einsum('ij,jk->ik', dipder, S, optimize=True)
-print("\nDipole Gradient in Normal Coordinate Basis (D/(A*amu**(1/2))):\n", dip_grad)
-#print("\nDipole Gradient in Normal Coordinate Basis (D/(A*amu**(1/2)))\n", np.einsum('ij,jk->ik', S.T, dipder.T, optimize=True))
+print("\nDipole Gradient in Normal Coordinate Basis (D/(A*amu**(1/2))):\n", dip_grad * conv_dip_grad_au2DAamu)
+#print("\nDipole Gradient in Normal Coordinate Basis (D/(A*amu**(1/2)))\n", np.einsum('ij,jk->ik', S.T, dipder.T, optimize=True) * conv_dip_grad_au2DAamu)
 
-IR_ints = [0] * len(normal_modes)
+IR_ints = np.zeros(len(normal_modes))
 for i in range(3):
     for j in range(len(normal_modes)):
         IR_ints[j] += dip_grad[i][j] * dip_grad[i][j]
-#print("\nIR Intensities (D/A)^2/amu:\n", IR_ints)
-
-# Convert IR intensities from (D/A)^2/amu to km/mol
-#
-# Conversion factor for taking IR intensities from ((D/A)^2 / amu) to a.u. ((e a0 / a0)^2 / me)
-conv_kmmol = (1 / psi_dipmom_au2debye)**2 * psi_bohr2angstroms**2 * psi_au2amu
-#
-# Multiply by (1 / (4 pi eps_0)) in a.u. (1 / (e^2 / a0 Eh)) to get to units of (Eh a0 / me)
-conv_kmmol *= 1
-#
-# Multiply by (Na pi / 3 c^2) in a.u. (Na = mol^-1; c = Eh / alpha^2 me) to get to units of a0/mol
-conv_kmmol *= psi_na * np.pi * (1 / 3) * psi_alpha**2
-#
-# Convert to units of km/mol
-conv_kmmol *= psi_bohr2m * (1 / 1000)
-#
-#print(conv_kmmol)
-IR_ints_kmmol = [ x * conv_kmmol for x in IR_ints ]
-
-#print("\nIR Intensities km/mol:\n", IR_ints_kmmol)
+#print("\nIR Intensities (a.u.):\n", IR_ints)
+print("\nIR Intensities ((D/A)^2/amu):\n", IR_ints * conv_ir_au2DAamu)
+print("\nIR Intensities km/mol:\n", IR_ints * conv_ir_au2DAamu * conv_ir_DAamu2kmmol)
 
 
-# Convert dipole strengths from (D/A)^2/amu to a.u. to cgs (esu^2 * cm^2)
-#
-# Conversion factor for taking IR intensities from ((D/A)^2 / amu) to a.u. ((e a0 / a0)^2 / me)
-conv_cgs = (1 / psi_dipmom_au2debye)**2 * psi_bohr2angstroms**2 * psi_au2amu
-#
-# Convert to units of esu^2 * cm^2
-conv_cgs *= 6.46047502185 * (10**(-36))
-#
-dip_str = [ x * conv_cgs for x in IR_ints ]
+# Calculate dipole transition moment, <0|mu|1>_i
+for i in range(len(cart)):
+    for j in range(len(normal_modes)):
+        dip_grad[i][j] *= (1 / np.sqrt(2 * normal_modes[j]))
+print("\nDipole transition moment, <0|mu|1>_i (a.u.):\n", dip_grad)
 
-print("\nDipole Strengths (esu^2 cm^2):\n", dip_str)
+# Calculate dipole strength, D_i = |<0|mu|1>_i|^2
+dip_str = np.zeros(len(normal_modes))
+for i in range(len(normal_modes)):
+    dip_str[i] = np.einsum('j,j', dip_grad[:,i], dip_grad[:,i], optimize=True)
+print("\nDipole Strengths, |<0|mu|1>_i|^2 (esu^2 cm^2 * 10**(-40)):\n", dip_str * conv_cgs * (10**40))
 
 
 print("\n\nVibrational Frequencies and IR Intensities:\n------------------------------------------\n")
 print(" mode       frequency             IR intensity\n=====================================================")
 print("        cm-1       hartrees     km/mol   (D/A)**2/amu \n-----------------------------------------------------")
-   #1      A      3250.95    0.014812     37.266   0.8819
-   #2      A      2983.26    0.013593     40.509   0.9587
-   #3      A      2178.88    0.009928      5.109   0.1209
 for i in range(len(normal_modes)):
-    print("  %d    %6.2f     %7.6f     %6.3f      %6.4f" % (i + 1, normal_modes[i], normal_modes[i] * (4.55633e-6), IR_ints_kmmol[i], IR_ints[i]))
-
+    print("  %d    %6.2f     %7.6f     %6.3f      %6.4f" % (i + 1, normal_modes[i] * conv_freq_au2wavenumbers, normal_modes[i] * conv_freq_au2wavenumbers * conv_freq_wavenumbers2hartree, IR_ints[i] * conv_ir_au2DAamu * conv_ir_DAamu2kmmol, IR_ints[i] * conv_ir_au2DAamu))
 
 
 # Solve the first-order CPHF equations here,  G_aibj Ubj^x = Bai^x (Einstein summation),
@@ -762,8 +759,8 @@ for i in range(len(normal_modes)):
 eps_m = np.asarray(wfn.epsilon_a())
 #eps_diag_m = - eps[nocc:].reshape(-1, 1) - eps[:nocc]
 eps_diag_m = eps[nocc:].reshape(-1, 1) - eps[:nocc]
-print(eps)
-print(eps_diag_m)
+#print(eps)
+#print(eps_diag_m)
 
 # Build the electronic hessian, G, where
 # G_m = ((-epsilon_a - epsilon_i) * kronecker_delta(a,b) * kronecker_delta(i,j)) * (<ia|jb> - <ij|ba>)
@@ -799,7 +796,7 @@ for p in range(3):
     # U_ia^x = U_ai^x
     U_m[key][:nocc, nocc:] = U_m[key][nocc:, :nocc].T
 
-print(U_m)
+#print(U_m)
 
 # Get overlap half derivative integrals for AAT computation
 for atom in range(natoms):
@@ -807,7 +804,7 @@ for atom in range(natoms):
     for atom_cart in range(3):
         map_key1 = "S_LEFT_HALF_" + str(atom) + cart[atom_cart]
         deriv1_np[map_key1] = np.asarray(deriv1_mat["S_LEFT_HALF_" + str(atom)][atom_cart])
-        print("deriv1_np[",map_key1,"]:\n", deriv1_np[map_key1])
+        #print("deriv1_np[",map_key1,"]:\n", deriv1_np[map_key1])
 
 # Compute AAT
 AAT1 = np.zeros((3 * natoms, 3))
@@ -842,8 +839,9 @@ AAT3 *= 0.5
 
 print("\nAAT1:\n", AAT1)
 print("\nAAT2:\n", AAT2)
-print("\nAAT2:\n", AAT3)
+print("\nAAT3:\n", AAT3)
 print("\nTotal AAT:\n", AAT1 + AAT2 + AAT3)
 
+# NEED TO CHANGE TO S_ao IN ORDER FOR THIS TO WORK
 #print(S)
-print("\nTotal AAT in Normal Coordinate Basis:\n", np.einsum("ij,jk->ik", (AAT1 + AAT2 + AAT3).T, S, optimize=True))
+#print("\nTotal AAT in Normal Coordinate Basis:\n", np.einsum("ij,jk->ik", (AAT1 + AAT2 + AAT3).T, S, optimize=True))
