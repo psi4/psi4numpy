@@ -87,14 +87,14 @@ conv_ir_DAamu2kmmol = conv_kmmol                                                
 
 
 # Specify Molecule
-mol = psi4.geometry("""
-    O            0.000000000000     0.000000000000    -0.075791843897
-    H            0.000000000000    -0.866811832375     0.601435781623
-    H            0.000000000000     0.866811832375     0.601435781623
-    symmetry c1
-    units ang
-    noreorient
-""")
+#mol = psi4.geometry("""
+#    O            0.000000000000     0.000000000000    -0.075791843897
+#    H            0.000000000000    -0.866811832375     0.601435781623
+#    H            0.000000000000     0.866811832375     0.601435781623
+#    symmetry c1
+#    units ang
+#    noreorient
+#""")
 #mol = psi4.geometry("""
 #    O     0.000000000000     0.000000000000    -0.134503695264
 #    H     0.000000000000    -1.684916670000     1.067335684736
@@ -103,9 +103,29 @@ mol = psi4.geometry("""
 #    units bohr
 #    noreorient
 #""")
-geom = psi4.core.Matrix.to_array(mol.geometry())
+#mol = psi4.geometry("""
+#    O           -0.0000000000        1.3127774000       -0.1092016150
+#    O           -0.0000000000       -1.3127774000       -0.1092016150
+#    H            1.4385007800        1.7079033100        0.8736129170
+#    H           -1.4385007800       -1.7079033100        0.8736129170
+#    symmetry c1
+#    units bohr
+#    noreorient
+#""")
+mol = psi4.geometry("""
+    O       0.0000000000        1.3192641900       -0.0952542913
+    O      -0.0000000000       -1.3192641900       -0.0952542913
+    H       1.6464858700        1.6841036400        0.7620343300
+    H      -1.6464858700       -1.6841036400        0.7620343300
+    symmetry c1
+    units bohr
+    noreorient
+    no_com
+""")
 
 psi4.core.set_active_molecule(mol)
+
+geom = psi4.core.Matrix.to_array(mol.geometry())
 
 # Set Psi4 Options
 options = {'BASIS':'STO-3G',
@@ -590,19 +610,34 @@ Mat = psi4.core.Matrix.from_array(Hessian)
 Mat.name = " TOTAL HESSIAN"
 Mat.print_out()
 
-H_DALTON = psi4.core.Matrix.from_list([
-[ 0.07613952,     0.00000000,    -0.00000000,    -0.03806976,    -0.00000000,     0.00000000,    -0.03806976,     0.00000000,     0.00000000],
-[ 0.00000000,     0.48290536,     0.00000000,    -0.00000000,    -0.24145268,     0.15890015,     0.00000000,    -0.24145268,    -0.15890015],
-[-0.00000000,     0.00000000,     0.43734495,     0.00000000,     0.07344234,    -0.21867248,     0.00000000,    -0.07344234,    -0.21867248],
-[-0.03806976,    -0.00000000,     0.00000000,     0.04537742,     0.00000000,    -0.00000000,    -0.00730766,    -0.00000000,    -0.00000000],
-[-0.00000000,    -0.24145268,     0.07344234,     0.00000000,     0.25786500,    -0.11617124,    -0.00000000,    -0.01641232,     0.04272891],
-[ 0.00000000,     0.15890015,    -0.21867248,    -0.00000000,    -0.11617124,     0.19775198,    -0.00000000,    -0.04272891,     0.02092050],
-[-0.03806976,     0.00000000,     0.00000000,    -0.00730766,    -0.00000000,    -0.00000000,     0.04537742,    -0.00000000,    -0.00000000],
-[ 0.00000000,    -0.24145268,    -0.07344234,    -0.00000000,    -0.01641232,    -0.04272891,    -0.00000000,     0.25786500,     0.11617124],
-[ 0.00000000,    -0.15890015,    -0.21867248,    -0.00000000,     0.04272891,     0.02092050,    -0.00000000,     0.11617124,     0.19775198]
-])
-H_python_mat = psi4.core.Matrix.from_array(Hessian)
-psi4.compare_matrices(H_DALTON, H_python_mat, 8, "RHF-HESSIAN-TEST")
+#H_DALTON = psi4.core.Matrix.from_list([
+#[ 0.07613952,     0.00000000,    -0.00000000,    -0.03806976,    -0.00000000,     0.00000000,    -0.03806976,     0.00000000,     0.00000000],
+#[ 0.00000000,     0.48290536,     0.00000000,    -0.00000000,    -0.24145268,     0.15890015,     0.00000000,    -0.24145268,    -0.15890015],
+#[-0.00000000,     0.00000000,     0.43734495,     0.00000000,     0.07344234,    -0.21867248,     0.00000000,    -0.07344234,    -0.21867248],
+#[-0.03806976,    -0.00000000,     0.00000000,     0.04537742,     0.00000000,    -0.00000000,    -0.00730766,    -0.00000000,    -0.00000000],
+#[-0.00000000,    -0.24145268,     0.07344234,     0.00000000,     0.25786500,    -0.11617124,    -0.00000000,    -0.01641232,     0.04272891],
+#[ 0.00000000,     0.15890015,    -0.21867248,    -0.00000000,    -0.11617124,     0.19775198,    -0.00000000,    -0.04272891,     0.02092050],
+#[-0.03806976,     0.00000000,     0.00000000,    -0.00730766,    -0.00000000,    -0.00000000,     0.04537742,    -0.00000000,    -0.00000000],
+#[ 0.00000000,    -0.24145268,    -0.07344234,    -0.00000000,    -0.01641232,    -0.04272891,    -0.00000000,     0.25786500,     0.11617124],
+#[ 0.00000000,    -0.15890015,    -0.21867248,    -0.00000000,     0.04272891,     0.02092050,    -0.00000000,     0.11617124,     0.19775198]
+#])
+#H_DALTON = psi4.core.Matrix.from_list([
+#[ 0.62185267,     0.14585976,     0.40827905,    -0.09070490,    -0.00527169,     0.00339125,    -0.54264614,    -0.07839452,    -0.40189413,     0.01149837,     -0.06219355,    -0.00977617],
+#[ 0.14585976,     0.74467965,     0.06248059,    -0.00527169,    -0.64831816,     0.04168411,    -0.15963550,    -0.06191200,    -0.10010874,     0.01904744,     -0.03444948,    -0.00405596],
+#[ 0.40827905,     0.06248059,     0.25802335,    -0.00339125,    -0.04168411,    -0.03483676,    -0.39680105,    -0.05330923,    -0.22652658,    -0.00808675,      0.03251275,     0.00333999],
+#[-0.09070490,    -0.00527169,    -0.00339125,     0.62185267,     0.14585976,    -0.40827905,     0.01149837,    -0.06219355,     0.00977617,    -0.54264614,     -0.07839452,     0.40189413],
+#[-0.00527169,    -0.64831816,    -0.04168411,     0.14585976,     0.74467965,    -0.06248059,     0.01904744,    -0.03444948,     0.00405596,    -0.15963550,     -0.06191200,     0.10010874],
+#[ 0.00339125,     0.04168411,    -0.03483676,    -0.40827905,    -0.06248059,     0.25802335,     0.00808675,    -0.03251275,     0.00333999,     0.39680105,      0.05330923,    -0.22652658],
+#[-0.54264614,    -0.15963550,    -0.39680105,     0.01149837,     0.01904744,     0.00808675,     0.53394587,     0.14074341,     0.39041613,    -0.00279810,     -0.00015534,    -0.00170183],
+#[-0.07839452,    -0.06191200,    -0.05330923,    -0.06219355,    -0.03444948,    -0.03251275,     0.14074341,     0.10252383,     0.09093738,    -0.00015534,     -0.00616234,    -0.00511540],
+#[-0.40189413,    -0.10010874,    -0.22652658,     0.00977617,     0.00405596,     0.00333999,     0.39041613,     0.09093738,     0.22363745,     0.00170183,      0.00511540,    -0.00045086],
+#[ 0.01149837,     0.01904744,    -0.00808675,    -0.54264614,    -0.15963550,     0.39680105,    -0.00279810,    -0.00015534,     0.00170183,     0.53394587,      0.14074341,    -0.39041613],
+#[-0.06219355,    -0.03444948,     0.03251275,    -0.07839452,    -0.06191200,     0.05330923,    -0.00015534,    -0.00616234,     0.00511540,     0.14074341,      0.10252383,    -0.09093738],
+#[-0.00977617,    -0.00405596,     0.00333999,     0.40189413,     0.10010874,    -0.22652658,    -0.00170183,    -0.00511540,    -0.00045086,    -0.39041613,     -0.09093738,     0.22363745]
+#])
+psi_H = wfn.hessian()
+python_H = psi4.core.Matrix.from_array(Hessian)
+psi4.compare_matrices(psi_H, python_H, 8, "RHF-HESSIAN-TEST")
 
 # Mass Weight the Hessian Matrix:
 masses = np.array([mol.mass(i) * (1 / psi_au2amu) for i in range(mol.natom())])
@@ -614,10 +649,8 @@ mH = M.T.dot(Hessian).dot(M)
 
 # Mass-weighted Normal modes from Hessian
 k2, Lxm = np.linalg.eigh(mH)
-# Correct k2 value to account for DALTONs incorrect vib freq
-k2[-1] = 2.194077249498237E-4
-#print(k2) #eigenvalues in a.u. (hartree/bohr^2 m_e)
-#print(Lxm) #eigenvectors are unitless
+print(k2) #eigenvalues in a.u. (hartree/bohr^2 m_e)
+print(Lxm) #eigenvectors are unitless
 #print(k2 * (1 / psi_au2amu)) #eigenvalues in (hartree/(bohr^2 amu))
 #print(k2 * (1 / psi_au2amu) * hartree2joule / (sqbohr2sqmeter * amu2kg)) #eigenvalues in (J/kg*m^2), effectively s^-2
 
@@ -638,25 +671,12 @@ Lx = M.dot(Lxm) #now has units of m_e**(-1/2)
 #print(Lx)
 
 # Normal Coordinates transformation matrix
-#S = np.flip(Lx, 1)[:,:3]
-S = np.flip(Lx, 1)[:,:3]
-# Correct S matrix to account for DALTONs incorrect vib freq
-S[:, 0] = [
-     0.000000,
-    -0.067359,
-     0.000000,
-     0.000000,
-     0.534521,
-    -0.417613,
-     0.000000,
-     0.534521,
-     0.417613]
-S[:, 0] *= np.sqrt(psi_au2amu)
+S = np.flip(Lx, 1)[:,:len(normal_modes)]
 print("\nNormal Coordinates transformation matrix (amu**-(1/2)):\n", S * (1 / np.sqrt(psi_au2amu)))
 #print("\nNormal Coordinates (a.u.):\n", S)
 
 
-# Compute Dipole Derivative for IR Intensities
+# Compute Dipole Derivative
 #
 Gradient = {};
 Gradient["MU"] = np.zeros((3 * natoms, 3))
@@ -677,7 +697,7 @@ for atom in range(natoms):
 #
 # Add nuclear contribution to dipole derivative
 zvals = np.array([mol.Z(i) for i in range(mol.natom())])
-Z = np.zeros((9,3))
+Z = np.zeros((3 * natoms, 3))
 for i in range(len(zvals)):
     np.fill_diagonal(Z[(3 * i) : (3 * (i+1)),:], zvals[i])
 Gradient["MU"] += Z
@@ -696,13 +716,13 @@ if dipder is not None:
     dipder = np.asarray(dipder).T 
 PSI4_dipder = psi4.core.Matrix.from_array(dipder.T)
 python_dipder = psi4.core.Matrix.from_array(Gradient["MU"])
-psi4.compare_matrices(PSI4_dipder, python_dipder, 10, "DIPOLE_DERIVATIVE_TEST")  # TEST
+psi4.compare_matrices(PSI4_dipder, python_dipder, 7, "DIPOLE_DERIVATIVE_TEST")  # TEST
 
 # APT Population Analysis
 # Reference : J. Cioslowski, J.Am.Chem.Soc. 111 (1989) 8333
 # Q^A = 1/3 ( dmu_x/dx_A + dmu_y/dy_A + dmu_z/dz_A), 
 # where A represents an atom; x_A, y_A, z_A are cartesian coordinates of atom A; and mu_x, mu_y, mu_z are cartesian components of the dipole
-Q = np.zeros(3)
+Q = np.zeros(natoms)
 for atom in range(natoms):
     for atom_cart in range(3):
         for mu_cart in range(3):
@@ -722,20 +742,21 @@ for i in range(3):
     for j in range(len(normal_modes)):
         IR_ints[j] += dip_grad[i][j] * dip_grad[i][j]
 #print("\nIR Intensities (a.u.):\n", IR_ints)
-print("\nIR Intensities ((D/A)^2/amu):\n", IR_ints * conv_ir_au2DAamu)
-print("\nIR Intensities km/mol:\n", IR_ints * conv_ir_au2DAamu * conv_ir_DAamu2kmmol)
+#print("\nIR Intensities ((D/A)^2/amu):\n", IR_ints * conv_ir_au2DAamu)
+#print("\nIR Intensities km/mol:\n", IR_ints * conv_ir_au2DAamu * conv_ir_DAamu2kmmol)
 
 
-# Calculate dipole transition moment, <0|mu|1>_i
+# Calculate APT, i.e. dipole transition moment, <0|mu|1>_i
+APT = copy.deepcopy(dip_grad)
 for i in range(len(cart)):
     for j in range(len(normal_modes)):
-        dip_grad[i][j] *= (1 / np.sqrt(2 * normal_modes[j]))
-print("\nDipole transition moment, <0|mu|1>_i (a.u.):\n", dip_grad)
+        APT[i][j] *= (1 / np.sqrt(2 * normal_modes[j]))
+print("\nAtomic Polar Tensor (APT), <0|mu|1>_i (a.u.):\n", APT)
 
 # Calculate dipole strength, D_i = |<0|mu|1>_i|^2
 dip_str = np.zeros(len(normal_modes))
 for i in range(len(normal_modes)):
-    dip_str[i] = np.einsum('j,j', dip_grad[:,i], dip_grad[:,i], optimize=True)
+    dip_str[i] = np.einsum('j,j', APT[:,i], APT[:,i], optimize=True)
 print("\nDipole Strengths, |<0|mu|1>_i|^2 (esu^2 cm^2 * 10**(-40)):\n", dip_str * conv_cgs * (10**40))
 
 
@@ -757,17 +778,12 @@ for i in range(len(normal_modes)):
 
 # Build epsilon_a - epsilon_i matrix
 eps_m = np.asarray(wfn.epsilon_a())
-#eps_diag_m = - eps[nocc:].reshape(-1, 1) - eps[:nocc]
 eps_diag_m = eps[nocc:].reshape(-1, 1) - eps[:nocc]
-#print(eps)
-#print(eps_diag_m)
 
 # Build the electronic hessian, G, where
 # G_m = ((-epsilon_a - epsilon_i) * kronecker_delta(a,b) * kronecker_delta(i,j)) * (<ia|jb> - <ij|ba>)
 
 # G_m += <ia|jb> - <ij|ba>
-#G_m  = 1.0 * npERI[:nocc, nocc:, :nocc, nocc:].swapaxes(1, 2)
-#G_m -= 1.0 * npERI[:nocc, :nocc, nocc:, nocc:].swapaxes(2, 3)
 G_m  = -1.0 * npERI[:nocc, nocc:, :nocc, nocc:].swapaxes(1, 2)
 G_m += 1.0 * npERI[:nocc, :nocc, nocc:, nocc:].swapaxes(2, 3)
 
@@ -783,7 +799,8 @@ Ginv_m = Ginv_m.reshape(nocc, nvir, nocc, nvir)
 
 B_m = {}
 U_m = {}
-# Build Bai^x
+# Build Bai^x and solve for CPHF coefficents
+# where Bai^x = - (mu_mag)_ia^x
 for p in range(3):
     key = cart[p]
 
@@ -795,53 +812,63 @@ for p in range(3):
     U_m[key][nocc:, :nocc] = np.einsum("iajb,bj->ai", Ginv_m, B_m[key], optimize=True)
     # U_ia^x = U_ai^x
     U_m[key][:nocc, nocc:] = U_m[key][nocc:, :nocc].T
-
+    #print("U_m[",key,"]:\n", U_m[key])
 #print(U_m)
 
-# Get overlap half derivative integrals for AAT computation
+# Get half-differentiated overlap integrals for AAT computation
 for atom in range(natoms):
     deriv1_mat["S_LEFT_HALF_" + str(atom)] = mints.mo_overlap_half_deriv1("LEFT", atom, C, C)
+    deriv1_mat["S_AO_LEFT_HALF_" + str(atom)] = mints.ao_overlap_half_deriv1("LEFT", atom)
     for atom_cart in range(3):
         map_key1 = "S_LEFT_HALF_" + str(atom) + cart[atom_cart]
+        map_key2 = "S_AO_LEFT_HALF_" + str(atom) + cart[atom_cart]
         deriv1_np[map_key1] = np.asarray(deriv1_mat["S_LEFT_HALF_" + str(atom)][atom_cart])
+        deriv1_np[map_key2] = np.asarray(deriv1_mat["S_AO_LEFT_HALF_" + str(atom)][atom_cart])
         #print("deriv1_np[",map_key1,"]:\n", deriv1_np[map_key1])
+        #print("deriv1_np[",map_key2,"]:\n", deriv1_np[map_key2])
 
 # Compute AAT
-AAT1 = np.zeros((3 * natoms, 3))
-AAT2 = np.zeros((3 * natoms, 3))
+AAT_elec = np.zeros((3 * natoms, 3))
 for atom in range(natoms):
     for atom_cart in range(3):
         for mu_cart in range(3):
             key1 = str(atom) + cart[atom_cart]
             key2 = cart[mu_cart]
-            #AAT1[3 * atom + atom_cart][mu_cart] += 1.0 * np.einsum("ai,ai", U[key1][nocc:, :nocc], U_m[key2][nocc:, :nocc], optimize=True)
-            #AAT2[3 * atom + atom_cart][mu_cart] += 1.0 * np.einsum("ai,ia", U_m[key2][nocc:, :nocc], deriv1_np["S_LEFT_HALF_" + key1][:nocc, nocc:], optimize=True)
-            AAT1[3 * atom + atom_cart][mu_cart] += 4.0 * np.einsum("ai,ai", U[key1][nocc:, :nocc], U_m[key2][nocc:, :nocc], optimize=True)
-            AAT2[3 * atom + atom_cart][mu_cart] += 4.0 * np.einsum("ai,ia", U_m[key2][nocc:, :nocc], deriv1_np["S_LEFT_HALF_" + key1][:nocc, nocc:], optimize=True)
-
-            #AAT[3 * atom + atom_cart][mu_cart] += 1.0 * np.einsum("ji,ji", U[key1][:nocc, :nocc], U_m[key2][:nocc, :nocc], optimize=True)
-            #AAT[3 * atom + atom_cart][mu_cart] += 1.0 * np.einsum("ji,ij", U_m[key2][:nocc, :nocc], deriv1_np["S_LEFT_HALF_" + key1][:nocc, :nocc], optimize=True)
+            AAT_elec[3 * atom + atom_cart][mu_cart] += 4.0 * np.einsum("ai,ai", U[key1][nocc:, :nocc], U_m[key2][nocc:, :nocc], optimize=True)
+            AAT_elec[3 * atom + atom_cart][mu_cart] += 4.0 * np.einsum("ai,ia", U_m[key2][nocc:, :nocc], deriv1_np["S_LEFT_HALF_" + key1][:nocc, nocc:], optimize=True)
+            #print(4.0 * np.einsum("ai,ai", U[key1][nocc:, :nocc], U_m[key2][nocc:, :nocc], optimize=True))
+            #print(4.0 * np.einsum("ai,ia", U_m[key2][nocc:, :nocc], deriv1_np["S_LEFT_HALF_" + key1][:nocc, nocc:], optimize=True))
+            #print(4.0 * np.einsum("ai,ai", U[key1][nocc:, :nocc], U_m[key2][nocc:, :nocc], optimize=True) + 4.0 * np.einsum("ai,ia", U_m[key2][nocc:, :nocc], deriv1_np["S_LEFT_HALF_" + key1][:nocc, nocc:], optimize=True))
+            #print()
 
 levi_civit = np.zeros((3,3,3))
 levi_civit[0][1][2] = levi_civit[1][2][0] = levi_civit[2][0][1] = 1
 levi_civit[0][2][1] = levi_civit[1][0][2] = levi_civit[2][1][0] = -1
-AAT3 = np.zeros((3 * natoms, 3))
+AAT_nuc = np.zeros((3 * natoms, 3))
 # Nuclear contribution to AAT
 for atom in range(natoms):
     for atom_cart in range(3):
         for mu_cart in range(3):
             for gamma in range(3):
-                AAT3[3 * atom + atom_cart][mu_cart] += 1.0 * levi_civit[atom_cart][mu_cart][gamma] * geom[atom][gamma] * (zvals[atom] / 2)
+                AAT_nuc[3 * atom + atom_cart][mu_cart] += 1.0 * levi_civit[atom_cart][mu_cart][gamma] * geom[atom][gamma] * (zvals[atom] / 2)
 
-AAT1 *= 0.5
-AAT2 *= 0.5
-AAT3 *= 0.5
+AAT_elec *= 0.5
+AAT_nuc *= 0.5
 
-print("\nAAT1:\n", AAT1)
-print("\nAAT2:\n", AAT2)
-print("\nAAT3:\n", AAT3)
-print("\nTotal AAT:\n", AAT1 + AAT2 + AAT3)
+print("\nElectronic contribution to AAT:\n", AAT_elec)
+print("\nNuclear contribution to AAT:\n", AAT_nuc)
+AAT = AAT_elec + AAT_nuc
+print("\nTotal AAT:\n", AAT)
 
-# NEED TO CHANGE TO S_ao IN ORDER FOR THIS TO WORK
-#print(S)
-#print("\nTotal AAT in Normal Coordinate Basis:\n", np.einsum("ij,jk->ik", (AAT1 + AAT2 + AAT3).T, S, optimize=True))
+AAT = np.einsum("ij,jk->ik", AAT.T, S, optimize=True)
+print("\nTotal AAT in Normal Coordinate Basis (a.u.):\n", AAT)
+
+# Calculate rotational strength, R_i = <0|mu_elec|1>_i <1|mu_mag|0>_i
+rot_str = np.zeros(len(normal_modes))
+for i in range(len(normal_modes)):
+    rot_str[i] = np.einsum('j,j', APT[:,i], np.sqrt(normal_modes[i] / 2) * AAT[:,i], optimize=True)
+
+rot_str *= 2.0
+
+# Convert AAT to cgs units (magnetic dipole operator requires multiplication by (1/c) = alpha in cgs units)
+print("\nRotational Strengths, <0|mu_elec|1>_i <1|mu_mag|0>_i (esu^2 cm^2 * 10**(-44)):\n", rot_str * psi_alpha * conv_cgs * (10**44))
