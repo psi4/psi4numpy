@@ -7,10 +7,15 @@ making use of one and two electron integrals and their associated
 derivatives from PSI4.
 
 References: 
-1. "Theory of vibrational circular dichroism", P. J. Stephens
+1. "Coupled-cluster open shell analytic gradients: Implementation of the
+direct product decomposition approach in energy gradient calculations",
+J. Gauss, J. F. Stanton, R. J. Bartlett
+DOI: 10.1063/1.460915
+
+2. "Theory of vibrational circular dichroism", P. J. Stephens
 DOI: 10.1021/j100251a006
 
-2. "Efficient calculation of vibrational magnetic dipole transition 
+3. "Efficient calculation of vibrational magnetic dipole transition 
 moments and rotational strenths",
 R. D. Amos, N. C. Handy, K. J. Jalkanen, P. J. Stephens
 DOI: 10.1016/0009-2614(87)80046-5
@@ -77,7 +82,6 @@ conv_freq_wavenumbers2hartree = 1 / psi4_hartree2wavenumbers                    
 # Conversion factor for taking IR intensities from ((D/A)^2 / amu) to a.u. ((e a0 / a0)^2 / me):
 conv_kmmol = (1 / conv_dip_grad_au2DAamu) ** 2
 # Multiply by (1 / (4 pi eps_0)) in a.u. (1 / (e^2 / a0 Eh)) to get to units of (Eh a0 / me)
-conv_kmmol *= 1
 # Multiply by (Na pi / 3 c^2) in a.u. (Na = mol^-1; c = Eh / alpha^2 me) to get to units of a0/mol
 conv_kmmol *= psi_na * np.pi * (1 / 3) * psi_alpha**2
 # Convert to units of km/mol
@@ -87,31 +91,6 @@ conv_ir_DAamu2kmmol = conv_kmmol                                                
 
 
 # Specify Molecule
-#mol = psi4.geometry("""
-#    O            0.000000000000     0.000000000000    -0.075791843897
-#    H            0.000000000000    -0.866811832375     0.601435781623
-#    H            0.000000000000     0.866811832375     0.601435781623
-#    symmetry c1
-#    units ang
-#    noreorient
-#""")
-#mol = psi4.geometry("""
-#    O     0.000000000000     0.000000000000    -0.134503695264
-#    H     0.000000000000    -1.684916670000     1.067335684736
-#    H     0.000000000000     1.684916670000     1.067335684736
-#    symmetry c1
-#    units bohr
-#    noreorient
-#""")
-#mol = psi4.geometry("""
-#    O           -0.0000000000        1.3127774000       -0.1092016150
-#    O           -0.0000000000       -1.3127774000       -0.1092016150
-#    H            1.4385007800        1.7079033100        0.8736129170
-#    H           -1.4385007800       -1.7079033100        0.8736129170
-#    symmetry c1
-#    units bohr
-#    noreorient
-#""")
 mol = psi4.geometry("""
     O       0.0000000000        1.3192641900       -0.0952542913
     O      -0.0000000000       -1.3192641900       -0.0952542913
@@ -171,7 +150,7 @@ npAM_mo = []
 for cart in range(3):
     npMU.append(psi4.core.Matrix.to_array(MU[cart]))
     npAM.append(psi4.core.Matrix.to_array(AM[cart]))
-    npAM[cart] *= -0.5
+    npAM[cart] *= 0.5
     npMU_mo.append(np.einsum('uj,vi,uv', npC, npC, npMU[cart], optimize=True))
     npAM_mo.append(np.einsum('uj,vi,uv', npC, npC, npAM[cart], optimize=True))
 
@@ -198,7 +177,9 @@ F_vir = np.diag(F)[nocc:nmo]
 # Build Reference OPDM
 npD_ao = 2.0 * np.einsum('ui,vi->uv', npC[:, :nocc], npC[:, :nocc], optimize=True)
 # Transform to MO Basis
-ref_opdm = np.einsum('iu,uv,vw,wx,xj', npC.T, npS.T, npD_ao, npS, npC, optimize=True)
+#ref_opdm = np.einsum('iu,uv,vw,wx,xj', npC.T, npS.T, npD_ao, npS, npC, optimize=True)
+ref_opdm = np.zeros((nmo, nmo))
+ref_opdm[:nocc, :nocc] = np.diag(np.repeat(2, nocc))
 
 # Build Total OPDM
 Ppq = np.zeros((nmo, nmo))
@@ -220,7 +201,11 @@ Ppqrs += ref_tpdm
 #print("\n\nTotal TPDM:\n", Ppqrs.reshape(nmo*nmo, nmo*nmo))
 
 
-# Build I'
+# Build I' intermediate as defined in
+# "Coupled-cluster open shell analytic gradients: Implementation of the
+# direct product decomposition approach in energy gradient calculations",
+# J. Gauss, J. F. Stanton, R. J. Bartlett, J Chem. Phys., 1991, 95(4), 2623-2638.
+# 
 # I'_pq = - (1/2) * [ fpp(Ppq + Pqp) + sum_rs (Prs * (4<rp|sq> - <rp|qs> - <rq|ps>)) * kronecker_delta(q,occ) + ...
 #         ... + sum_rst (Pqrst <pr|st> + Prqst <rp|st> + Prsqt <rs|pt> + Prstq <rs|tp>) ]
 Ip = np.zeros((nmo, nmo))
@@ -610,31 +595,7 @@ Mat = psi4.core.Matrix.from_array(Hessian)
 Mat.name = " TOTAL HESSIAN"
 Mat.print_out()
 
-#H_DALTON = psi4.core.Matrix.from_list([
-#[ 0.07613952,     0.00000000,    -0.00000000,    -0.03806976,    -0.00000000,     0.00000000,    -0.03806976,     0.00000000,     0.00000000],
-#[ 0.00000000,     0.48290536,     0.00000000,    -0.00000000,    -0.24145268,     0.15890015,     0.00000000,    -0.24145268,    -0.15890015],
-#[-0.00000000,     0.00000000,     0.43734495,     0.00000000,     0.07344234,    -0.21867248,     0.00000000,    -0.07344234,    -0.21867248],
-#[-0.03806976,    -0.00000000,     0.00000000,     0.04537742,     0.00000000,    -0.00000000,    -0.00730766,    -0.00000000,    -0.00000000],
-#[-0.00000000,    -0.24145268,     0.07344234,     0.00000000,     0.25786500,    -0.11617124,    -0.00000000,    -0.01641232,     0.04272891],
-#[ 0.00000000,     0.15890015,    -0.21867248,    -0.00000000,    -0.11617124,     0.19775198,    -0.00000000,    -0.04272891,     0.02092050],
-#[-0.03806976,     0.00000000,     0.00000000,    -0.00730766,    -0.00000000,    -0.00000000,     0.04537742,    -0.00000000,    -0.00000000],
-#[ 0.00000000,    -0.24145268,    -0.07344234,    -0.00000000,    -0.01641232,    -0.04272891,    -0.00000000,     0.25786500,     0.11617124],
-#[ 0.00000000,    -0.15890015,    -0.21867248,    -0.00000000,     0.04272891,     0.02092050,    -0.00000000,     0.11617124,     0.19775198]
-#])
-#H_DALTON = psi4.core.Matrix.from_list([
-#[ 0.62185267,     0.14585976,     0.40827905,    -0.09070490,    -0.00527169,     0.00339125,    -0.54264614,    -0.07839452,    -0.40189413,     0.01149837,     -0.06219355,    -0.00977617],
-#[ 0.14585976,     0.74467965,     0.06248059,    -0.00527169,    -0.64831816,     0.04168411,    -0.15963550,    -0.06191200,    -0.10010874,     0.01904744,     -0.03444948,    -0.00405596],
-#[ 0.40827905,     0.06248059,     0.25802335,    -0.00339125,    -0.04168411,    -0.03483676,    -0.39680105,    -0.05330923,    -0.22652658,    -0.00808675,      0.03251275,     0.00333999],
-#[-0.09070490,    -0.00527169,    -0.00339125,     0.62185267,     0.14585976,    -0.40827905,     0.01149837,    -0.06219355,     0.00977617,    -0.54264614,     -0.07839452,     0.40189413],
-#[-0.00527169,    -0.64831816,    -0.04168411,     0.14585976,     0.74467965,    -0.06248059,     0.01904744,    -0.03444948,     0.00405596,    -0.15963550,     -0.06191200,     0.10010874],
-#[ 0.00339125,     0.04168411,    -0.03483676,    -0.40827905,    -0.06248059,     0.25802335,     0.00808675,    -0.03251275,     0.00333999,     0.39680105,      0.05330923,    -0.22652658],
-#[-0.54264614,    -0.15963550,    -0.39680105,     0.01149837,     0.01904744,     0.00808675,     0.53394587,     0.14074341,     0.39041613,    -0.00279810,     -0.00015534,    -0.00170183],
-#[-0.07839452,    -0.06191200,    -0.05330923,    -0.06219355,    -0.03444948,    -0.03251275,     0.14074341,     0.10252383,     0.09093738,    -0.00015534,     -0.00616234,    -0.00511540],
-#[-0.40189413,    -0.10010874,    -0.22652658,     0.00977617,     0.00405596,     0.00333999,     0.39041613,     0.09093738,     0.22363745,     0.00170183,      0.00511540,    -0.00045086],
-#[ 0.01149837,     0.01904744,    -0.00808675,    -0.54264614,    -0.15963550,     0.39680105,    -0.00279810,    -0.00015534,     0.00170183,     0.53394587,      0.14074341,    -0.39041613],
-#[-0.06219355,    -0.03444948,     0.03251275,    -0.07839452,    -0.06191200,     0.05330923,    -0.00015534,    -0.00616234,     0.00511540,     0.14074341,      0.10252383,    -0.09093738],
-#[-0.00977617,    -0.00405596,     0.00333999,     0.40189413,     0.10010874,    -0.22652658,    -0.00170183,    -0.00511540,    -0.00045086,    -0.39041613,     -0.09093738,     0.22363745]
-#])
+# Test Hessian
 psi_H = wfn.hessian()
 python_H = psi4.core.Matrix.from_array(Hessian)
 psi4.compare_matrices(psi_H, python_H, 8, "RHF-HESSIAN-TEST")
@@ -784,7 +745,8 @@ eps_diag_m = eps[nocc:].reshape(-1, 1) - eps[:nocc]
 # G_m = ((-epsilon_a - epsilon_i) * kronecker_delta(a,b) * kronecker_delta(i,j)) * (<ia|jb> - <ij|ba>)
 
 # G_m += <ia|jb> - <ij|ba>
-G_m  = -1.0 * npERI[:nocc, nocc:, :nocc, nocc:].swapaxes(1, 2)
+#G_m  = -1.0 * npERI[:nocc, nocc:, :nocc, nocc:].swapaxes(1, 2)
+G_m  = -1.0 * (npERI[:nocc, nocc:, :nocc, nocc:].swapaxes(1, 3)).swapaxes(1, 2)
 G_m += 1.0 * npERI[:nocc, :nocc, nocc:, nocc:].swapaxes(2, 3)
 
 # Change shape of G_m from ij,ab to ia,jb
@@ -804,7 +766,7 @@ U_m = {}
 for p in range(3):
     key = cart[p]
 
-    B_m[key] = - 1.0 * npAM_mo[p][nocc:, :nocc]
+    B_m[key] = npAM_mo[p][nocc:, :nocc]
 
     # Compute U^x, where
     U_m[key] = np.zeros((nmo, nmo))
