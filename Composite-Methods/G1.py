@@ -40,11 +40,11 @@ print("1b. Harmonic frequencies: HF/6-31G*")
 psi4.frequencies("HF")
 
 T = psi4.core.get_global_option("T")
-zpe = psi4.get_variable("ZPVE")
-# du = psi4.get_variable("INTERNAL ENERGY CORRECTION")
-du = psi4.get_variable("THERMAL ENERGY CORRECTION")
-dh = psi4.get_variable("ENTHALPY CORRECTION")
-dg = psi4.get_variable("GIBBS FREE ENERGY CORRECTION")
+zpe = psi4.core.scalar_variable("ZPVE")
+# du = psi4.core.scalar_variable("INTERNAL ENERGY CORRECTION")
+du = psi4.core.scalar_variable("THERMAL ENERGY CORRECTION")
+dh = psi4.core.scalar_variable("ENTHALPY CORRECTION")
+dg = psi4.core.scalar_variable("GIBBS FREE ENERGY CORRECTION")
 
 psi4.core.clean()
 
