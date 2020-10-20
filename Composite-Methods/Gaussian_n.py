@@ -148,3 +148,65 @@ print("G1(0 K)= {:10.6f}".format(g1_0k))
 print("G1 Energy= {:10.6f}".format(g1_energy))
 print("G1 Enthalpy= {:10.6f}".format(g1_enthalpy))
 print("G1 Free Energy= {:10.6f}".format(g1_free_energy))
+
+print("\nAdding components for G2 and G2(MP2) calculation.\n")
+
+print("Single-point energy: MP2/6-311+G(3df,2p) [frozen core]")
+
+psi4.set_options({
+    "basis": "6-311+G(3df,2p)",
+    "scf_type": "direct",
+    "df_scf_guess": False,
+    "mp2_type": "conv",
+    "freeze_core": "true",
+})
+
+psi4.energy("MP2")
+e_mp2_plus_3df2p = psi4.get_variable("MP2 TOTAL ENERGY")
+psi4.core.clean()
+
+# e_mp2_base = -76.263654158359
+# e_mp2_plus = -76.274546774908
+# e_mp2_2df = -76.298942654928
+# This calculation can be avoided by rearranging the expressions.
+# e_mp2_plus_2df
+# e_mp2_plus_3df2p = -76.318108464496
+
+# de_mp2_plus_2df
+de_mp2_plus = e_mp2_plus - e_mp2_base
+de_mp2_2df = e_mp2_2df - e_mp2_base
+
+# de_1 = de_plus_2df + de_plus + de_2df
+# de_2 = e_mp2_plus_3df2p - e_mp2_plus_2df
+# de = de_1 + de_2
+de = e_mp2_plus_3df2p - e_mp2_2df - e_mp2_plus + e_mp2_base
+
+# Calculate the number of valence pairs.
+npairs = min(nalpha, nbeta)
+e_hlc_2 = 1.14 * npairs / 1000
+
+g2_0k = g1_0k + de + e_hlc_2
+g2_energy = g2_0k - zpe + du
+g2_enthalpy = g2_0k - zpe + dh
+g2_free_energy = g2_0k - zpe + dg
+
+# G2(MP2) bits
+
+de_mp2 = e_mp2_plus_3df2p - e_mp2_base
+g2mp2_0k = (e_step6_qci + e_step3) + de_mp2 + e_hlc_1 + e_hlc_2 + e_zpe
+
+g2mp2_energy = g2mp2_0k - zpe + du
+g2mp2_enthalpy = g2mp2_0k - zpe + dh
+g2mp2_free_energy = g2mp2_0k - zpe + dg
+
+print("e(Delta-G2)=              {:10.6f}".format(de))
+print("E(G2-Empiric)=               {:10.6f}".format(e_hlc_2))
+print("G2(0 K)=                  {:10.6f}".format(g2_0k))
+print("G2 Energy=                   {:10.6f}".format(g2_energy))
+print("G2 Enthalpy=              {:10.6f}".format(g2_enthalpy))
+print("G2 Free Energy=              {:10.6f}".format(g2_free_energy))
+print("DE(MP2)=                  {:10.6f}".format(de_mp2))
+print("G2MP2(0 K)=               {:10.6f}".format(g2mp2_0k))
+print("G2MP2 Energy=                {:10.6f}".format(g2mp2_energy))
+print("G2MP2 Enthalpy=           {:10.6f}".format(g2mp2_enthalpy))
+print("G2MP2 Free Energy=           {:10.6f}".format(g2mp2_free_energy))
