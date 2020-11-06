@@ -71,7 +71,7 @@ def integrator(int_alg,timestep,pos,veloc,accel,molec,grad_method):
         molec.set_geometry(psi4.core.Matrix.from_array(pos_new))
         E,force_new = get_forces(grad_method)
         accel_new = force_new/(atom_mass.reshape((natoms,1)))
-        vel_new += 0*5*timestep*accel_new
+        vel_new += 0.5*timestep*accel_new
     return pos_new,vel_new,accel_new,E
 
 def get_forces(grad_method):
