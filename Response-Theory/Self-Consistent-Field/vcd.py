@@ -115,10 +115,50 @@ psi4.core.set_active_molecule(mol)
 geom = psi4.core.Matrix.to_array(mol.geometry())
 
 # Set Psi4 Options
-options = {'BASIS':'STO-3G_dalton',
-           'SCF_TYPE':'PK',
-           'E_CONVERGENCE':1e-12,
-           'D_CONVERGENCE':1e-12}
+options = {
+    #'BASIS':'STO-3G_dalton',
+    'SCF_TYPE':'PK',
+    'E_CONVERGENCE':1e-12,
+    'D_CONVERGENCE':1e-12}
+
+# Define custom basis set to match STO-3G from DALTON
+def define_custom_basis(mol, role):
+    basstrings = {}
+    mol.set_basis_all_atoms("sto-3g", role=role)
+    basstrings['sto-3g'] = """ 
+spherical
+****
+H 0
+S 3 1.00
+      3.4252509 0.15432897
+      0.6239137 0.53532814
+      0.1688554 0.44463454
+****
+C 0
+S 3 1.00
+     71.6168370 0.15432897
+     13.0450960 0.53532814
+      3.5305122 0.44463454
+SP 3 1.00
+      2.9412494 -0.09996723 0.15591627
+      0.6834831 0.39951283 0.60768372
+      0.2222899 0.70011547 0.39195739
+****
+O 0
+S 3 1.00
+    130.7093200 0.15432897
+     23.8088610 0.53532814
+      6.4436083 0.44463454
+SP 3 1.00
+      5.0331513 -0.09996723 0.15591627
+      1.1695961 0.39951283 0.60768372
+      0.3803890 0.70011547 0.39195739
+****
+"""
+    return basstrings
+qcdb.libmintsbasisset.basishorde['STO-3G_DALTON'] = define_custom_basis
+core.set_global_option("BASIS", "STO-3G_dalton")
+
 psi4.set_options(options)
 
 # Perform SCF Energy Calculation
@@ -768,6 +808,23 @@ print("\nElectronic contribution to AAT:\n", AAT_elec)
 print("\nNuclear contribution to AAT:\n", AAT_nuc)
 AAT = AAT_elec + AAT_nuc
 print("\nTotal AAT:\n", AAT)
+
+# Compare AATs to DALTONs result
+AAT_dalton = psi4.core.Matrix.from_list([
+[-0.16438927,   -0.10446393,   -2.00901728],
+[ 0.09439940,    0.00574249,    0.11809387],
+[ 2.19819309,   -0.11635324,    0.15601962],
+[-0.16438927,   -0.10446393,    2.00901728],
+[ 0.09439940,    0.00574249,   -0.11809387],
+[-2.19819309,    0.11635324,    0.15601962],
+[-0.11803349,    0.11314253,   -0.10726430],
+[-0.19342146,    0.00350944,    0.36522207],
+[ 0.25524026,   -0.20123957,    0.12058354],
+[-0.11803349,    0.11314253,    0.10726430],
+[-0.19342146,    0.00350944,   -0.36522207],
+[-0.25524026,    0.20123957,    0.12058354]])
+AAT_python_mat = psi4.core.Matrix.from_array(AAT)
+psi4.compare_matrices(AAT_dalton, AAT_python_mat, 8, "SCF-VCD-TEST")
 
 AAT = np.einsum("ij,jk->ik", AAT.T, S, optimize=True)
 for i in range(len(normal_modes)):
