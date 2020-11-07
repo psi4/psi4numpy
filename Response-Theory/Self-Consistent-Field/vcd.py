@@ -134,16 +134,6 @@ S 3 1.00
       0.6239137 0.53532814
       0.1688554 0.44463454
 ****
-C 0
-S 3 1.00
-     71.6168370 0.15432897
-     13.0450960 0.53532814
-      3.5305122 0.44463454
-SP 3 1.00
-      2.9412494 -0.09996723 0.15591627
-      0.6834831 0.39951283 0.60768372
-      0.2222899 0.70011547 0.39195739
-****
 O 0
 S 3 1.00
     130.7093200 0.15432897
@@ -230,7 +220,6 @@ ref_opdm[:nocc, :nocc] = np.diag(np.repeat(2, nocc))
 # Build Total OPDM
 Ppq = np.zeros((nmo, nmo))
 Ppq += ref_opdm
-#print("\n\nTotal OPDM:\n", Ppq)
 
 # Build Reference TPDM
 ref_tpdm = np.zeros((nmo, nmo, nmo, nmo))
@@ -241,7 +230,6 @@ ref_tpdm = -0.25 * ref_tpdm
 # Build Total TPDM
 Ppqrs = np.zeros((nmo, nmo, nmo, nmo))
 Ppqrs += ref_tpdm
-#print("\n\nTotal TPDM:\n", Ppqrs.reshape(nmo*nmo, nmo*nmo))
 
 
 # Build I' intermediate
@@ -265,7 +253,6 @@ Ip[:, :nocc] -= 1.0 * np.einsum('rs,rpqs->pq', Ppq , npERI[:, :, :nocc, :], opti
 Ip[:, :nocc] -= 1.0 * np.einsum('rs,rqps->pq', Ppq , npERI[:, :nocc, :, :], optimize=True)
 
 Ip *= -0.5
-#print("\nI':\n",Ip)
 
 
 # Build I'' ,
@@ -276,7 +263,6 @@ Ipp[nocc:, :nocc] = Ip[:nocc, nocc:].T
 
 # Build X_ai = I'_ia - I'_ai
 X = Ip[:nocc, nocc:].T - Ip[nocc:, :nocc]
-#print("\nX:\n", X)
 
 # Build Idenity matrices in nocc/nvir dimensions
 I_occ = np.diag(np.ones(nocc))
@@ -300,24 +286,17 @@ G = G.swapaxes(1, 2)
 # G += (epsilon_a - epsilon_i) * kronecker_delta(a,b) * kronecker delta(i,j)
 G += np.einsum('ai,ij,ab->iajb', eps_diag, I_occ, I_vir, optimize=True)
 
-# Inverse of G
-Ginv = np.linalg.inv(G.reshape(nocc * nvir, -1))
-Ginv = Ginv.reshape(nocc, nvir, nocc, nvir)
-
 # Take Transpose of G_iajb
 G = G.T.reshape(nocc * nvir, nocc * nvir)
-#print("\nMO Hessian, G:\n", G)
 
 # Solve G^T(ai,bj) Z(b,j) = X(a,i)
 X = X.reshape(nocc * nvir, -1)
 Z = np.linalg.solve(G, X).reshape(nvir, -1)
-#print("\nZ Vector:\n", X)
 
 # Relax OPDM
 # Ppq(a,i) = Ppq(i,a) = - Z(a,i)
 Ppq[:nocc, nocc:] = -Z.T
 Ppq[nocc:, :nocc] = -Z
-#print("\n\nRelaxed Total OPDM:\n", Ppq)
 
 # Build Lagrangian, I, where
 # I(i,j) = I''(i,j) + sum_ak ( Z(a,k) * [ 2<ai|kj> - <ai|jk>  + 2<aj|ki> - <aj|ik> ])
@@ -334,7 +313,6 @@ I[:nocc, :nocc] -= 1.0 * np.einsum('ak,ajik->ij', Z, npERI[nocc:, :nocc, :nocc, 
 I[nocc:, :nocc] += Z * F_occ
 # I(i,a)
 I[:nocc, nocc:] += (Z * F_occ).T
-#print("\n\nLagrangian I:\n", I)
 
 
 
@@ -471,14 +449,9 @@ for atom in range(natoms):
         # U_ab^x = - 1/2 S_ab^a
         U[key] = np.zeros((nmo, nmo))
         U[key][:nocc, :nocc] = - 0.5 * deriv1_np["S" + key][:nocc, :nocc]
-        U[key][nocc:, :nocc] = np.einsum("iajb,bj->ai", Ginv, B[key], optimize=True)
+        U[key][nocc:, :nocc] = (np.linalg.solve(G.reshape(nocc * nvir, -1), B[key].reshape(nocc * nvir, -1))).reshape(nvir, nocc)
         U[key][:nocc, nocc:] = - (U[key][nocc:, :nocc] + deriv1_np["S" + key][nocc:, :nocc]).T
         U[key][nocc:, nocc:] = - 0.5 * deriv1_np["S" + key][nocc:, nocc:]
-
-        #psi4.core.print_out("\n")
-        #UMat = psi4.core.Matrix.from_array(U[key])
-        #UMat.name = key
-        #UMat.print_out()
 
 
 # Build the response hessian now
@@ -636,13 +609,18 @@ while mode >= 6:
         print("%.2fi" % (np.sqrt(abs(k2[mode])) * conv_freq_au2wavenumbers))
     mode -= 1
 
+# Test frequencies
+psi_freq = np.flip(wfn.frequencies().to_array())
+for i in range(len(normal_modes)):
+    psi4.compare_values(psi_freq[i], normal_modes[i] * conv_freq_au2wavenumbers, 6, "FREQ-TEST")
+
 # Un-mass-weight the eigenvectors
 Lx = M.dot(Lxm) #now has units of m_e**(-1/2)
 
 # Normal Coordinates transformation matrix
 S = np.flip(Lx, 1)[:,:len(normal_modes)]
 #print("\nNormal Coordinates transformation matrix (a.u.):\n", S)
-print("\nNormal Coordinates transformation matrix (amu**-(1/2)):\n", S * (1 / np.sqrt(psi_au2amu)))
+#print("\nNormal Coordinates transformation matrix (amu**-(1/2)):\n", S * (1 / np.sqrt(psi_au2amu)))
 
 
 # Compute Dipole Derivative
@@ -754,9 +732,8 @@ G_m = G_m.swapaxes(1, 2)
 # G_m += (-epsilon_a - epsilon_i) * kronecker_delta(a,b) * kronecker delta(i,j)
 G_m += np.einsum('ai,ij,ab->iajb', eps_diag_m, I_occ, I_vir, optimize=True)
 
-# Inverse of G_m
-Ginv_m = np.linalg.inv(G_m.reshape(nocc * nvir, -1))
-Ginv_m = Ginv_m.reshape(nocc, nvir, nocc, nvir)
+# Take transpose of G_m_iajb
+G_m = G_m.T.reshape(nocc * nvir, nocc * nvir)
 
 B_m = {}
 U_m = {}
@@ -770,7 +747,7 @@ for p in range(3):
     # Compute U^x, where
     U_m[key] = np.zeros((nmo, nmo))
     # U_ai^x = G^(-1)_aibj * B_bj^x
-    U_m[key][nocc:, :nocc] = np.einsum("iajb,bj->ai", Ginv_m, B_m[key], optimize=True)
+    U_m[key][nocc:, :nocc] = (np.linalg.solve(G_m.reshape(nocc * nvir, -1), B_m[key].reshape(nocc * nvir, -1))).reshape(nvir, nocc)
     # U_ia^x = U_ai^x
     U_m[key][:nocc, nocc:] = U_m[key][nocc:, :nocc].T
     #print("U_m[",key,"]:\n", U_m[key])
@@ -809,7 +786,7 @@ print("\nNuclear contribution to AAT:\n", AAT_nuc)
 AAT = AAT_elec + AAT_nuc
 print("\nTotal AAT:\n", AAT)
 
-# Compare AATs to DALTONs result
+# Compare AATs to DALTON's result
 AAT_dalton = psi4.core.Matrix.from_list([
 [-0.16438927,   -0.10446393,   -2.00901728],
 [ 0.09439940,    0.00574249,    0.11809387],
@@ -840,3 +817,8 @@ rot_str *= 2.0
 
 # Convert AAT to cgs units (magnetic dipole operator requires multiplication by (1/c) = alpha in cgs units)
 print("\nRotational Strengths, <0|mu_elec|1>_i <1|mu_mag|0>_i (esu^2 cm^2 * 10**(-44)):\n", rot_str * psi_alpha * conv_cgs * (10**44))
+
+# Compare rotatory strengths to DALTON's result (within a sign)
+rot_str_dalton = -1.0 * np.array([-50.538, 53.528, -28.607, 14.650, -1.098, -101.378])
+for i in range(len(rot_str)):
+    psi4.compare_values(rot_str_dalton[i], rot_str[i] * psi_alpha * conv_cgs * (10**44), 3, "ROTATORY-STRENGTHS-TEST")
