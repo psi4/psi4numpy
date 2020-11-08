@@ -21,6 +21,11 @@ def test_TDHF(workspace):
     exe_py(workspace, tdir, 'Self-Consistent-Field/TDHF')
 
 
+@using_psi4_python_integral_deriv
+def test_vcd(workspace):
+    exe_py(workspace, tdir, 'Self-Consistent-Field/vcd')
+
+
 def test_polar_cc(workspace):
     exe_py(workspace, tdir, 'Coupled-Cluster/RHF/polar')
 
