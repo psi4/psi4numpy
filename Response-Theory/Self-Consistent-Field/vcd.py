@@ -610,7 +610,7 @@ while mode >= 6:
     mode -= 1
 
 # Test frequencies
-psi_freq = np.flip(wfn.frequencies().to_array())
+psi_freq = np.flip(wfn.frequencies().to_array(), 0)
 for i in range(len(normal_modes)):
     psi4.compare_values(psi_freq[i], normal_modes[i] * conv_freq_au2wavenumbers, 6, "FREQ-TEST")
 
