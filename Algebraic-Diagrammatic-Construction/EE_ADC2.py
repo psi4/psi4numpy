@@ -123,33 +123,7 @@ def matvec(y):
 
     return r
 
-# Define a function to get the diagonal to precondition the iterative
-# solver - explicitly building the full 1p1h-1p1h space would make the
-# algorithm N^6.
-def diag():
-    diag = np.zeros((nia+nia*nia))
-    dia = diag[:nia].reshape(nocc, nvir)
-    diajb = diag[nia:].reshape(nocc, nvir, nocc, nvir)
-    
-    dia -= e_ia
-    dia -= einsum('aiai->ia', eri[v,o,v,o])
-
-    dia += einsum('acik,ikac->ia', eri[v,v,o,o], t2) * 0.5
-    dia += einsum('ikac,ikac->ia', eri[o,o,v,v], t2) * 0.5
-
-    tmp  = einsum('cdik,ikcd->i', eri[v,v,o,o], t2)
-    tmp += einsum('ikcd,ikcd->i', eri[o,o,v,v], t2)
-    dia += tmp[:,None] * -0.25
-
-    tmp  = einsum('ackl,klac->a', eri[v,v,o,o], t2)
-    tmp += einsum('klac,klac->a', eri[o,o,v,v], t2)
-    dia += tmp[None,:] * -0.25
-
-    diajb -= e_ijab.swapaxes(1,2)
-
-    return diag.ravel()
-
-# Compute teh diagonal of the EE-ADC(2) matrix to use as a preconditioner
+# Compute the diagonal of the EE-ADC(2) matrix to use as a preconditioner
 # for the Davidson algorithm, and to generate the guess vectors
 diag = -np.concatenate([e_ia.ravel(), e_ijab.swapaxes(1,2).ravel()])
 d_ia = diag[:nia].reshape(nocc, nvir)
