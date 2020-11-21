@@ -4,7 +4,7 @@ states for a restricted Hartree-Fock reference. A spin orbital
 formulation is used, as it simplifies the equations.
 
 References:
-    M. Hodecker, PhD Thesis, Heidelberg University (2020).
+    M. Hodecker, PhD Thesis, Heidelberg University (2020): https://doi.org/10.11588/heidok.00028275
 '''
 
 __authors__ = 'Oliver J. Backhouse'
