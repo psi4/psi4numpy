@@ -1,7 +1,7 @@
 Algebraic Diagrammatic Construction Theory
 ==========================================
 Algebraic diagrammatic construction (ADC) theory is the excited-state counterpart
-to Moller-Plesset perturbation theory. ADC(n) allows the calculation of excitation
+to Møller-Plesset perturbation theory. ADC(n) allows the calculation of excitation
 energies consistent with a correlated MPn ground state.
 
 ### Included Reference Implementations
