@@ -127,7 +127,8 @@ while mode >= 6:
     mode -= 1
 
 # Test frequencies
-psi_freq = np.flip(wfn.frequencies().to_array(), 0)
+psi_freq = wfn.frequency_analysis['omega'].data[6:]
+psi_freq = np.flip(psi_freq, 0)
 for i in range(len(normal_modes)):
     psi4.compare_values(psi_freq[i], normal_modes[i] * conv_freq_au2wavenumbers, 6, "FREQ-TEST")
 
@@ -163,4 +164,10 @@ print("  mode        frequency               IR intensity\n=====================
 print("           cm-1      hartrees      km/mol  (D/A)**2/amu \n--------------------------------------------------------")
 for i in range(len(normal_modes)):
     print("  %3d    %7.2f     %8.6f     %7.3f      %6.4f" % (i + 1, normal_modes[i] * conv_freq_au2wavenumbers, normal_modes[i] * conv_freq_au2wavenumbers * conv_freq_wavenumbers2hartree, IR_ints[i] * conv_ir_au2DAamu * conv_ir_DAamu2kmmol, IR_ints[i] * conv_ir_au2DAamu))
+
+# Test IR intensities
+psi_irints = wfn.frequency_analysis["IR_intensity"].data[6:]
+psi_irints = np.flip(psi_irints, 0)
+for i in range(len(normal_modes)):
+    psi4.compare_values(psi_irints[i], IR_ints[i] * conv_ir_au2DAamu * conv_ir_DAamu2kmmol, 6, "IR-INTS-TEST")
 
