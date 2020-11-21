@@ -87,7 +87,7 @@ psi4.compare_values(psi4.energy('mp2'), e_mp2 + e_scf, 6, 'MP2 Energy')
 
 
 # Define the operation representing the dot-product of the EE-ADC(2) matrix
-# with an arbitrary state vector.
+# with an arbitrary state vector (eq 2.115a&b, 2.117, 2.118a&b, 2.119)
 def matvec(y):
     y = np.array(y, order='C')
     r = np.zeros_like(y)
@@ -127,7 +127,7 @@ def matvec(y):
 
 
 # Compute the diagonal of the EE-ADC(2) matrix to use as a preconditioner
-# for the Davidson algorithm, and to generate the guess vectors
+# for the Davidson algorithm, and to generate the guess vector
 diag = -np.concatenate([e_ia.ravel(), e_ijab.swapaxes(1, 2).ravel()])
 d_ia = diag[:nia].reshape(nocc, nvir)
 d_ia -= einsum('aiai->ia', eri[v, o, v, o])

@@ -87,19 +87,19 @@ print('MP2 correlation energy: %16.10f' % e_mp2)
 print('MP2 total energy:       %16.10f' % (e_scf + e_mp2))
 psi4.compare_values(psi4.energy('mp2'), e_mp2 + e_scf, 6, 'MP2 Energy')
 
-# Construct the singles-singles (1h-1h) space
+# Construct the singles-singles (1h-1h) space (eq A5)
 h_hh = np.diag(e_mo[o])
 h_hh += einsum('ikab,jkab->ij', t2, eri[o, o, v, v]) * 0.25
 h_hh += einsum('jkab,ikab->ij', t2, eri[o, o, v, v]) * 0.25
 
-# Construct the single-singles (1p-1p) space
+# Construct the single-singles (1p-1p) space (adapted from eq A5)
 h_pp = np.diag(e_mo[v])
 h_pp -= einsum('ijac,ijbc->ab', t2, eri[o, o, v, v]) * 0.25
 h_pp -= einsum('ijbc,ijac->ab', t2, eri[o, o, v, v]) * 0.25
 
 
 # Define the operation representing the dot-product of the IP-ADC(2) matrix
-# with an arbitrary state vector.
+# with an arbitrary state vector (eq A3 & A4)
 def ip_matvec(y):
     y = np.array(y, order='C')
     r = np.zeros_like(y)
@@ -119,7 +119,7 @@ def ip_matvec(y):
 
 
 # Define the operation representing the dot-product of the EA-ADC(2) matrix
-# with an arbitrary state vector.
+# with an arbitrary state vector (adapted from eq A3 & A4)
 def ea_matvec(y):
     y = np.array(y, order='C')
     r = np.zeros_like(y)
