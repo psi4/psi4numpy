@@ -35,6 +35,7 @@ psi4.set_options({'basis': 'aug-cc-pvdz',
                   'scf_type': 'pk',
                   'guess': 'core',
                   'mp2_type': 'conv',
+                  'mp_type': 'conv',
                   'freeze_core': 'false',
                   'e_convergence': 1e-8,
                   'd_convergence': 1e-8})

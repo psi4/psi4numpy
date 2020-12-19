@@ -35,7 +35,7 @@ symmetry c1
 psi4.set_options({'basis': 'cc-pvdz',
                   'scf_type': 'pk',
                   'mp2_type': 'conv',
-                  'mp2_type': 'conv',
+                  'mp_type': 'conv',
                   'freeze_core': 'false',
                   'e_convergence': 1e-8,
                   'd_convergence': 1e-8})
