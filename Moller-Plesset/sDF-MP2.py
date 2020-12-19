@@ -79,10 +79,10 @@ mints = psi4.core.MintsHelper(orb)
 # ==> Build Density-Fitted Integrals <==
 
 # Build (P|pq) raw 3-index ERIs, dimension (1, Naux, nbf, nbf)
-Ppq = mints.ao_eri(zero_bas, aux, orb, orb)
+Ppq = mints.ao_eri(aux, zero_bas, orb, orb)
 
 # Build & invert Coulomb metric, dimension (1, Naux, 1, Naux)
-metric = mints.ao_eri(zero_bas, aux, zero_bas, aux)
+metric = mints.ao_eri(aux, zero_bas, aux, zero_bas)
 metric.power(-0.5, 1.e-14)
 
 # Remove excess dimensions of Ppq, & metric

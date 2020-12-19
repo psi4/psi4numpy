@@ -77,9 +77,9 @@ def integrals_DF(mol, singles=False):
     basis = mints.basisset()
     zero_bas = psi4.core.BasisSet.zero_ao_basis_set()
     aux = psi4.core.BasisSet.build(mol, "DF_BASIS_CC", "", "RIFIT", basis.name())
-    Ppq = np.squeeze(mints.ao_eri(zero_bas, aux, basis, basis))
+    Ppq = np.squeeze(mints.ao_eri(aux, zero_bas, basis, basis))
     Ppq = np.kron(np.eye(2), Ppq)  # Construct spinorbital quantities
-    metric = mints.ao_eri(zero_bas, aux, zero_bas, aux)
+    metric = mints.ao_eri(aux, zero_bas, aux, zero_bas)
     metric.power(-0.5, 1.e-10)
     metric = np.squeeze(metric)
     Qpq = np.einsum("QP,Ppq->pqQ", metric, Ppq, optimize=True)

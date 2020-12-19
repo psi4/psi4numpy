@@ -89,11 +89,11 @@ naux = aux_basis.nbf()
 
 # Build (P|pq) raw 3-index ERIs, dimension (1, Naux, nbf, nbf)
 # this is I^t in the paper
-Ppq = mints.ao_eri(zero_bas, aux_basis, orbital_basis, orbital_basis)
+Ppq = mints.ao_eri(aux_basis, zero_bas, orbital_basis, orbital_basis)
 print('Ppq = I^t = (Q|pg)', Ppq.shape)
 
 # Build Coulomb metric but only invert, dimension (1, Naux, 1, Naux)
-metric = mints.ao_eri(zero_bas, aux_basis, zero_bas, aux_basis)
+metric = mints.ao_eri(aux_basis, zero_bas, aux_basis, zero_bas)
 metric.power(-1.0, 1.e-14)
 
 # Remove excess dimensions of Ppq & metric
