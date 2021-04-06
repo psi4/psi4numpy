@@ -446,12 +446,15 @@ class HamiltonianGenerator:
         numUniqueOrbitals = None
         if det1.diff2OrLessOrbitals(det2):
             numUniqueOrbitals = det1.numberOfTotalDiffOrbitals(det2)
+            if numUniqueOrbitals == 0:
+                return self.calcMatrixElementIdentialDet(det1)
             if numUniqueOrbitals == 2:
                 return self.calcMatrixElementDiffIn2(det1, det2)
             elif numUniqueOrbitals == 1:
                 return self.calcMatrixElementDiffIn1(det1, det2)
             else:
-                return self.calcMatrixElementIdentialDet(det1)
+                # 
+                return 0.0
         else:
             return 0.0
 
