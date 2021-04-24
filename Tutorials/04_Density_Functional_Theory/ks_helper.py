@@ -5,7 +5,9 @@ import numpy as np
 import psi4
 
 from pkg_resources import parse_version
-if parse_version(psi4.__version__) >= parse_version('1.3a1'):
+if parse_version(psi4.__version__) >= parse_version('1.4rc1'):
+    build_superfunctional = psi4.driver.procrouting.dft.build_superfunctional
+elif parse_version(psi4.__version__) >= parse_version('1.3a1'):
     build_superfunctional = psi4.driver.dft.build_superfunctional
 else:
     build_superfunctional = psi4.driver.dft_funcs.build_superfunctional
