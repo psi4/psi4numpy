@@ -41,6 +41,9 @@ maxiter = 40
 E_conv = 1.0E-6
 D_conv = 1.0E-3
 
+# electric field parameter
+lam_z = 1e-5
+
 # Integral generation from Psi4's MintsHelper
 wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option('BASIS'))
 t = time.time()
@@ -70,12 +73,20 @@ V = np.asarray(mints.ao_potential())
 T = np.asarray(mints.ao_kinetic())
 I = np.asarray(mints.ao_eri())
 
+# Extra terms for Pauli-Fierz Hamiltonian... assuming electric field
+# is only z-polarized for now!
+
+# dipole matrix
+mu_z = np.asarray(mints.ao_dipole()[2])
+# quadrupole matrix
+Q_z = np.asarray(mints.ao_quadrupole()[2])
 
 print('\nTotal time taken for integrals: %.3f seconds.' % (time.time() - t))
 t = time.time()
 
 # Build H_core: [Szabo:1996] Eqn. 3.153, pp. 141
-H = T + V
+# plus quadrupole terms from Pauli-Fierz Hamiltonian
+H = T + V + 0.5 * lam_z * Q_z
 
 # Orthogonalizer A = S^(-1/2) using Psi4's matrix power.
 A = mints.ao_overlap()
@@ -107,7 +118,15 @@ for SCF_ITER in range(1, maxiter + 1):
     # Build fock matrix: [Szabo:1996] Eqn. 3.154, pp. 141
     J = np.einsum('pqrs,rs->pq', I, D)
     K = np.einsum('prqs,rs->pq', I, D)
-    F = H + J * 2 - K
+    
+    # Pauli-Fierz dipole-dipole matrices
+    M = np.einsum('pq,rs,rs->pq', mu_z, mu_z, D)
+    # Pauli-Fierz dipole-dipole "exchange" terms
+    N = np.einsum('pr,qs,rs->pq', mu_z, mu_z, D)
+    
+    # Build fock matrix: [Szabo:1996] Eqn. 3.154, pp. 141 +
+    # Pauli-Fierz terms
+    F = H + J * 2 - K + lam_z ** 2 * M - 0.5 * lam_z **2 * N
 
     diis_e = np.einsum('ij,jk,kl->il', F, D, S) - np.einsum('ij,jk,kl->il', S, D, F)
     diis_e = A.dot(diis_e).dot(A)
