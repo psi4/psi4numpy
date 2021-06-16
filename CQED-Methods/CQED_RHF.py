@@ -26,11 +26,17 @@ psi4.core.set_output_file("output.dat", False)
 numpy_memory = 2
 
 mol = psi4.geometry("""
-O
-H 1 1.1
-H 1 1.1 2 104
-symmetry c1
+H
+Mg 1 1.5
+1 1
 """)
+
+#mol = psi4.geometry("""
+#O
+#H 1 1.1
+#H 1 1.1 2 104
+#symmetry c1
+#""")
 
 psi4.set_options({'basis': 'cc-pvdz',
                   'scf_type': 'pk',
@@ -42,7 +48,7 @@ E_conv = 1.0E-6
 D_conv = 1.0E-3
 
 # electric field parameter
-lam_z = 1e-5
+lam_z = 1e-3
 
 # Integral generation from Psi4's MintsHelper
 wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option('BASIS'))
