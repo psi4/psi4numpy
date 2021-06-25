@@ -110,11 +110,11 @@ def SCF_Hx(xa, xb, moFa, Co_a, Cv_a, moFb, Co_b, Cv_b):
     F : numpy.array
         Hessian product tensor
     """
-    Hx_a = np.dot(moFa[:nbeta, :nbeta], xa)
-    Hx_a -= np.dot(xa, moFa[nbeta:, nbeta:])
+    Hx_a = np.dot(moFa[:nalpha, :nalpha], xa)
+    Hx_a -= np.dot(xa, moFa[nalpha:, nalpha:])
 
-    Hx_b = np.dot(moFb[:nalpha, :nalpha], xb)
-    Hx_b -= np.dot(xb, moFb[nalpha:, nalpha:])
+    Hx_b = np.dot(moFb[:nbeta, :nbeta], xb)
+    Hx_b -= np.dot(xb, moFb[nbeta:, nbeta:])
 
     # Build two electron part, M = -4 (4 G_{mnip} - g_{mpin} - g_{npim}) K_{ip}
     # From [Helgaker:2000] Eqn. 10.8.65
@@ -132,8 +132,8 @@ def SCF_Hx(xa, xb, moFa, Co_a, Cv_a, moFb, Co_b, Cv_b):
 
     return (Hx_a, Hx_b)
 
-Ca, Da = diag_H(H, nbeta)
-Cb, Db = diag_H(H, nalpha)
+Ca, Da = diag_H(H, nalpha)
+Cb, Db = diag_H(H, nbeta)
 
 t = time.time()
 E = 0.0
@@ -156,7 +156,7 @@ t = time.time()
 for SCF_ITER in range(1, maxiter + 1):
 
     # Build Fock matrices
-    J, K = scf_helper.compute_jk(jk, [Ca[:, :nbeta], Cb[:, :nalpha]])
+    J, K = scf_helper.compute_jk(jk, [Ca[:, :nalpha], Cb[:, :nbeta]])
     J = J[0] + J[1]
     Fa = H + J - K[0]
     Fb = H + J - K[1]
@@ -185,16 +185,16 @@ for SCF_ITER in range(1, maxiter + 1):
 
     Eold = SCF_E
 
-    Co_a = Ca[:, :nbeta]
-    Cv_a = Ca[:, nbeta:]
+    Co_a = Ca[:, :nalpha]
+    Cv_a = Ca[:, nalpha:]
     moF_a = np.dot(Ca.T, Fa).dot(Ca)
-    gradient_a = -4 * moF_a[:nbeta, nbeta:]
+    gradient_a = -4 * moF_a[:nalpha, nalpha:]
     gradient_norm_a = np.linalg.norm(gradient_a)
 
-    Co_b = Cb[:, :nalpha]
-    Cv_b = Cb[:, nalpha:]
+    Co_b = Cb[:, :nbeta]
+    Cv_b = Cb[:, nbeta:]
     moF_b = np.dot(Cb.T, Fb).dot(Cb)
-    gradient_b = -4 * moF_b[:nalpha, nalpha:]
+    gradient_b = -4 * moF_b[:nbeta, nbeta:]
     gradient_norm_b = np.linalg.norm(gradient_b)
 
     gradient_norm = gradient_norm_a + gradient_norm_b
@@ -205,19 +205,19 @@ for SCF_ITER in range(1, maxiter + 1):
         Fb = diisb.extrapolate()
 
         # Diagonalize Fock matrix
-        Ca, Da = diag_H(Fa, nbeta)
-        Cb, Db = diag_H(Fb, nalpha)
+        Ca, Da = diag_H(Fa, nalpha)
+        Cb, Db = diag_H(Fb, nbeta)
 
     else:
         so_diis = scf_helper.DIIS_helper()
 
         # Initial guess & Jacobi preconditioner for alpha & beta
         eps_a = np.diag(moF_a)
-        precon_a = -4 * (eps_a[:nbeta].reshape(-1, 1) - eps_a[nbeta:])
+        precon_a = -4 * (eps_a[:nalpha].reshape(-1, 1) - eps_a[nalpha:])
         x_a = gradient_a / precon_a
 
         eps_b = np.diag(moF_b)
-        precon_b = -4 * (eps_b[:nalpha].reshape(-1, 1) - eps_b[nalpha:])
+        precon_b = -4 * (eps_b[:nbeta].reshape(-1, 1) - eps_b[nbeta:])
         x_b = gradient_b / precon_b
 
         Hx_a, Hx_b = SCF_Hx(x_a, x_b, moF_a, Co_a, Cv_a, moF_b, Co_b, Cv_b)
