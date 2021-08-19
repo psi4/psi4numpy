@@ -12,7 +12,7 @@ __credits__   = ["Jon McTague", "Jonathan Foley"]
 
 __copyright_amp__ = "(c) 2014-2018, The Psi4NumPy Developers"
 __license__   = "BSD-3-Clause"
-__date__      = "2021-01-15"
+__date__      = "2021-08-19"
 
 # ==> Import Psi4, NumPy, & SciPy <==
 import psi4
