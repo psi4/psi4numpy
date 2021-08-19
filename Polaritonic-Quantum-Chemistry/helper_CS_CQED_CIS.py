@@ -19,7 +19,7 @@ import psi4
 import numpy as np
 import scipy.linalg as la
 import time
-from helper_cqed_rhf import cqed_rhf
+from helper_CQED_RHF import cqed_rhf
 
 def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
     """ Computes the QED-RHF energy and density 
