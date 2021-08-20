@@ -58,7 +58,7 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
     # define geometry using the molecule_string
     mol = psi4.geometry(molecule_string)
     # define options for the calculation
-    psi4.set_options(psi4_options_dict)
+   psi4.set_options(psi4_options_dict)
     # run psi4 to get ordinary scf energy and wavefunction object
     psi4_rhf_energy, wfn = psi4.energy("scf", return_wfn=True)
 

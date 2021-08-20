@@ -26,45 +26,31 @@ and the 2-electron contributions are augmented as follows
 
 ![CQED_RHF_FO_2E](../media/latex/CQED_RHF_FO_2E.png)
 
-As all SAPT quantities will make use of this expression, a SAPT helper object that can automatically build this value greatly simplifies many routine SAPT tasks. In psi4numpy this helper object can be initialized as follow:
+The helper_CQED_RHF.py function will build this augmented Fock matrix and use it the SCF procedue.  Note that the
+dipole terms in the augmented core Hamiltonian are scaled by the dipole moment expectation value, which depends on the
+CQED-RHF orbitals; hence the core Hamiltonian is updated in the SCF steps.
+
+To function within helper_CQED_RHF.py is `cqed_rhf()` and takes vector specifying the electric
+field coupled to the molecule, a string that specifies the molecular geometry, and a dictionary containing psi4 options.  A dictionary
+containing the CQED-RHF energy and related quantities is returned.
 
 ```python
-sapt = helper_SAPT(dimer, memory=8)
+cqed_rhf_dictionary = cqed_rhf([0., 0., 1e-2], '''\nMg\nH 1 1.7\nsymmetry c1\n1 1\n''', psi4_options_dictionary)
 ```
 
-Where the dimer object is a Psi4 Molecule with exactly two fragments.
+The returned dictionary contains the following keys:
 
-Indices used:
-- a - occupied indices of monomer A
-- b - occupied indices of monomer B
-- r - virtual indices of monomer A
-- s - virtual indices of monomer B
+   'RHF ENERGY' -> result of canonical RHF calculation using psi4 defined by molecule_string and psi4_options_dict
+   'CQED-RHF ENERGY' -> result of CQED-RHF calculation, see Eq. (13) of [McTague:2021:]
+   'CQED-RHF C' -> orbitals resulting from CQED-RHF calculation
+   'CQED-RHF DENSITY MATRIX' -> density matrix resulting from CQED-RHF calculation
+   'CQED-RHF EPS'  -> orbital energies from CQED-RHF calculation
+   'PSI4 WFN' -> wavefunction object from psi4 canonical RHF calcluation
+   'CQED-RHF DIPOLE MOMENT' -> total dipole moment from CQED-RHF calculation (1x3 numpy array)
+   'NUCLEAR DIPOLE MOMENT' -> nuclear dipole moment (1x3 numpy array)
+   'DIPOLE ENERGY' -> See Eq. (14) of [McTague:2021:]
+   'NUCLEAR REPULSION ENERGY' -> Total nuclear repulsion energy
 
-The `sapt` object now contains all of the information that we need to compute the following:
-- `v`: Two electron repulsion integrals in the MO basis (e.g. `sapt.v('arar')`)
-- `s`: Overlap integrals in the MO basis (e.g. `sapt.s('ab')`)
-- `eps`: SCF eigenvalues (e.g. `sapt.eps('a')`)
-- `potential`: Electrostatic potential of a monomer (e.g. `sapt.potential('bb', 'A')`)
-- `vt`: Intermolecular interaction operator \tilde{V} (e.g. `sapt.vt('arar')`)
-- `chf`: Computes CPHF orbitals for each monomer (e.g. `chf('A')`)
-
-Where for all 4-index quantities the order of the indices is as follows:
-
-`\tilde{V}_{0, 1}^{2, 3}`
-
-For example, the expression for first order electrostatics is as follows:
-
-`4 * \tilde{V}_{a, b}^{a, b}`
-
-Computation of the \tilde{V} operator can be accomplished as:
-
-`vt_abab = sapt.vt('abab')`
-
-`vt_abab` is a 4-index tensor that needs to be summed over following einsum convention:
-
-`Elst10 = 4 * np.einsum('abab', vt_abab)`
-
-By first building a tool to compute arbitrary `\tilde{V}` tensors we can, in principle, compute up to third order SAPT easily.
 
 ### References
 
