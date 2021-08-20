@@ -7,66 +7,67 @@ References:
 
 """
 
-__authors__   = ["Jon McTague", "Jonathan Foley"]
-__credits__   = ["Jon McTague", "Jonathan Foley"]
+__authors__ = ["Jon McTague", "Jonathan Foley"]
+__credits__ = ["Jon McTague", "Jonathan Foley"]
 
 __copyright_amp__ = "(c) 2014-2018, The Psi4NumPy Developers"
-__license__   = "BSD-3-Clause"
-__date__      = "2021-08-19"
+__license__ = "BSD-3-Clause"
+__date__ = "2021-08-19"
 
 # ==> Import Psi4, NumPy, & SciPy <==
 import psi4
 import numpy as np
 import time
 
+
 def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
-    """ Computes the QED-RHF energy and density 
+    """Computes the QED-RHF energy and density
 
-        Arguments
-        ---------
-        lambda_vector : 1 x 3 array of floats
-            the electric field vector, see e.g. Eq. (1) in [DePrince:2021:094112]
-            and (15) in [Haugland:2020:041043]
-        
-        molecule_string : string
-            specifies the molecular geometry
+    Arguments
+    ---------
+    lambda_vector : 1 x 3 array of floats
+        the electric field vector, see e.g. Eq. (1) in [DePrince:2021:094112]
+        and (15) in [Haugland:2020:041043]
 
-        options_dict : dictionary
-            specifies the psi4 options to be used in running the canonical RHF 
+    molecule_string : string
+        specifies the molecular geometry
 
-        Returns
-        -------
-        cqed_rhf_dictionary : dictionary
-            Contains important quantities from the cqed_rhf calculation, with keys including:
-                'RHF ENERGY' -> result of canonical RHF calculation using psi4 defined by molecule_string and psi4_options_dict
-                'CQED-RHF ENERGY' -> result of CQED-RHF calculation, see Eq. (13) of [McTague:2021:] 
-                'CQED-RHF C' -> orbitals resulting from CQED-RHF calculation
-                'CQED-RHF DENSITY MATRIX' -> density matrix resulting from CQED-RHF calculation
-                'CQED-RHF EPS'  -> orbital energies from CQED-RHF calculation
-                'PSI4 WFN' -> wavefunction object from psi4 canonical RHF calcluation
-                'CQED-RHF DIPOLE MOMENT' -> total dipole moment from CQED-RHF calculation (1x3 numpy array)
-                'NUCLEAR DIPOLE MOMENT' -> nuclear dipole moment (1x3 numpy array) 
-                'DIPOLE ENERGY' -> See Eq. (14) of [McTague:2021:]
-                'NUCLEAR REPULSION ENERGY' -> Total nuclear repulsion energy  
+    options_dict : dictionary
+        specifies the psi4 options to be used in running the canonical RHF
 
-        Example
-        -------
-        >>> cqed_rhf_dictionary = cqed_rhf([0., 0., 1e-2], '''\nMg\nH 1 1.7\nsymmetry c1\n1 1\n''', psi4_options_dictionary)
-        
+    Returns
+    -------
+    cqed_rhf_dictionary : dictionary
+        Contains important quantities from the cqed_rhf calculation, with keys including:
+            'RHF ENERGY' -> result of canonical RHF calculation using psi4 defined by molecule_string and psi4_options_dict
+            'CQED-RHF ENERGY' -> result of CQED-RHF calculation, see Eq. (13) of [McTague:2021:]
+            'CQED-RHF C' -> orbitals resulting from CQED-RHF calculation
+            'CQED-RHF DENSITY MATRIX' -> density matrix resulting from CQED-RHF calculation
+            'CQED-RHF EPS'  -> orbital energies from CQED-RHF calculation
+            'PSI4 WFN' -> wavefunction object from psi4 canonical RHF calcluation
+            'CQED-RHF DIPOLE MOMENT' -> total dipole moment from CQED-RHF calculation (1x3 numpy array)
+            'NUCLEAR DIPOLE MOMENT' -> nuclear dipole moment (1x3 numpy array)
+            'DIPOLE ENERGY' -> See Eq. (14) of [McTague:2021:]
+            'NUCLEAR REPULSION ENERGY' -> Total nuclear repulsion energy
+
+    Example
+    -------
+    >>> cqed_rhf_dictionary = cqed_rhf([0., 0., 1e-2], '''\nMg\nH 1 1.7\nsymmetry c1\n1 1\n''', psi4_options_dictionary)
+
     """
     # define geometry using the molecule_string
     mol = psi4.geometry(molecule_string)
     # define options for the calculation
     psi4.set_options(psi4_options_dict)
     # run psi4 to get ordinary scf energy and wavefunction object
-    psi4_rhf_energy, wfn = psi4.energy('scf', return_wfn=True)
+    psi4_rhf_energy, wfn = psi4.energy("scf", return_wfn=True)
 
     # Create instance of MintsHelper class
     mints = psi4.core.MintsHelper(wfn.basisset())
 
     # Grab data from wavfunction
     # number of doubly occupied orbitals
-    ndocc   = wfn.nalpha()
+    ndocc = wfn.nalpha()
 
     # grab all transformation vectors and store to a numpy array
     C = np.asarray(wfn.Ca())
@@ -95,11 +96,11 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
     mu_ao_z = np.asarray(mints.ao_dipole()[2])
 
     # \lambda \cdot \mu_el (see within the sum of line 3 of Eq. (9) in [McTague:2021:])
-    l_dot_mu_el =  lambda_vector[0] * mu_ao_x
+    l_dot_mu_el = lambda_vector[0] * mu_ao_x
     l_dot_mu_el += lambda_vector[1] * mu_ao_y
     l_dot_mu_el += lambda_vector[2] * mu_ao_z
 
-    # compute electronic dipole expectation value with 
+    # compute electronic dipole expectation value with
     # canonincal RHF density
     mu_exp_x = np.einsum("pq,pq->", 2 * mu_ao_x, D)
     mu_exp_y = np.einsum("pq,pq->", 2 * mu_ao_y, D)
@@ -117,16 +118,25 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
     # see prefactor to sum of Line 3 of Eq. (9) in [McTague:2021:]
 
     # \lambda_vector \cdot \mu_{nuc}
-    l_dot_mu_nuc = lambda_vector[0] * mu_nuc_x + lambda_vector[1] * mu_nuc_y + lambda_vector[2] * mu_nuc_z
+    l_dot_mu_nuc = (
+        lambda_vector[0] * mu_nuc_x
+        + lambda_vector[1] * mu_nuc_y
+        + lambda_vector[2] * mu_nuc_z
+    )
     # \lambda_vecto \cdot < \mu > where <\mu> contains electronic and nuclear contributions
-    l_dot_mu_exp = lambda_vector[0] * mu_exp_x + lambda_vector[1] * mu_exp_y + lambda_vector[2] * mu_exp_z
-
+    l_dot_mu_exp = (
+        lambda_vector[0] * mu_exp_x
+        + lambda_vector[1] * mu_exp_y
+        + lambda_vector[2] * mu_exp_z
+    )
 
     # dipole energy, Eq. (14) in [McTague:2021:]
-    #  0.5 * (\lambda_vector \cdot \mu_{nuc})** 2 
+    #  0.5 * (\lambda_vector \cdot \mu_{nuc})** 2
     #      - (\lambda_vector \cdot <\mu> ) ( \lambda_vector\cdot \mu_{nuc})
     # +0.5 * (\lambda_vector \cdot <\mu>) ** 2
-    d_c = 0.5 * l_dot_mu_nuc **2 - l_dot_mu_nuc * l_dot_mu_exp + 0.5 * l_dot_mu_exp ** 2
+    d_c = (
+        0.5 * l_dot_mu_nuc ** 2 - l_dot_mu_nuc * l_dot_mu_exp + 0.5 * l_dot_mu_exp ** 2
+    )
 
     # quadrupole arrays
     Q_ao_xx = np.asarray(mints.ao_quadrupole()[0])
@@ -147,14 +157,14 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
     Q_PF -= lambda_vector[0] * lambda_vector[2] * Q_ao_xz
     Q_PF -= lambda_vector[1] * lambda_vector[2] * Q_ao_yz
 
-    # Pauli-Fierz 1-e dipole terms scaled by 
+    # Pauli-Fierz 1-e dipole terms scaled by
     # (\lambda_vector \cdot \mu_{nuc} - \lambda_vector \cdot <\mu>)
     # Line 3 in full of Eq. (9) in [McTague:2021:]
     d_PF = (l_dot_mu_nuc - l_dot_mu_exp) * l_dot_mu_el
 
     # ordinary H_core
     H_0 = T + V
-    
+
     # Add Pauli-Fierz terms to H_core
     # Eq. (11) in [McTague:2021:]
     H = H_0 + Q_PF + d_PF
@@ -176,21 +186,21 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
     print("Canonical RHF One-electron energy = %4.16f" % E_1el_crhf)
     print("CQED-RHF One-electron energy      = %4.16f" % E_1el)
     print("Nuclear repulsion energy          = %4.16f" % Enuc)
-    print("Dipole energy                     = %4.16f" % d_c )
+    print("Dipole energy                     = %4.16f" % d_c)
 
     # Set convergence criteria
-    if 'e_convergence' in psi4_options_dict:
-        E_conv = psi4_options_dict['e_convergence']
+    if "e_convergence" in psi4_options_dict:
+        E_conv = psi4_options_dict["e_convergence"]
     else:
         E_conv = 1.0e-7
-    if 'd_convergence' in psi4_options_dict:
-        D_conv = psi4_options_dict['d_convergence']
+    if "d_convergence" in psi4_options_dict:
+        D_conv = psi4_options_dict["d_convergence"]
     else:
         D_conv = 1.0e-5
 
     t = time.time()
 
-    # maxiter 
+    # maxiter
     maxiter = 500
     for SCF_ITER in range(1, maxiter + 1):
 
@@ -201,11 +211,11 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
         # Pauli-Fierz 2-e dipole-dipole terms, line 2 of Eq. (12) in [McTague:2021:]
         M = np.einsum("pq,rs,rs->pq", l_dot_mu_el, l_dot_mu_el, D)
         N = np.einsum("pr,qs,rs->pq", l_dot_mu_el, l_dot_mu_el, D)
-            
-        # Build fock matrix: [Szabo:1996] Eqn. 3.154, pp. 141 
+
+        # Build fock matrix: [Szabo:1996] Eqn. 3.154, pp. 141
         # plus Pauli-Fierz terms Eq. (12) in [McTague:2021:]
-        F = H + J * 2 - K + 2 * M - N        
-        
+        F = H + J * 2 - K + 2 * M - N
+
         diis_e = np.einsum("ij,jk,kl->il", F, D, S) - np.einsum("ij,jk,kl->il", S, D, F)
         diis_e = A.dot(diis_e).dot(A)
         dRMS = np.mean(diis_e ** 2) ** 0.5
@@ -231,16 +241,20 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
         D = np.einsum("pi,qi->pq", Cocc, Cocc)  # [Szabo:1996] Eqn. 3.145, pp. 139
 
         # update electronic dipole expectation value
-        mu_exp_x = np.einsum("pq,pq->",  2 * mu_ao_x, D)
-        mu_exp_y = np.einsum("pq,pq->",  2 * mu_ao_y, D)
-        mu_exp_z = np.einsum("pq,pq->",  2 * mu_ao_z, D)
+        mu_exp_x = np.einsum("pq,pq->", 2 * mu_ao_x, D)
+        mu_exp_y = np.einsum("pq,pq->", 2 * mu_ao_y, D)
+        mu_exp_z = np.einsum("pq,pq->", 2 * mu_ao_z, D)
 
         mu_exp_x += mu_nuc_x
         mu_exp_y += mu_nuc_y
         mu_exp_z += mu_nuc_z
-                
-        # update \lambda \cdot <\mu> 
-        l_dot_mu_exp = lambda_vector[0] * mu_exp_x + lambda_vector[1] * mu_exp_y + lambda_vector[2] * mu_exp_z
+
+        # update \lambda \cdot <\mu>
+        l_dot_mu_exp = (
+            lambda_vector[0] * mu_exp_x
+            + lambda_vector[1] * mu_exp_y
+            + lambda_vector[2] * mu_exp_z
+        )
         # Line 3 in full of Eq. (9) in [McTague:2021:]
         d_PF = (l_dot_mu_nuc - l_dot_mu_exp) * l_dot_mu_el
 
@@ -248,18 +262,26 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
         H = H_0 + Q_PF + d_PF
 
         # update dipole energetic contribution, Eq. (14) in [McTague:2021:]
-        d_c = 0.5 * l_dot_mu_nuc **2 - l_dot_mu_nuc * l_dot_mu_exp + 0.5 * l_dot_mu_exp ** 2
+        d_c = (
+            0.5 * l_dot_mu_nuc ** 2
+            - l_dot_mu_nuc * l_dot_mu_exp
+            + 0.5 * l_dot_mu_exp ** 2
+        )
 
         if SCF_ITER == maxiter:
             psi4.core.clean()
             raise Exception("Maximum number of SCF cycles exceeded.")
-            
+
     print("Total time for SCF iterations: %.3f seconds \n" % (time.time() - t))
     print("QED-RHF   energy: %.8f hartree" % SCF_E)
     print("Psi4  SCF energy: %.8f hartree" % psi4_rhf_energy)
 
-    rhf_one_e_cont = 2 * H_0 # note using H_0 which is just T + V, and does not include Q_PF and d_PF
-    rhf_two_e_cont = J * 2 - K # note using just J and K that would contribute to ordinary RHF 2-electron energy
+    rhf_one_e_cont = (
+        2 * H_0
+    )  # note using H_0 which is just T + V, and does not include Q_PF and d_PF
+    rhf_two_e_cont = (
+        J * 2 - K
+    )  # note using just J and K that would contribute to ordinary RHF 2-electron energy
     pf_two_e_cont = 2 * M - N
 
     SCF_E_One = np.einsum("pq,pq->", rhf_one_e_cont, D)
@@ -269,25 +291,28 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
     CQED_SCF_E_D_PF = np.einsum("pq,pq->", 2 * d_PF, D)
     CQED_SCF_E_Q_PF = np.einsum("pq,pq->", 2 * Q_PF, D)
 
-    assert np.isclose(SCF_E_One + SCF_E_Two + CQED_SCF_E_D_PF + CQED_SCF_E_Q_PF + CQED_SCF_E_Two, SCF_E-d_c-Enuc) 
-    
+    assert np.isclose(
+        SCF_E_One + SCF_E_Two + CQED_SCF_E_D_PF + CQED_SCF_E_Q_PF + CQED_SCF_E_Two,
+        SCF_E - d_c - Enuc,
+    )
+
     cqed_rhf_dict = {
-        'RHF ENERGY' : psi4_rhf_energy,
-        'CQED-RHF ENERGY' : SCF_E,
-        '1E ENERGY' : SCF_E_One,
-        '2E ENERGY' : SCF_E_Two,
-        '1E DIPOLE ENERGY' : CQED_SCF_E_D_PF,
-        '1E QUADRUPOLE ENERGY' : CQED_SCF_E_Q_PF,
-        '2E DIPOLE ENERGY' : CQED_SCF_E_Two,
-        'CQED-RHF C' : C,
-        'CQED-RHF DENSITY MATRIX' : D,
-        'CQED-RHF EPS' : e, 
-        'PSI4 WFN' : wfn, 
-        'RHF DIPOLE MOMENT' : rhf_dipole_moment,
-        'CQED-RHF DIPOLE MOMENT' : np.array([mu_exp_x, mu_exp_y, mu_exp_z]),
-        'NUCLEAR DIPOLE MOMENT' : np.array([mu_nuc_x, mu_nuc_y, mu_nuc_z]),
-        'DIPOLE ENERGY' : d_c,
-        'NUCLEAR REPULSION ENERGY': Enuc 
+        "RHF ENERGY": psi4_rhf_energy,
+        "CQED-RHF ENERGY": SCF_E,
+        "1E ENERGY": SCF_E_One,
+        "2E ENERGY": SCF_E_Two,
+        "1E DIPOLE ENERGY": CQED_SCF_E_D_PF,
+        "1E QUADRUPOLE ENERGY": CQED_SCF_E_Q_PF,
+        "2E DIPOLE ENERGY": CQED_SCF_E_Two,
+        "CQED-RHF C": C,
+        "CQED-RHF DENSITY MATRIX": D,
+        "CQED-RHF EPS": e,
+        "PSI4 WFN": wfn,
+        "RHF DIPOLE MOMENT": rhf_dipole_moment,
+        "CQED-RHF DIPOLE MOMENT": np.array([mu_exp_x, mu_exp_y, mu_exp_z]),
+        "NUCLEAR DIPOLE MOMENT": np.array([mu_nuc_x, mu_nuc_y, mu_nuc_z]),
+        "DIPOLE ENERGY": d_c,
+        "NUCLEAR REPULSION ENERGY": Enuc,
     }
 
     return cqed_rhf_dict

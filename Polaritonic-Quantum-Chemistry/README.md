@@ -1,21 +1,30 @@
 Polaritonic-Quantum-Chemistry
 ====================================
 
-!!!! NEEDS UPDAGING
 The following codes are available:
-- `SAPT0.py`: A simple Psi 4 input script to compute SAPT interaction energies.
-- `SAPT0_ROHF.py`: A SAPT0(ROHF) script for the oxygen dimer (two triplets making a quintet).
-- `SAPT0_no_S2.py`: A script to compute the SAPT0 interaction energy without the the Single-Exchange Approximation.
-- `SAPT0ao.py`: A Psi 4 input script to compute SAPT interaction energies in atomic orbitals.
+- `CQED_RHF.py`: A script to compute CQED-RHF ground-state of the water molecule strongly coupled to a single photon.
+- `CS_CQED_CIS.py`: A script to compute the CS-CQED-CIS excitation energies of a lone MgH+ molecule (Case 1), MgH+ strongly 
+                    coupled to a single photon that is resonant with the first dipole-allowed transition (Case 2), and
+                    MgH+ coupled to a single photon with finite lifetime / complex energy with central energy resonant with the first dipole
+                    allowed-transition (Case 3)
 
 Helper programs:
-- `helper_cqed_rhf.py`: A helper function to perform Restricted Hartree-Fock theory for the mean-field ground state of the  Pauli-Fierz Hamiltonian that includes an ab initio electronic Hamiltonian with dipolar coupling to a quantized photon mode and a quadratic self polarization energy contribution
-  `helper_cs_cqed_cis.py`: A helper function to perform configuration interaction singles for the mean-field excited-states of the Pauli-Fierz Hamiltonian including an ab initio electronic Hamiltonian with dipolar coupling to a quantized photon mode and a quadratic self polarization energy contribution
+- `helper_CQED_RHF.py`: A helper function to perform Restricted Hartree-Fock theory for the mean-field ground state of the  Pauli-Fierz Hamiltonian that includes an ab initio electronic Hamiltonian with dipolar coupling to a quantized photon mode and a quadratic self polarization energy contribution
+  `helper_CS_CQED_CIS.py`: A helper function to perform configuration interaction singles for the mean-field excited-states of the Pauli-Fierz Hamiltonian including an ab initio electronic Hamiltonian with dipolar coupling to a quantized photon mode and a quadratic self polarization energy contribution
 
 !!! NEEDS UPDATING BELOW
-The most important operator in SAPT is the intermolecular interaction operator `\tilde{V}`, that is defined as follows:
+At the heart of CQED-RHF is an augmented Fock operator `F` that includes dipolar and quadrupolar coupling between 
+the molecular electronic degrees of freedom and the photonic degree of freedom:
 
-![TildeV](../media/latex/SAPT_V_TILDE.png)
+![CQED_RHF_FO](../media/latex/CQED_RHF_FO.png)
+
+Where the Core Hamiltonian `H` is defined as follows:
+
+![CQED_RHF_FO_1E](../media/latex/CQED_RHF_FO_1E.png)
+
+and the 2-electron contributions are augmented as follows
+
+![CQED_RHF_FO_2E](../media/latex/CQED_RHF_FO_2E.png)
 
 As all SAPT quantities will make use of this expression, a SAPT helper object that can automatically build this value greatly simplifies many routine SAPT tasks. In psi4numpy this helper object can be initialized as follow:
 
