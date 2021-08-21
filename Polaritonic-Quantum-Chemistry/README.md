@@ -40,6 +40,8 @@ cqed_rhf_dictionary = cqed_rhf([0., 0., 1e-2], '''\nMg\nH 1 1.7\nsymmetry c1\n1 
 
 The returned dictionary contains the following keys:
 
+```python
+
    'RHF ENERGY' -> result of canonical RHF calculation using psi4 defined by molecule_string and psi4_options_dict
    'CQED-RHF ENERGY' -> result of CQED-RHF calculation, see Eq. (13) of [McTague:2021:]
    'CQED-RHF C' -> orbitals resulting from CQED-RHF calculation
@@ -50,7 +52,7 @@ The returned dictionary contains the following keys:
    'NUCLEAR DIPOLE MOMENT' -> nuclear dipole moment (1x3 numpy array)
    'DIPOLE ENERGY' -> See Eq. (14) of [McTague:2021:]
    'NUCLEAR REPULSION ENERGY' -> Total nuclear repulsion energy
-
+```
 
 The CS-CQED-CIS method builds and diagonalizes the Hamiltonian matrix `H_CQED_CIS` in the space of all singly excited electronic and photonic configurations,
 where the electronic contributions have been transformed to the coherent state basis, i.e. the orbital basis that results from solving the
