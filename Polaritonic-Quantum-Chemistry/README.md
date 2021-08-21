@@ -1,6 +1,8 @@
 Polaritonic-Quantum-Chemistry
 ====================================
 
+Psi4Numpy implementations of hybrid *ab initio* - cavity quantum electrodynamics methods for molecules strongly coupled to a single photon.
+These methods can be used for studying polaritonic chemical effects; relevant papers given in the **References** section.
 The following codes are available:
 - `CQED_RHF.py`: A script to compute CQED-RHF ground-state of the water molecule strongly coupled to a single photon.
 - `CS_CQED_CIS.py`: A script to compute the CS-CQED-CIS excitation energies of a lone MgH+ molecule (Case 1), MgH+ strongly 
