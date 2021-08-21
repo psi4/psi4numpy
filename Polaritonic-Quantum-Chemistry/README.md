@@ -55,7 +55,11 @@ The returned dictionary contains the following keys:
 ```
 
 The CS-CQED-CIS method builds and diagonalizes the Hamiltonian matrix `H_CQED_CIS` in the space of all singly excited electronic and photonic configurations,
-where the electronic contributions have been transformed to the coherent state basis, i.e. the orbital basis that results from solving the
+
+![CQED_CIS_Psi](../media/latex/cs_cqed_cis_wavefunction.png)
+
+where the photonic state `|0>` and `|1>` represent 0 or one photon occupied; note generic occupation number is denoted `|s>` and `|t>` below.
+Here the electronic contributions have been transformed to the coherent state basis, i.e. the orbital basis that results from solving the
 CQED-RHF equations.  There are three blocks to this Hamiltonian:
 
 ![CQED_CIS_00](../media/latex/CQED_CIS_00.png)
