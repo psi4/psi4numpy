@@ -15,6 +15,10 @@ Helper programs:
 - `helper_CS_CQED_CIS.py`: A helper function to perform configuration interaction singles for the mean-field excited-states of the Pauli-Fierz Hamiltonian including an *ab initio* electronic Hamiltonian with dipolar coupling to a quantized photon mode and a quadratic self polarization energy contribution.
 
 ### Overview
+We adopt a Pauli-Fierz Hamiltonian for the molecular system interacting with a quantized photon:
+
+![PF](../media/latex/PF.png)
+
 
 At the heart of CQED-RHF is an augmented Fock operator `F` that includes dipolar and quadrupolar coupling between 
 the molecular electronic degrees of freedom and the photonic degree of freedom:
