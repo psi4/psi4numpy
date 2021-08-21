@@ -9,8 +9,8 @@ The following codes are available:
                     allowed-transition (Case 3)
 
 Helper programs:
-- `helper_CQED_RHF.py`: A helper function to perform Restricted Hartree-Fock theory for the mean-field ground state of the  Pauli-Fierz Hamiltonian that includes an ab initio electronic Hamiltonian with dipolar coupling to a quantized photon mode and a quadratic self polarization energy contribution
-  `helper_CS_CQED_CIS.py`: A helper function to perform configuration interaction singles for the mean-field excited-states of the Pauli-Fierz Hamiltonian including an ab initio electronic Hamiltonian with dipolar coupling to a quantized photon mode and a quadratic self polarization energy contribution
+- `helper_CQED_RHF.py`: A helper function to perform Restricted Hartree-Fock theory for the mean-field ground state of the  Pauli-Fierz Hamiltonian that includes an *ab initio* electronic Hamiltonian with dipolar coupling to a quantized photon mode and a quadratic self polarization energy contribution
+  `helper_CS_CQED_CIS.py`: A helper function to perform configuration interaction singles for the mean-field excited-states of the Pauli-Fierz Hamiltonian including an *ab initio* electronic Hamiltonian with dipolar coupling to a quantized photon mode and a quadratic self polarization energy contribution
 
 !!! NEEDS UPDATING BELOW
 At the heart of CQED-RHF is an augmented Fock operator `F` that includes dipolar and quadrupolar coupling between 
