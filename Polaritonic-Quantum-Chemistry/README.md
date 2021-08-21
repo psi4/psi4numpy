@@ -22,7 +22,7 @@ Where the Core Hamiltonian `H` is defined as follows:
 
 ![CQED_RHF_FO_1E](../media/latex/CQED_RHF_FO_1E.png)
 
-and the 2-electron contributions are augmented as follows
+and the 2-electron contributions `G` are augmented as follows
 
 ![CQED_RHF_FO_2E](../media/latex/CQED_RHF_FO_2E.png)
 
@@ -51,6 +51,20 @@ The returned dictionary contains the following keys:
    'DIPOLE ENERGY' -> See Eq. (14) of [McTague:2021:]
    'NUCLEAR REPULSION ENERGY' -> Total nuclear repulsion energy
 
+
+The CS-CQED-CIS method builds and diagonalizes the Hamiltonian matrix `H_CQED_CIS` in the space of all singly excited electronic and photonic configurations,
+where the electronic contributions have been transformed to the coherent state basis, i.e. the orbital basis that results from solving the
+CQED-RHF equations.  There are three blocks to this Hamiltonian:
+
+![CQED_CIS_00](../media/latex/CQED_CIS_00.png)
+
+Which couples the reference electronic states and the photon occupation states through the photonic Hamiltonian,:
+
+![CQED_CIS_0_ia](../media/latex/CQED_CIS_0_ia.png)
+
+and the 2-electron contributions `G` are augmented as follows
+
+![CQED_CIS_iajb](../media/latex/CQED_CIS_iajb.png)
 
 ### References
 
