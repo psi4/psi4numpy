@@ -19,9 +19,12 @@ We adopt a Pauli-Fierz Hamiltonian for the molecular system interacting with a q
 
 ![PF](../media/latex/PF.png)
 
+where the `H_e` term denotes the standard molecular electronic Hamiltonian within the Born-Oppenheimer approximation, `H_p` contains 
+the energy of the photonic mode (which can be complex, to account for finite lifetime of the photonic mode), `H_dse` is a quadratic dipole self energy term, and 
+`H_ep` is a bilinear coupling between the electronic and photonic degrees of freedom within the dipole approximation.
 
 At the heart of CQED-RHF is an augmented Fock operator `F` that includes dipolar and quadrupolar coupling between 
-the molecular electronic degrees of freedom and the photonic degree of freedom:
+the molecular electronic and photonic degrees of freedom that arise specifically from `H_dse` above:
 
 ![CQED_RHF_FO](../media/latex/CQED_RHF_FO.png)
 
