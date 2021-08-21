@@ -188,7 +188,7 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
     print("Nuclear repulsion energy          = %4.16f" % Enuc)
     print("Dipole energy                     = %4.16f" % d_c)
 
-    # Set convergence criteria
+    # Set convergence criteria from psi4_options_dict
     if "e_convergence" in psi4_options_dict:
         E_conv = psi4_options_dict["e_convergence"]
     else:
