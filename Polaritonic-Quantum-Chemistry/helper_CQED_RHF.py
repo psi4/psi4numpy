@@ -3,7 +3,7 @@ Helper function for CQED_RHF
 
 References:
     Equations and algorithms from 
-    [Haugland:2020:041043], [DePrince:2021:094112], and [McTague:2021:] 
+    [Haugland:2020:041043], [DePrince:2021:094112], and [McTague:2021:ChemRxiv] 
 
 """
 
@@ -40,14 +40,14 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
     cqed_rhf_dictionary : dictionary
         Contains important quantities from the cqed_rhf calculation, with keys including:
             'RHF ENERGY' -> result of canonical RHF calculation using psi4 defined by molecule_string and psi4_options_dict
-            'CQED-RHF ENERGY' -> result of CQED-RHF calculation, see Eq. (13) of [McTague:2021:]
+            'CQED-RHF ENERGY' -> result of CQED-RHF calculation, see Eq. (13) of [McTague:2021:ChemRxiv]
             'CQED-RHF C' -> orbitals resulting from CQED-RHF calculation
             'CQED-RHF DENSITY MATRIX' -> density matrix resulting from CQED-RHF calculation
             'CQED-RHF EPS'  -> orbital energies from CQED-RHF calculation
             'PSI4 WFN' -> wavefunction object from psi4 canonical RHF calcluation
             'CQED-RHF DIPOLE MOMENT' -> total dipole moment from CQED-RHF calculation (1x3 numpy array)
             'NUCLEAR DIPOLE MOMENT' -> nuclear dipole moment (1x3 numpy array)
-            'DIPOLE ENERGY' -> See Eq. (14) of [McTague:2021:]
+            'DIPOLE ENERGY' -> See Eq. (14) of [McTague:2021:ChemRxiv]
             'NUCLEAR REPULSION ENERGY' -> Total nuclear repulsion energy
 
     Example
@@ -58,7 +58,7 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
     # define geometry using the molecule_string
     mol = psi4.geometry(molecule_string)
     # define options for the calculation
-   psi4.set_options(psi4_options_dict)
+    psi4.set_options(psi4_options_dict)
     # run psi4 to get ordinary scf energy and wavefunction object
     psi4_rhf_energy, wfn = psi4.energy("scf", return_wfn=True)
 
@@ -95,7 +95,7 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
     mu_ao_y = np.asarray(mints.ao_dipole()[1])
     mu_ao_z = np.asarray(mints.ao_dipole()[2])
 
-    # \lambda \cdot \mu_el (see within the sum of line 3 of Eq. (9) in [McTague:2021:])
+    # \lambda \cdot \mu_el (see within the sum of line 3 of Eq. (9) in [McTague:2021:ChemRxiv])
     l_dot_mu_el = lambda_vector[0] * mu_ao_x
     l_dot_mu_el += lambda_vector[1] * mu_ao_y
     l_dot_mu_el += lambda_vector[2] * mu_ao_z
@@ -115,7 +115,7 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
 
     # We need to carry around the electric field dotted into the nuclear dipole moment
     # and the electric field dotted into the RHF electronic dipole expectation value
-    # see prefactor to sum of Line 3 of Eq. (9) in [McTague:2021:]
+    # see prefactor to sum of Line 3 of Eq. (9) in [McTague:2021:ChemRxiv]
 
     # \lambda_vector \cdot \mu_{nuc}
     l_dot_mu_nuc = (
@@ -130,7 +130,7 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
         + lambda_vector[2] * mu_exp_z
     )
 
-    # dipole energy, Eq. (14) in [McTague:2021:]
+    # dipole energy, Eq. (14) in [McTague:2021:ChemRxiv]
     #  0.5 * (\lambda_vector \cdot \mu_{nuc})** 2
     #      - (\lambda_vector \cdot <\mu> ) ( \lambda_vector\cdot \mu_{nuc})
     # +0.5 * (\lambda_vector \cdot <\mu>) ** 2
@@ -146,7 +146,7 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
     Q_ao_yz = np.asarray(mints.ao_quadrupole()[4])
     Q_ao_zz = np.asarray(mints.ao_quadrupole()[5])
 
-    # Pauli-Fierz 1-e quadrupole terms, Line 2 of Eq. (9) in [McTague:2021:]
+    # Pauli-Fierz 1-e quadrupole terms, Line 2 of Eq. (9) in [McTague:2021:ChemRxiv]
     Q_PF = -0.5 * lambda_vector[0] * lambda_vector[0] * Q_ao_xx
     Q_PF -= 0.5 * lambda_vector[1] * lambda_vector[1] * Q_ao_yy
     Q_PF -= 0.5 * lambda_vector[2] * lambda_vector[2] * Q_ao_zz
@@ -159,14 +159,14 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
 
     # Pauli-Fierz 1-e dipole terms scaled by
     # (\lambda_vector \cdot \mu_{nuc} - \lambda_vector \cdot <\mu>)
-    # Line 3 in full of Eq. (9) in [McTague:2021:]
+    # Line 3 in full of Eq. (9) in [McTague:2021:ChemRxiv]
     d_PF = (l_dot_mu_nuc - l_dot_mu_exp) * l_dot_mu_el
 
     # ordinary H_core
     H_0 = T + V
 
     # Add Pauli-Fierz terms to H_core
-    # Eq. (11) in [McTague:2021:]
+    # Eq. (11) in [McTague:2021:ChemRxiv]
     H = H_0 + Q_PF + d_PF
 
     # Overlap for DIIS
@@ -208,12 +208,12 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
         J = np.einsum("pqrs,rs->pq", I, D)
         K = np.einsum("prqs,rs->pq", I, D)
 
-        # Pauli-Fierz 2-e dipole-dipole terms, line 2 of Eq. (12) in [McTague:2021:]
+        # Pauli-Fierz 2-e dipole-dipole terms, line 2 of Eq. (12) in [McTague:2021:ChemRxiv]
         M = np.einsum("pq,rs,rs->pq", l_dot_mu_el, l_dot_mu_el, D)
         N = np.einsum("pr,qs,rs->pq", l_dot_mu_el, l_dot_mu_el, D)
 
         # Build fock matrix: [Szabo:1996] Eqn. 3.154, pp. 141
-        # plus Pauli-Fierz terms Eq. (12) in [McTague:2021:]
+        # plus Pauli-Fierz terms Eq. (12) in [McTague:2021:ChemRxiv]
         F = H + J * 2 - K + 2 * M - N
 
         diis_e = np.einsum("ij,jk,kl->il", F, D, S) - np.einsum("ij,jk,kl->il", S, D, F)
@@ -221,7 +221,7 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
         dRMS = np.mean(diis_e ** 2) ** 0.5
 
         # SCF energy and update: [Szabo:1996], Eqn. 3.184, pp. 150
-        # Pauli-Fierz terms Eq. 13 of [McTague:2021:]
+        # Pauli-Fierz terms Eq. 13 of [McTague:2021:ChemRxiv]
         SCF_E = np.einsum("pq,pq->", F + H, D) + Enuc + d_c
 
         print(
@@ -255,13 +255,13 @@ def cqed_rhf(lambda_vector, molecule_string, psi4_options_dict):
             + lambda_vector[1] * mu_exp_y
             + lambda_vector[2] * mu_exp_z
         )
-        # Line 3 in full of Eq. (9) in [McTague:2021:]
+        # Line 3 in full of Eq. (9) in [McTague:2021:ChemRxiv]
         d_PF = (l_dot_mu_nuc - l_dot_mu_exp) * l_dot_mu_el
 
         # update Core Hamiltonian
         H = H_0 + Q_PF + d_PF
 
-        # update dipole energetic contribution, Eq. (14) in [McTague:2021:]
+        # update dipole energetic contribution, Eq. (14) in [McTague:2021:ChemRxiv]
         d_c = (
             0.5 * l_dot_mu_nuc ** 2
             - l_dot_mu_nuc * l_dot_mu_exp

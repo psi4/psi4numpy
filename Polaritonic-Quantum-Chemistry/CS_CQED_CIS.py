@@ -11,20 +11,20 @@ Angstroms.  Three calculations will be performed:
 2. Electric field vector is z-polarized with magnitude 0.0125 atomic units 
    (\lambda = (0, 0, 0.125) and photon has energy 4.75 eV, which will split
    the eigenvectors proportional to the field strength, allowing comparison to 
-   results in Figure 3 (top) in [McTague:2021:] 
+   results in Figure 3 (top) in [McTague:2021:ChemRxiv] 
 
 3. Electric field vector is z-polarized (\lambda = (0, 0, 0.0125)) and photon has complex
-   energy 4.75 - 0.22i eV, allowing comparison to results in Figure 3 (bottom) in [McTague:2021:]
+   energy 4.75 - 0.22i eV, allowing comparison to results in Figure 3 (bottom) in [McTague:2021:ChemRxiv]
 
 
 """
 
-__authors__   = ["Jon McTague", "Jonathan Foley"]
-__credits__   = ["Jon McTague", "Jonathan Foley"]
+__authors__ = ["Jon McTague", "Jonathan Foley"]
+__credits__ = ["Jon McTague", "Jonathan Foley"]
 
 __copyright_amp__ = "(c) 2014-2018, The Psi4NumPy Developers"
-__license__   = "BSD-3-Clause"
-__date__      = "2021-08-19"
+__license__ = "BSD-3-Clause"
+__date__ = "2021-08-19"
 
 # ==> Import Psi4, numpy, and helper_CS_CQED_CIS <==
 import psi4
@@ -33,8 +33,8 @@ from helper_CS_CQED_CIS import *
 from psi4.driver.procrouting.response.scf_response import tdscf_excitations
 
 # Set Psi4 & NumPy Memory Options
-psi4.set_memory('2 GB')
-psi4.core.set_output_file('output.dat', False)
+psi4.set_memory("2 GB")
+psi4.core.set_output_file("output.dat", False)
 
 numpy_memory = 2
 
@@ -47,34 +47,35 @@ symmetry c1
 """
 
 # options dict
-options_dict = {'basis': 'cc-pVDZ',
-               'save_jk': True, 
-               'scf_type': 'pk', 
-               'e_convergence' : 1e-10,
-               'd_convergence' : 1e-10
-               }
+options_dict = {
+    "basis": "cc-pVDZ",
+    "save_jk": True,
+    "scf_type": "pk",
+    "e_convergence": 1e-10,
+    "d_convergence": 1e-10,
+}
 
 # set psi4 options and geometry
 psi4.set_options(options_dict)
 mol = psi4.geometry(mol_str)
 
 om_1 = 0
-lam_1 = np.array([0.,0.,0.])
+lam_1 = np.array([0.0, 0.0, 0.0])
 
 om_2 = 4.75 / 27.211
-lam_2 = np.array([0.,0.,0.0125])
+lam_2 = np.array([0.0, 0.0, 0.0125])
 
 om_3 = 4.75 / 27.211 - 0.22j
-lam_3 = np.array([0.,0.,0.0125])
+lam_3 = np.array([0.0, 0.0, 0.0125])
 
 
 n_states = 5
 
 # run psi4 SCF
 psi4_rhf_e, wfn = psi4.energy("scf/cc-pVDZ", return_wfn=True, molecule=mol)
-    
+
 # calculate the excited-state energies and save them to a dictionary called 'res'
-res = tdscf_excitations(wfn, states=n_states, triplets = "NONE", tda=True)
+res = tdscf_excitations(wfn, states=n_states, triplets="NONE", tda=True)
 
 # parse res for excitation energies
 psi4_excitation_e = [r["EXCITATION ENERGY"] for r in res]
@@ -84,35 +85,60 @@ cqed_cis_1 = cs_cqed_cis(lam_1, om_1, mol_str, options_dict)
 cqed_cis_2 = cs_cqed_cis(lam_2, om_2, mol_str, options_dict)
 cqed_cis_3 = cs_cqed_cis(lam_3, om_3, mol_str, options_dict)
 
-cqed_cis_e_1 = cqed_cis_1['CQED-CIS ENERGY']
-scf_e_1 = cqed_cis_1['CQED-RHF ENERGY']
+cqed_cis_e_1 = cqed_cis_1["CQED-CIS ENERGY"]
+scf_e_1 = cqed_cis_1["CQED-RHF ENERGY"]
 
-cqed_cis_e_2 = cqed_cis_2['CQED-CIS ENERGY']
-scf_e_2 = cqed_cis_1['CQED-RHF ENERGY']
+cqed_cis_e_2 = cqed_cis_2["CQED-CIS ENERGY"]
+scf_e_2 = cqed_cis_1["CQED-RHF ENERGY"]
 
-cqed_cis_e_3 = cqed_cis_3['CQED-CIS ENERGY']
-scf_e_3 = cqed_cis_3['CQED-RHF ENERGY']
+cqed_cis_e_3 = cqed_cis_3["CQED-CIS ENERGY"]
+scf_e_3 = cqed_cis_3["CQED-RHF ENERGY"]
 
 # collect every other excitation energy for case 1 since cqed-cis will be doubly
 # degenerate when omega = 0 and lambda = 0,0,0
 cqed_cis_e_1 = cqed_cis_e_1[::2]
 
+print("\n    PRINTING RESULTS FOR CASE 1: NO COUPLING")
 print("\n    CASE 1 RHF Energy (Hatree):                    %.8f" % psi4_rhf_e)
 print("    CASE 1 CQED-RHF Energy (Hartree):              %.8f" % scf_e_1)
-print("    CASE 1 CIS LOWEST EXCITATION ENERGY (eV)        %.4f" % (psi4_excitation_e[0] * 27.211))
-print("    CASE 1 CQED-CIS LOWEST EXCITATION ENERGY (eV)   %.4f" % (np.real(cqed_cis_e_1[1]) * 27.211))
+print(
+    "    CASE 1 CIS LOWEST EXCITATION ENERGY (eV)        %.4f"
+    % (psi4_excitation_e[0] * 27.211)
+)
+print(
+    "    CASE 1 CQED-CIS LOWEST EXCITATION ENERGY (eV)   %.4f"
+    % (np.real(cqed_cis_e_1[1]) * 27.211)
+)
 
-print("\n    CASE 2 |X,0> -> |LP> Energy (eV)                %.4f" % (np.real(cqed_cis_e_2[1]) * 27.211))
-print("    CASE 2 |X,0> -> |UP> Energy (eV)                %.4f" % (np.real(cqed_cis_e_2[2]) * 27.211))
+print(
+    "\n    PRINTING RESULTS FOR CASE 2: HBAR * OMEGA = 4.75 eV, LAMBDA = (0, 0, 0.0125) A.U."
+)
+print(
+    "\n    CASE 2 |X,0> -> |LP> Energy (eV)                %.4f"
+    % (np.real(cqed_cis_e_2[1]) * 27.211)
+)
+print(
+    "    CASE 2 |X,0> -> |UP> Energy (eV)                %.4f"
+    % (np.real(cqed_cis_e_2[2]) * 27.211)
+)
 
-print("\n    CASE 3 |X,0> -> |LP> Energy (eV)                %.4f" % (np.real(cqed_cis_e_3[1]) * 27.211))
-print("    CASE 3 |X,0> -> |UP> Energy (eV)                %.4f\n" % (np.real(cqed_cis_e_3[2]) * 27.211))
+print(
+    "\n    PRINTING RESULTS FOR CASE 3: HBAR * OMEGA = (4.75 - 0.22i) eV, LAMBDA = (0, 0, 0.0125) A.U."
+)
+print(
+    "\n    CASE 3 |X,0> -> |LP> Energy (eV)                %.4f"
+    % (np.real(cqed_cis_e_3[1]) * 27.211)
+)
+print(
+    "    CASE 3 |X,0> -> |UP> Energy (eV)                %.4f\n"
+    % (np.real(cqed_cis_e_3[2]) * 27.211)
+)
 
 # check to see that the CQED-RHF energy matches ordinary RHF energy for case 1
-psi4.compare_values(psi4_rhf_e, scf_e_1, 8, 'CASE 1 SCF E')
+psi4.compare_values(psi4_rhf_e, scf_e_1, 8, "CASE 1 SCF E")
 
 # check to see if first CQED-CIS excitation energy matches first CIS excitation energy for case 1
-psi4.compare_values(cqed_cis_e_1[1], psi4_excitation_e[0], 8, 'CASE 1 CQED-CIS E')
+psi4.compare_values(cqed_cis_e_1[1], psi4_excitation_e[0], 8, "CASE 1 CQED-CIS E")
 
-# check to see if first CQED-CIS excitation energy matches value from [McTague:2021:] Figure 3 for case 2
-psi4.compare_values(cqed_cis_e_2[1], 0.1656324971518871, 8, 'CASE 2 CQED-CIS E')
+# check to see if first CQED-CIS excitation energy matches value from [McTague:2021:ChemRxiv] Figure 3 for case 2
+psi4.compare_values(cqed_cis_e_2[1], 0.1656324971518871, 8, "CASE 2 CQED-CIS E")

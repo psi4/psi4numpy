@@ -53,14 +53,14 @@ The returned dictionary contains the following keys:
 ```python
 
    'RHF ENERGY' -> result of canonical RHF calculation using psi4 defined by molecule_string and psi4_options_dict
-   'CQED-RHF ENERGY' -> result of CQED-RHF calculation, see Eq. (13) of [McTague:2021:]
+   'CQED-RHF ENERGY' -> result of CQED-RHF calculation, see Eq. (13) of [McTague:2021:ChemRxiv]
    'CQED-RHF C' -> orbitals resulting from CQED-RHF calculation
    'CQED-RHF DENSITY MATRIX' -> density matrix resulting from CQED-RHF calculation
    'CQED-RHF EPS'  -> orbital energies from CQED-RHF calculation
    'PSI4 WFN' -> wavefunction object from psi4 canonical RHF calcluation
    'CQED-RHF DIPOLE MOMENT' -> total dipole moment from CQED-RHF calculation (1x3 numpy array)
    'NUCLEAR DIPOLE MOMENT' -> nuclear dipole moment (1x3 numpy array)
-   'DIPOLE ENERGY' -> See Eq. (14) of [McTague:2021:]
+   'DIPOLE ENERGY' -> See Eq. (14) of [McTague:2021:ChemRxiv]
    'NUCLEAR REPULSION ENERGY' -> Total nuclear repulsion energy
 ```
 
@@ -99,7 +99,7 @@ The returned dictionary contains the following keys:
 ```python
 
     'RHF ENERGY' -> result of canonical RHF calculation using psi4 defined by molecule_string and psi4_options_dict
-    'CQED-RHF ENERGY' -> result of CQED-RHF calculation, see Eq. (13) of [McTague:2021:]
+    'CQED-RHF ENERGY' -> result of CQED-RHF calculation, see Eq. (13) of [McTague:2021:ChemRxiv]
     'CQED-CIS ENERGY' -> numpy array of complex floats comprising energy eigenvalues of CQED-CIS Hamiltonian
     'CQED-CIS L VECTORS' -> numpy array of complex floats comprising the left eigenvectors of CQED-CIS Hamiltonian
 
@@ -112,4 +112,5 @@ The returned dictionary contains the following keys:
     - [[Haugland:2020:041043](https://journals.aps.org/prx/pdf/10.1103/PhysRevX.10.041043)] T. S. Haughland, E. Ronco, E. F. Kjonstad, A. Rubio, H. Koch, *Phys. Rev. X*, **10**, 041043 (2020) 
     - [[DePrince:2021:094112]](https://aip.scitation.org/doi/10.1063/5.0038748) A. E. DePrince III, *J. Chem. Phys.* **154**, 094113 (2021).
 2. Detailed CQED-RHF and CQED-CIS equations and overview of algorithm   
-    - [[McTague:2021:254]()] J. McTague, J. J. Foley IV, 
+    - [[McTague:2021:ChemRxiv](https://chemrxiv.org/engage/chemrxiv/article-details/611fa8d08a6faa13229c8be6)] J. McTague, J. J. Foley IV, *ChemRxiv*, 
+doi: 10.33774/chemrxiv-2021-0gpz8 (2021)

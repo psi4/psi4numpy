@@ -3,7 +3,7 @@ Helper function for CQED-CIS in the coherent state basis
 
 References:
     Equations and algorithms from 
-    [Haugland:2020:041043], [DePrince:2021:094112], and [McTague:2021:] 
+    [Haugland:2020:041043], [DePrince:2021:094112], and [McTague:2021:ChemRxiv] 
 
 """
 
@@ -32,7 +32,7 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
         and (15) in [Haugland:2020:041043]
 
     omega_val : complex float
-        the complex energy associated with the photon, see Eq. (3) in [McTague:2021:]
+        the complex energy associated with the photon, see Eq. (3) in [McTague:2021:ChemRxiv]
 
     molecule_string : string
         specifies the molecular geometry
@@ -45,7 +45,7 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
     cqed_cis_dictionary : dictionary
         Contains important quantities from the cqed_rhf calculation, with keys including:
             'RHF ENERGY' -> result of canonical RHF calculation using psi4 defined by molecule_string and psi4_options_dict
-            'CQED-RHF ENERGY' -> result of CQED-RHF calculation, see Eq. (13) of [McTague:2021:]
+            'CQED-RHF ENERGY' -> result of CQED-RHF calculation, see Eq. (13) of [McTague:2021:ChemRxiv]
             'CQED-CIS ENERGY' -> numpy array of complex floats comprising energy eigenvalues of CQED-CIS Hamiltonian
             'CQED-CIS L VECTORS' -> numpy array of complex floats comprising the left eigenvectors of CQED-CIS Hamiltonian
 
@@ -139,13 +139,13 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
     mu_cmo_z = np.dot(C.T, mu_ao_z).dot(C)
 
     # \lambda \cdot < \mu >
-    # e.g. line 6 of Eq. (18) in [McTague:2021:]
+    # e.g. line 6 of Eq. (18) in [McTague:2021:ChemRxiv]
     l_dot_mu_exp = 0.0
     for i in range(0, 3):
         l_dot_mu_exp += lambda_vector[i] * cqed_rhf_dipole_moment[i]
 
     # \lambda \cdot \mu_{el}
-    # e.g. line 4 Eq. (18) in [McTague:2021:]
+    # e.g. line 4 Eq. (18) in [McTague:2021:ChemRxiv]
     l_dot_mu_el = lambda_vector[0] * mu_cmo_x
     l_dot_mu_el += lambda_vector[1] * mu_cmo_y
     l_dot_mu_el += lambda_vector[2] * mu_cmo_z
@@ -154,7 +154,7 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
     #  0.5 * (\lambda \cdot \mu_{nuc})** 2
     #      - (\lambda \cdot <\mu> ) ( \lambda \cdot \mu_{nuc})
     # +0.5 * (\lambda \cdot <\mu>) ** 2
-    # Eq. (14) of [McTague:2021:]
+    # Eq. (14) of [McTague:2021:ChemRxiv]
     d_c = (
         0.5 * l_dot_mu_nuc ** 2 - l_dot_mu_nuc * l_dot_mu_exp + 0.5 * l_dot_mu_exp ** 2
     )
@@ -171,12 +171,12 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
     Hp = np.zeros((ndocc * nvirt * 2 + 2, ndocc * nvirt * 2 + 2), dtype=complex)
 
     # elements corresponding to <s|<\Phi_0 | H | \Phi_0>|t>
-    # Eq. (16) of [McTague:2021:]
+    # Eq. (16) of [McTague:2021:ChemRxiv]
     Hp[0, 0] = 0.0
     Hp[1, 1] = omega_val
 
     # elements corresponding to <s|<\Phi_0 | H | \Phi_i^a>|t>
-    # Eq. (17) of [McTague:2021:]
+    # Eq. (17) of [McTague:2021:ChemRxiv]
     for s in range(0, 2):
         for i in range(0, ndocc):
             for a in range(0, nvirt):
@@ -209,7 +209,7 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
                     )
 
     # elements corresponding to <s|<\Phi_i^a| H | \Phi_j^b|t>
-    # Eq. (18) of [McTague:2021:]
+    # Eq. (18) of [McTague:2021:ChemRxiv]
     for i in range(0, ndocc):
         for a in range(0, nvirt):
             A = a + ndocc
