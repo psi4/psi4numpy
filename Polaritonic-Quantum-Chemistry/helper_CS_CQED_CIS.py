@@ -183,7 +183,7 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
                 A = a + ndocc
                 for t in range(0, 2):
                     iat = 2 * (i * nvirt + a) + t + 2
-                    Hep[s, iat] = (
+                    Hep[s, iat] = Hep[iat, s] = (
                         -np.sqrt(omega_val)
                         * np.sqrt(t + 1)
                         * l_dot_mu_el[i, A]
