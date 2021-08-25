@@ -188,25 +188,12 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
                         * np.sqrt(t + 1)
                         * l_dot_mu_el[i, A]
                         * (s == t + 1)
-                    )
-                    Hep[s, iat] -= (
-                        np.sqrt(omega_val)
+                        -np.sqrt(omega_val) 
                         * np.sqrt(t)
                         * l_dot_mu_el[i, A]
                         * (s == t - 1)
                     )
-                    Hep[iat, s] = (
-                        -np.sqrt(omega_val)
-                        * np.sqrt(s + 1)
-                        * l_dot_mu_el[i, A]
-                        * (s + 1 == t)
-                    )
-                    Hep[iat, s] -= (
-                        np.sqrt(omega_val)
-                        * np.sqrt(s)
-                        * l_dot_mu_el[i, A]
-                        * (s - 1 == t)
-                    )
+
 
     # elements corresponding to <s|<\Phi_i^a| H | \Phi_j^b|t>
     # Eq. (18) of [McTague:2021:ChemRxiv]
