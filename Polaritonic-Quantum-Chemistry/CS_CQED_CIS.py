@@ -62,10 +62,10 @@ mol = psi4.geometry(mol_str)
 om_1 = 0
 lam_1 = np.array([0.0, 0.0, 0.0])
 
-om_2 = 4.75 / 27.211
+om_2 = 4.75 / psi4.constants.Hartree_energy_in_eV 
 lam_2 = np.array([0.0, 0.0, 0.0125])
 
-om_3 = 4.75 / 27.211 - 0.22j
+om_3 = 4.75 / psi4.constants.Hartree_energy_in_eV - 0.22j
 lam_3 = np.array([0.0, 0.0, 0.0125])
 
 
@@ -103,11 +103,11 @@ print("\n    CASE 1 RHF Energy (Hatree):                    %.8f" % psi4_rhf_e)
 print("    CASE 1 CQED-RHF Energy (Hartree):              %.8f" % scf_e_1)
 print(
     "    CASE 1 CIS LOWEST EXCITATION ENERGY (eV)        %.4f"
-    % (psi4_excitation_e[0] * 27.211)
+    % (psi4_excitation_e[0] * psi4.constants.Hartree_energy_in_eV)
 )
 print(
     "    CASE 1 CQED-CIS LOWEST EXCITATION ENERGY (eV)   %.4f"
-    % (np.real(cqed_cis_e_1[1]) * 27.211)
+    % (np.real(cqed_cis_e_1[1]) * psi4.constants.Hartree_energy_in_eV)
 )
 
 print(
@@ -115,11 +115,11 @@ print(
 )
 print(
     "\n    CASE 2 |X,0> -> |LP> Energy (eV)                %.4f"
-    % (np.real(cqed_cis_e_2[1]) * 27.211)
+    % (np.real(cqed_cis_e_2[1]) * psi4.constants.Hartree_energy_in_eV)
 )
 print(
     "    CASE 2 |X,0> -> |UP> Energy (eV)                %.4f"
-    % (np.real(cqed_cis_e_2[2]) * 27.211)
+    % (np.real(cqed_cis_e_2[2]) * psi4.constants.Hartree_energy_in_eV)
 )
 
 print(
@@ -127,11 +127,11 @@ print(
 )
 print(
     "\n    CASE 3 |X,0> -> |LP> Energy (eV)                %.4f"
-    % (np.real(cqed_cis_e_3[1]) * 27.211)
+    % (np.real(cqed_cis_e_3[1]) * psi4.constants.Hartree_energy_in_eV)
 )
 print(
     "    CASE 3 |X,0> -> |UP> Energy (eV)                %.4f\n"
-    % (np.real(cqed_cis_e_3[2]) * 27.211)
+    % (np.real(cqed_cis_e_3[2]) * psi4.constants.Hartree_energy_in_eV)
 )
 
 # check to see that the CQED-RHF energy matches ordinary RHF energy for case 1
@@ -140,5 +140,6 @@ psi4.compare_values(psi4_rhf_e, scf_e_1, 8, "CASE 1 SCF E")
 # check to see if first CQED-CIS excitation energy matches first CIS excitation energy for case 1
 psi4.compare_values(cqed_cis_e_1[1], psi4_excitation_e[0], 8, "CASE 1 CQED-CIS E")
 
+
 # check to see if first CQED-CIS excitation energy matches value from [McTague:2021:ChemRxiv] Figure 3 for case 2
-psi4.compare_values(cqed_cis_e_2[1], 0.1656324971518871, 8, "CASE 2 CQED-CIS E")
+psi4.compare_values(cqed_cis_e_2[1], 0.16563136, 8, "CASE 2 CQED-CIS E")
