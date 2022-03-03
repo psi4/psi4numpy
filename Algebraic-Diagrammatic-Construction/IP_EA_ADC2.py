@@ -148,9 +148,11 @@ guess = np.eye(diag.size)[:, arg[:n_states]]
 e_ip, v_ip = davidson(ip_matvec, guess, diag, tol=tol)
 
 # Print the IPs - each should be doubly degenerate
-print('\n%2s %16s %16s' % ('#', 'IP (Ha)', 'IP (eV)'))
+# Also printed is the quasiparticle weight (weight in the singles space)
+print('\n%2s %16s %16s %16s' % ('#', 'IP (Ha)', 'IP (eV)', 'QP weight'))
 for i in range(n_states):
-    print('%2d %16.8f %16.8f' % (i, -e_ip[i], -e_ip[i] * 27.21139664))
+    qpwt = np.linalg.norm(v_ip[:nocc, i])**2
+    print('%2d %16.8f %16.8f %16.8f' % (i, -e_ip[i], -e_ip[i] * 27.21139664, qpwt))
 print()
 
 # Compute the diagonal of the EA-ADC(2) matrix to use as a preconditioner
@@ -163,6 +165,8 @@ guess = np.eye(diag.size)[:, arg[:n_states]]
 e_ea, v_ea = davidson(ea_matvec, guess, diag, tol=tol)
 
 # Print the states - each should be doubly degenerate
-print('\n%2s %16s %16s' % ('#', 'EA (Ha)', 'EA (eV)'))
+# Also printed is the quasiparticle weight (weight in the singles space)
+print('\n%2s %16s %16s %16s' % ('#', 'EA (Ha)', 'EA (eV)', 'QP weight'))
 for i in range(n_states):
-    print('%2d %16.8f %16.8f' % (i, e_ea[i], e_ea[i] * 27.21139664))
+    qpwt = np.linalg.norm(v_ea[:nvir, i])**2
+    print('%2d %16.8f %16.8f %16.8f' % (i, e_ea[i], e_ea[i] * 27.21139664, qpwt))
