@@ -142,7 +142,9 @@ def ea_matvec(y):
 # for the Davidson algorithm, and to generate the guess vectors
 diag = np.concatenate([np.diag(h_hh), e_ija.ravel()])
 arg = np.argsort(np.absolute(diag))
-guess = np.eye(diag.size)[:, arg[:n_states]]
+guess = np.zeros((diag.size, n_states))
+for i in range(n_states):
+    guess[arg[i], i] = 1.0
 
 # Compute the IPs
 e_ip, v_ip = davidson(ip_matvec, guess, diag, tol=tol)
@@ -159,7 +161,9 @@ print()
 # for the Davidson algorithm, and to generate the guess vectors
 diag = np.concatenate([np.diag(h_pp), -e_iab.ravel()])
 arg = np.argsort(np.absolute(diag))
-guess = np.eye(diag.size)[:, arg[:n_states]]
+guess = np.zeros((diag.size, n_states))
+for i in range(n_states):
+    guess[arg[i], i] = 1.0
 
 # Compute the EAs
 e_ea, v_ea = davidson(ea_matvec, guess, diag, tol=tol)

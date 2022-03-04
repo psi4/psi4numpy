@@ -139,7 +139,9 @@ d_ia -= einsum('ackl,klac->a', eri[v, v, o, o], t2)[None, :] * 0.25
 d_ia -= einsum('klac,klac->a', eri[o, o, v, v], t2)[None, :] * 0.25
 
 arg = np.argsort(np.absolute(diag))
-guess = np.eye(diag.size)[:, arg[:n_states]]
+guess = np.zeros((diag.size, n_states))
+for i in range(n_states):
+    guess[arg[i], i] = 1.0
 
 # Computes the EEs
 e_ee, v_ee = davidson(matvec, guess, diag, tol=tol)
