@@ -65,4 +65,6 @@ def davidson(matrix, guesses, diag, maxiter=None, sort_via_abs=True, tol=1e-10, 
             else:
                 b = np.concatenate([b, np.column_stack(b_new)], axis=1)
 
+    b = b[:, :guesses.shape[-1]]
+
     return theta, b
