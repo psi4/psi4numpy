@@ -57,6 +57,7 @@ def davidson(matrix, guesses, diag, maxiter=None, sort_via_abs=True, tol=1e-10, 
         de = np.linalg.norm(theta[:k] - theta_old)
         if de < tol:
             conv = True
+            b = np.dot(b, alpha)
             break
         else:
             if b.shape[1] >= (k * nvec_per_root):
