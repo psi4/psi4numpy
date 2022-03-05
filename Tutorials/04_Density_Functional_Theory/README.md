@@ -3,7 +3,7 @@ Density Functional Theory
 
 This module seeks to provide an overview of the theory and programming challenges associated with Density Functional Theory with the following tutorials:
 
-- 4a DFT Grid: Briefly outlines several details of the DFT Grid.
+- 4a Grids: Briefly outlines several details of the grids used in DFT and visualization.
 
 - 4b LDA Kernel: Discusses how the local density approximation (LDA) is formed and computed.
 
