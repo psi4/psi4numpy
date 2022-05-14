@@ -81,7 +81,7 @@ options = {
 }
 
 # Define custom basis set to match STO-3G from CFOUR
-def basisspec_psi4_yo__anonymous203a4092(mol, role):
+def define_custom_basis(mol, role):
     basstrings = {}
     mol.set_basis_all_atoms("sto-3g", role=role)
     basstrings['sto-3g'] = """
@@ -115,8 +115,8 @@ SP   3   1.00
 ****
 """
     return basstrings
-qcdb.libmintsbasisset.basishorde['ANONYMOUS203A4092'] = basisspec_psi4_yo__anonymous203a4092
-core.set_global_option("BASIS", "anonymous203a4092")
+qcdb.libmintsbasisset.basishorde['STO-3G_CFOUR'] = define_custom_basis
+core.set_global_option("BASIS", "STO-3G_CFOUR")
 
 psi4.set_options(options)
 
@@ -761,7 +761,7 @@ Mat = psi4.core.Matrix.from_array(Hessian)
 Mat.name = " TOTAL HESSIAN"
 Mat.print_out()
 
-H_psi4 = psi4.core.Matrix.from_list([
+H_cfour = psi4.core.Matrix.from_list([
 [-3.6130997071,        0.0000000000,       -0.0000000000,        1.8065498535,       -0.0000000000,       -0.0000000000,        1.8065498535,        0.0000000000,        0.0000000000],
 [ 0.0000000000,        8.4484978101,        0.0000000000,       -0.0000000000,       -4.2242489050,       -4.7117763859,        0.0000000000,       -4.2242489050,        4.7117763859],
 [-0.0000000000,        0.0000000000,        3.7558758529,       -0.0000000000,       -4.3809411905,       -1.8779379264,        0.0000000000,        4.3809411905,       -1.8779379264],
@@ -773,4 +773,4 @@ H_psi4 = psi4.core.Matrix.from_list([
 [ 0.0000000000,        4.7117763860,       -1.8779379264,        0.0000000000,       -0.1654175977,        0.0707306648,       -0.0000000000,       -4.5463587882,        1.8072072616]
 ])
 H_python_mat = psi4.core.Matrix.from_array(Hessian)
-psi4.compare_matrices(H_psi4, H_python_mat, 9, "RHF-HESSIAN-TEST")
+psi4.compare_matrices(H_cfour, H_python_mat, 9, "MP2-HESSIAN-TEST")
