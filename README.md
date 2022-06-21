@@ -45,19 +45,11 @@ please see our [contributor guidelines](https://github.com/psi4/psi4numpy/blob/m
 1. Obtain required software
     1. [Psi4NumPy](https://github.com/psi4/psi4numpy) (clone this repository; no install available)
     2. [Psi4](http://psicode.org/psi4manual/1.1/build_obtaining.html)
-        * Option 1 (easiest): [Download installer](http://vergil.chemistry.gatech.edu/psicode-download/1.1.html) and install according to [instructions](http://psicode.org/psi4manual/1.1/conda.html#how-to-install-a-psi4-binary-with-the-psi4conda-installer-command-line).
-          ```
-          # Have Psi4conda installer (http://psicode.org/downloads.html)
-          >>> bash psi4conda-{various}.sh
-          # Check `psi4` command in path; adjust path if needed
-          # **IF** using DFT tutorials (or a few newer specialized integrals), after above, create a separate environment within for newer psi4:
-          >>> conda create -n p4env psi4 -c psi4/label/dev
-          >>> source activate p4env
-          ```
-        * Option 2 (easy): Download Conda package according to [instructions](http://psicode.org/psi4manual/1.1/conda.html#how-to-install-a-psi4-binary-into-an-ana-miniconda-distribution)
+        * Option 1 (easiest): [Download installer](https://psicode.org/installs/latest/) based on your preferred operating system and version of Python. Proceed to follow the instructions described at the bottom of that page.  
+        * Option 2 (easy): Download Conda package according to [instructions](https://psicode.org/psi4manual/master/conda.html#how-to-install-a-psi4-binary-into-an-ana-miniconda-distribution). To find the different versions available visit the [anaconda website](https://anaconda.org/psi4/psi4).
           ```
           # Have Anaconda or Miniconda (https://conda.io/miniconda.html)
-          >>> conda create -n p4env psi4 -c psi4
+          >>> conda create -n p4env psi4 -c psi4 # Create a new environment named p4env and install psi4. 
           >>> bash
           >>> source activate p4env
           ```
@@ -93,11 +85,10 @@ please see our [contributor guidelines](https://github.com/psi4/psi4numpy/blob/m
         ```
 
 New users can follow the
-[Getting Started](https://github.com/psi4/psi4numpy/blob/master/Tutorials/01_Psi4NumPy-Basics/1a_Getting-Started.ipynb)
-notebook or the [PsiAPI documentation](http://psicode.org/psi4manual/master/psiapi.html) for an introduction to running Psi4 within the PsiAPI.
+[Tutorials](https://github.com/psi4/psi4numpy/blob/master/Tutorials/01_Psi4NumPy-Basics/) or the [PsiAPI documentation](http://psicode.org/psi4manual/master/psiapi.html) for an introduction to running Psi4 within the PsiAPI.
 
 A tutorial that covers the basics of NumPy can be found
-[here](http://wiki.scipy.org/Tentative_NumPy_Tutorial).
+[here](https://education.molssi.org/python-data-analysis/01-numpy-arrays/index.html).
 
 ### Repository Organization
 
