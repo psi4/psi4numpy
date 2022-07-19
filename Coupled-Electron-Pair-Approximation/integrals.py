@@ -16,6 +16,9 @@ def orbitals_fock(mol, singles):
     wfn = psi4.energy('scf', molecule=mol, return_wfn=True)[1]
 
     ### Orbitals
+    CA_C = wfn.Ca_subset("AO", "FROZEN_OCC")
+    CB_C = wfn.Cb_subset("AO", "FROZEN_OCC")
+    C_C = np.block([[CA_C, np.zeros(CB_C.shape)], [np.zeros(CA_C.shape), CB_C]])
     CA_O = wfn.Ca_subset("AO", "ACTIVE_OCC")
     CB_O = wfn.Cb_subset("AO", "ACTIVE_OCC")
     C_O = np.block([[CA_O, np.zeros(CB_O.shape)], [np.zeros(CA_O.shape), CB_O]])
@@ -29,18 +32,21 @@ def orbitals_fock(mol, singles):
     Fb = wfn.Fb()
     FI = np.block([[Fa, np.zeros(Fb.shape)], [np.zeros(Fa.shape), Fb]])
     F = {
-        "oo": np.einsum('pP,qQ,pq->PQ', C_O, C_O, FI, optimize=True),
-        "vv": np.einsum('pP,qQ,pq->PQ', C_V, C_V, FI, optimize=True)
+        "cv": np.einsum("pP,qQ,pq->PQ", C_C, C_V, FI, optimize=True),
+        "co": np.einsum("pP,qQ,pq->PQ", C_C, C_O, FI, optimize=True),
+        "cc": np.einsum("pP,qQ,pq->PQ", C_C, C_C, FI, optimize=True),
+        "oo": np.einsum("pP,qQ,pq->PQ", C_O, C_O, FI, optimize=True),
+        "vv": np.einsum("pP,qQ,pq->PQ", C_V, C_V, FI, optimize=True),
     }
     if singles:
         F["ov"] = np.einsum('pP, qQ, pq -> PQ', C_O, C_V, FI, optimize=True)
 
-    return C_O, C_V, mints, F
+    return C_C, C_O, C_V, mints, F
 
 
 def integrals(mol, singles=False, return_intermediates=False):
 
-    C_O, C_V, mints, F = orbitals_fock(mol, singles)
+    C_C, C_O, C_V, mints, F = orbitals_fock(mol, singles)
 
     ### Two-Electron Integrals
     TEI = mints.ao_eri().np
@@ -54,7 +60,19 @@ def integrals(mol, singles=False, return_intermediates=False):
         "oovv": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_O, C_O, C_V, C_V, TEI, optimize=True),
         "oooo": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_O, C_O, C_O, C_O, TEI, optimize=True),
         "voov": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_V, C_O, C_O, C_V, TEI, optimize=True),
-        "vvvv": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_V, C_V, C_V, C_V, TEI, optimize=True)
+        "vvvv": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_V, C_V, C_V, C_V, TEI, optimize=True),
+        "coco": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_C, C_O, C_C, C_O, TEI, optimize=True),
+        "cocv": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_C, C_O, C_C, C_V, TEI, optimize=True),
+        "cvcv": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_C, C_V, C_C, C_V, TEI, optimize=True),
+        "cccc": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_C, C_C, C_C, C_C, TEI, optimize=True),
+        "ccco": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_C, C_C, C_C, C_O, TEI, optimize=True),
+        "cvvv": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_C, C_V, C_V, C_V, TEI, optimize=True),
+        "coov": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_C, C_O, C_O, C_V, TEI, optimize=True),
+        "cooo": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_C, C_O, C_O, C_O, TEI, optimize=True),
+        "cvov": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_C, C_V, C_O, C_V, TEI, optimize=True),
+        "covv": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_C, C_O, C_V, C_V, TEI, optimize=True),
+        "cccv": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_C, C_C, C_C, C_V, TEI, optimize=True),
+        "cvoo": np.einsum('pP,qQ,rR,sS,pqrs->PQRS', C_C, C_V, C_O, C_O, TEI, optimize=True),
     }
 
     if singles:
@@ -65,7 +83,7 @@ def integrals(mol, singles=False, return_intermediates=False):
         return I, F
     else:
         OEI = np.kron(np.eye(2), mints.ao_kinetic().np + mints.ao_potential().np)
-        intermed = {"TEI": TEI, "O": C_O, "V": C_V, "OEI": OEI}
+        intermed = {"TEI": TEI, "C": C_C, "O": C_O, "V": C_V, "OEI": OEI}
         return I, F, intermed
 
 
