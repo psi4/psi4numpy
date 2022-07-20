@@ -106,15 +106,6 @@ for i in range(1, maxiter + 1):
     Fc = F["cc"].diagonal()
     Fo = F["oo"].diagonal()
     Fv = F["vv"].diagonal()
-    D_ov = Fo.reshape(-1, 1) - Fv
-    D_cv = Fc.reshape(-1, 1) - Fv
-    # Use the diagonal MP2 hessian for core-occupied rotations.
-    # However, off-diagonal elements can be large (confirmed numerically by code not in P4N)
-    # so even this is suboptimal.
-    D_co = np.einsum("C, Ii, iI -> CI", np.ones(num_cor), F["oo"], opdm_oo_corr)
-    D_co -= np.einsum("C, II -> CI", Fc, opdm_oo_corr)
-    D_co += 0.5 * np.einsum("C, Ijab, Ijab -> CI", np.ones(num_cor), t2, I["oovv"])
-    D2 = Fo.reshape(-1, 1, 1, 1) + Fo.reshape(-1, 1, 1) - Fv.reshape(-1, 1) - Fv
 
     ### Construct reduced density matrices. Eq. 24 is always relevant.
     scf_opdm = np.eye(*F["oo"].shape) # Eq. 25
@@ -137,6 +128,16 @@ for i in range(1, maxiter + 1):
     tpdm_cccc = temp + temp.transpose((1, 0, 3, 2))
     tpdm_coco = np.einsum("pr, qs -> pqrs", opdm_cc, opdm_oo, optimize=True)
     tpdm_cvcv = np.einsum("pr, qs -> pqrs", opdm_cc, opdm_vv, optimize=True)
+
+    D_ov = Fo.reshape(-1, 1) - Fv
+    D_cv = Fc.reshape(-1, 1) - Fv
+    # Use the diagonal MP2 hessian for core-occupied rotations.
+    # However, off-diagonal elements can be large (confirmed numerically by code not in P4N)
+    # so even this is suboptimal.
+    D_co = np.einsum("C, Ii, iI -> CI", np.ones(num_cor), F["oo"], opdm_oo_corr)
+    D_co -= np.einsum("C, II -> CI", Fc, opdm_oo_corr)
+    D_co += 0.5 * np.einsum("C, Ijab, Ijab -> CI", np.ones(num_cor), t2, I["oovv"])
+    D2 = Fo.reshape(-1, 1, 1, 1) + Fo.reshape(-1, 1, 1) - Fv.reshape(-1, 1) - Fv
 
     # Expand out eq. 37.
     # A non-toy implementation will likely want to avoid explicitly constructing the VVVV TPDM
