@@ -142,4 +142,5 @@ psi4.compare_values(cqed_cis_e_1[1], psi4_excitation_e[0], 8, "CASE 1 CQED-CIS E
 
 
 # check to see if first CQED-CIS excitation energy matches value from [McTague:2021:ChemRxiv] Figure 3 for case 2
-psi4.compare_values(cqed_cis_e_2[1], 0.16563136, 8, "CASE 2 CQED-CIS E")
+# This still needs to be corrected in the paper!
+psi4.compare_values(cqed_cis_e_2[1], 0.1655708380, 8, "CASE 2 CQED-CIS E")

@@ -251,37 +251,7 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
                                 * (s == t - 1)
                                 * (i == j)
                             )
-                            # now handle diagonal in electronic term
-                            if a == b and i == j and s == t + 1:
-                                # l dot <mu> term
-                                Hep[ias, jbt] += (
-                                    np.sqrt(t + 1)
-                                    * np.sqrt(omega_val / 2)
-                                    * l_dot_mu_exp
-                                )
-                                # l dot mu terms
-                                for k in range(0, ndocc):
-                                    # sum over occupied indices
-                                    Hep[ias, jbt] -= (
-                                        np.sqrt(t + 1)
-                                        * np.sqrt(omega_val / 2)
-                                        * l_dot_mu_el[k, k]
-                                    )
 
-                            # now handle diagonal in electronic term
-                            if a == b and i == j and s == t - 1:
-                                # l dot <mu> term
-                                Hep[ias, jbt] += (
-                                    np.sqrt(t) * np.sqrt(omega_val / 2) * l_dot_mu_exp
-                                )
-                                # l dot mu terms
-                                for k in range(0, ndocc):
-                                    # sum over occupied indices
-                                    Hep[ias, jbt] -= (
-                                        np.sqrt(t)
-                                        * np.sqrt(omega_val / 2)
-                                        * l_dot_mu_el[k, k]
-                                    )
     # Form Htot from sum of all terms
     Htot = Hp + Hep + H1e + H2e + H2edp
     # now diagonalize H
