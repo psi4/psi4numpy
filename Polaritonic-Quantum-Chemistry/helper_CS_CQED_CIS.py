@@ -222,7 +222,7 @@ def cs_cqed_cis(lambda_vector, omega_val, molecule_string, psi4_options_dict):
                             Hp[ias, jbt] += (
                                 (omega_val * t) * (s == t) * (i == j) * (a == b)
                             )
-                            # bilinear coupling - off-diagonals first
+                            # bilinear coupling
                             Hep[ias, jbt] += (
                                 np.sqrt(t + 1)
                                 * np.sqrt(omega_val / 2)
