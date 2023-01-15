@@ -102,6 +102,9 @@ MO = MO - MO.swapaxes(1, 3)
 MO = MO.swapaxes(1, 2)
 print('..finished transformation in %.3f seconds.\n' % (time.time()-t))
 
+#define constant in one place - easier if needs to be changed
+eV = 27.21138505
+
 # Update nocc and nvirt
 nocc = ndocc * 2
 nvirt = MO.shape[0] - nocc
@@ -138,19 +141,19 @@ for orbital in range(nocc-num_orbs*2, nocc, 2):
         # Break if below threshold
         if abs(Enew - Eold) < 1.e-4:
             ep2_conv = True
-            ep2_arr.append(Enew * 27.21138505)
+            ep2_arr.append(Enew * eV)
             break
 
         # Build derivatives
-        sigma_deriv1 = -1 * np.einsum('rsa,ars,ars', MO[v, v, orbital, o], MO[orbital, o, v, v], np.power(epsilon1, 2))
-        sigma_deriv2 = -1 * np.einsum('abr,rab,rab', MO[o, o, orbital, v], MO[orbital, v, o, o], np.power(epsilon2, 2))
+        sigma_deriv1 = -0.5 * np.einsum('rsa,ars,ars', MO[v, v, orbital, o], MO[orbital, o, v, v], np.power(epsilon1, 2))
+        sigma_deriv2 = -0.5 * np.einsum('abr,rab,rab', MO[o, o, orbital, v], MO[orbital, v, o, o], np.power(epsilon2, 2))
         deriv = 1 - (sigma_deriv1 + sigma_deriv2)
 
         # Newton-Raphson update
         E = Eold - (Eold - Enew) / deriv
 
     if ep2_conv is False:
-        ep2_arr.append(Enew * 27.21138505)
+        ep2_arr.append(Enew * eV)
         print('WARNING: EP2 for orbital HOMO - %d did not converged' % (ndocc - orbital/2 - 1))
 
 
@@ -159,7 +162,7 @@ print("EP2 - Electron Propagator 2\n")
 print("HOMO - n         KP (eV)              EP2 (eV)")
 print("----------------------------------------------")
 
-KP_arr = eps[:nocc][::2] * 27.21138505
+KP_arr = eps[:nocc][::2] * eV
 
 for orbital in range(0, len(ep2_arr)):
     print("% 4d     % 16.4f    % 16.4f" % ((len(ep2_arr)-orbital-1), KP_arr[orbital], ep2_arr[orbital]))
