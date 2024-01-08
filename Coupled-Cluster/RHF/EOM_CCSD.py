@@ -45,7 +45,7 @@ symmetry c1
 # EOM options
 compare_psi4 = True
 nroot = 3
-nvec_per_root = 30
+nvec_per_root = 10
 e_tol = 1.0e-7
 max_iter = 80
 
