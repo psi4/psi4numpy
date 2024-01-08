@@ -45,8 +45,8 @@ symmetry c1
 # EOM options
 compare_psi4 = True
 nroot = 3
-nvec_per_root = 30
-e_tol = 1.0e-6
+nvec_per_root = 10
+e_tol = 1.0e-7
 max_iter = 80
 
 # roots per irrep must be set to do the eom calculation with psi4
@@ -93,13 +93,14 @@ cceom = HelperCCEom(ccsd, cchbar)
 # Get the approximate diagonal of Hbar
 D = np.hstack((cceom.Dia.flatten(), cceom.Dijab.flatten()))
 
-# We build a guess by selecting the lowest values of the approximate diagonal
-# in the singles space one for each nroot*2 guesses we want,
-# and we insert a guess vector with a 1 in the position corresponding to
-# that single excitation and zeros everywhere else.
-# This is a decent guess, more complicated one such as using CIS
+# We build a guess by selecting the highest values of the approximate diagonal
+# in the singles space one for each nroot*2 guesses we want, because these roughly
+# correspond to HOMO-LUMO energy differences (using HBAR for the energies rather 
+# than the Fock matrix).  For each guess, we insert a guess vector with a 1 in the 
+# position corresponding to that single excitation and zeros everywhere else.
+# This is a decent guess, though more complicated one such as using CIS
 # eigenvectors are more common in production level codes.
-B_idx = D[:nov].argsort()[:nroot * 2]
+B_idx = D[:nov].argsort()[::-1][:nroot * 2]
 B = np.eye(hbar_dim)[:, B_idx]
 
 conv = False
@@ -136,7 +137,7 @@ for EOMCCSD_iter in range(0, max_iter + 1):
         # that the norm of the residual vector is below some threshold.
         w = np.dot(S, alpha[:, j]) - theta[j] * np.dot(B, alpha[:, j])
         # Precondition the residual vector to form a correction vector
-        q = w / (theta[j] - D[j])
+        q = w / (theta[j] - D)
         # The correction vectors are added to the set of guesses after each
         # iterations, so L the guess space dimension grows by nroot at each
         # iteration
@@ -175,9 +176,9 @@ if conv:
     print("Excitation Energies")
     print("{:>6}  {:^20}  {:^20}".format("Root #", "Hartree", "eV"))
     print("{:>6}  {:^20}  {:^20}".format("-" * 6, "-" * 20, "-" * 20))
+    ev = psi4.qcel.constants.get("hartree energy in ev")
     for i in range(nroot):
-        print("{:>6}  {:>20.12f}  {:>20.12f}".format(i, theta[i],
-                                                     theta[i] * 22.211))
+        print("{:>6}  {:>20.12f}  {:>20.12f}".format(i, theta[i], theta[i] * ev))
 else:
     psi4.core.clean()
     raise Exception("EOMCCSD Failed -- Iterations exceeded")
