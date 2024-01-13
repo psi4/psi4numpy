@@ -64,9 +64,6 @@ class helper_CPHF(object):
             Fia *= -2
             self.dipoles_xyz.append(Fia)
 
-        self.x = None
-        self.rhsvecs = None
-
     def run(self, method='direct', omega=None):
         self.method = method
         if self.method == 'direct':
@@ -273,85 +270,85 @@ class helper_CPHF(object):
             print('CPHF Iteration %3d: Average RMS = %3.8f  Maximum RMS = %3.8f' %
                   (CPHF_ITER, avg_RMS, max_RMS))
 
-    def solve_dynamic_iterative(self, omega=0.0, maxiter=20, conv=1.e-9, use_diis=True):
+    def solve_dynamic_iterative(self, omega=0.0, maxiter=20, conv=1.e-10, use_diis=True):
 
         # Init JK object
         jk = psi4.core.JK.build(self.scf_wfn.basisset())
         jk.initialize()
 
-        # Add blank matrices to the JK object and NumPy hooks to
-        # C_right; there are 6 sets of matrices to account for X and Y
-        # vectors separately.
-        npC_right = []
-        for xyz in range(6):
+        # Build initial guess, previous vectors, and DIIS objects
+        norb = self.scf_wfn.nmo()
+        C = np.asarray(self.C)
+        rhsmats = [(C.T).dot(np.asarray(dipmat)).dot(C) for dipmat in self.tmp_dipoles]
+        x = []
+        x_old = []
+        diis = []
+        ia_denom = self.epsilon[self.nocc:] - self.epsilon[:self.nocc].reshape(-1, 1) - omega
+        all_denom = self.epsilon.reshape(-1, 1) - self.epsilon - omega
+        for rhsmat in rhsmats:
+            U = np.zeros((norb, norb))
+            U[:self.nocc, self.nocc:] = rhsmat[:self.nocc, self.nocc:] / ia_denom
+            U[self.nocc:, :self.nocc] = rhsmat[self.nocc:, :self.nocc] / -ia_denom.T
+            x.append(U)
+            x_old.append(np.zeros_like(U))
+            diis.append(DIIS_helper())
+
+        # Add blank matrices to the jk object and NumPy hooks to C_right,
+        # which will contain MO coefficients contracted with the response
+        # matrix. 1 and 2 refer to the first and second terms in the perturbed
+        # density build:
+        #   P^{x} = C @ U^{x}.T @ C.T - C @ U^{x} @ C.T
+        #         = C @ C^{x}_1.T + C^{x}_2 @ C.T
+        npCx_1 = []
+        npCx_2 = []
+        for _ in range(len(rhsmats)):
+            mCx_1 = psi4.core.Matrix(self.nbf, self.nocc)
+            npCx_1.append(np.asarray(mCx_1))
             jk.C_left_add(self.Co)
-            mC = psi4.core.Matrix(self.nbf, self.nocc)
-            npC_right.append(np.asarray(mC))
-            jk.C_right_add(mC)
-
-        # Build initial guess, previous vectors, diis object, and C_left updates
-        x_l, x_r = [], []
-        x_l_old, x_r_old = [], []
-        diis_l, diis_r = [], []
-        ia_denom_l = self.epsilon[self.nocc:] - self.epsilon[:self.nocc].reshape(-1, 1) - omega
-        ia_denom_r = self.epsilon[self.nocc:] - self.epsilon[:self.nocc].reshape(-1, 1) + omega
-        for xyz in range(3):
-            x_l.append(self.dipoles_xyz[xyz] / ia_denom_l)
-            x_r.append(self.dipoles_xyz[xyz] / ia_denom_r)
-            x_l_old.append(np.zeros(ia_denom_l.shape))
-            x_r_old.append(np.zeros(ia_denom_r.shape))
-            diis_l.append(DIIS_helper())
-            diis_r.append(DIIS_helper())
-
-        # Convert Co and Cv to numpy arrays
-        Co = np.asarray(self.Co)
-        Cv = np.asarray(self.Cv)
+            jk.C_right_add(mCx_1)
+        for _ in range(len(rhsmats)):
+            mCx_2 = psi4.core.Matrix(self.nbf, self.nocc)
+            npCx_2.append(np.asarray(mCx_2))
+            jk.C_left_add(mCx_2)
+            jk.C_right_add(self.Co)
 
         print('\nStarting CPHF iterations:')
         t = time.time()
         for CPHF_ITER in range(1, maxiter + 1):
 
-            # Update jk's C_right; ordering is Xx, Xy, Xz, Yx, Yy, Yz
-            for xyz in range(3):
-                npC_right[xyz][:] = Cv.dot(x_l[xyz].T)
-                npC_right[xyz + 3][:] = Cv.dot(x_r[xyz].T)
+            for xyz in range(len(rhsmats)):
+                npCx_1[xyz][:] = C.dot(x[xyz].T)[:, :self.nocc]
+                npCx_2[xyz][:] = (-C).dot(x[xyz])[:, :self.nocc]
 
             # Perform generalized J/K build
             jk.compute()
-
             # Update amplitudes
-            for xyz in range(3):
+            for xyz in range(len(rhsmats)):
                 # Build J and K objects
-                J_l = np.asarray(jk.J()[xyz])
-                K_l = np.asarray(jk.K()[xyz])
-                J_r = np.asarray(jk.J()[xyz + 3])
-                K_r = np.asarray(jk.K()[xyz + 3])
+                J_1 = np.asarray(jk.J()[xyz])
+                K_1 = np.asarray(jk.K()[xyz])
+                J_2 = np.asarray(jk.J()[xyz + len(rhsmats)])
+                K_2 = np.asarray(jk.K()[xyz + len(rhsmats)])
 
-                # Bulid new guess
-                X_l = self.dipoles_xyz[xyz].copy()
-                X_r = self.dipoles_xyz[xyz].copy()
-                X_l -= (Co.T).dot(2 * J_l - K_l).dot(Cv)
-                X_r -= (Co.T).dot(2 * J_r - K_r).dot(Cv)
-                X_l /= ia_denom_l
-                X_r /= ia_denom_r
-
+                # Build new guess: work in the full [norb, norb] space, then
+                # select only those parameters corresponding to
+                # occ->virt/virt->occ rotation, leaving the occ-occ and
+                # virt-virt parameters zero.
+                U = x[xyz].copy()
+                upd = (rhsmats[xyz] - (x[xyz] * all_denom - (C.T).dot(2 * J_1 - K_1 + 2 * J_2 - K_2).dot(C))) / all_denom
+                U[:self.nocc, self.nocc:] += upd[:self.nocc, self.nocc:]
+                U[self.nocc:, :self.nocc] += upd[self.nocc:, :self.nocc]
                 # DIIS for good measure
                 if use_diis:
-                    diis_l[xyz].add(X_l, X_l - x_l_old[xyz])
-                    X_l = diis_l[xyz].extrapolate()
-                    diis_r[xyz].add(X_r, X_r - x_r_old[xyz])
-                    X_r = diis_r[xyz].extrapolate()
-                x_l[xyz] = X_l.copy()
-                x_r[xyz] = X_r.copy()
+                    diis[xyz].add(U, U - x_old[xyz])
+                    U = diis[xyz].extrapolate()
+                x[xyz] = U.copy()
 
             # Check for convergence
             rms = []
             for xyz in range(3):
-                rms_l = np.max((x_l[xyz] - x_l_old[xyz]) ** 2)
-                rms_r = np.max((x_r[xyz] - x_r_old[xyz]) ** 2)
-                rms.append(max(rms_l, rms_r))
-                x_l_old[xyz] = x_l[xyz]
-                x_r_old[xyz] = x_r[xyz]
+                rms.append(np.max((x[xyz] - x_old[xyz]) ** 2))
+                x_old[xyz] = x[xyz]
 
             avg_RMS = sum(rms) / 3
             max_RMS = max(rms)
@@ -359,11 +356,24 @@ class helper_CPHF(object):
             if max_RMS < conv:
                 print('CPHF converged in %d iterations and %.2f seconds.' % (CPHF_ITER, time.time() - t))
                 self.rhsvecs = []
+                self.x = []
                 for numx in range(3):
-                    rhsvec = self.dipoles_xyz[numx].reshape(-1)
-                    self.rhsvecs.append(np.concatenate((rhsvec, -rhsvec)))
-                    self.x.append(np.concatenate((x_l[numx].reshape(-1),
-                                                  x_r[numx].reshape(-1))))
+                    self.rhsvecs.append(
+                        np.concatenate(
+                            (
+                                self.dipoles_xyz[numx].reshape(-1),
+                                -self.dipoles_xyz[numx].T.reshape(-1),
+                            )
+                        )
+                    )
+                    self.x.append(
+                        np.concatenate(
+                            (
+                                x[numx][: self.nocc, self.nocc :].reshape(-1),
+                                x[numx][self.nocc :, : self.nocc].reshape(-1),
+                            )
+                        )
+                    )
                 break
 
             print('CPHF Iteration %3d: Average RMS = %3.8f  Maximum RMS = %3.8f' %
