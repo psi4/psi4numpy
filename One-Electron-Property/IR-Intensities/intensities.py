@@ -105,7 +105,7 @@ print("\nDipole Gradient in Normal Coordinate Basis ((D/A)/amu^(1/2)):\n", dip_g
 # (thanks to Zack Glick!)
 #
 psi_na = psi4.constants.na # Avogdro's number
-psi_alpha = qcel.constants.get("fine-structure constant") # finite-structure constant
+psi_alpha = psi4.constants.get("fine-structure constant") # finite-structure constant
 #
 # Conversion factor for taking IR intensities from ((D/A)^2 / amu) to a.u. ((e a0 / a0)^2 / me):
 conv_kmmol = psi4.constants.conversion_factor("debye^2 / (angstrom^2 * amu)", "(e^2 * bohr^2)/(bohr^2 * atomic_unit_of_mass)")

@@ -53,7 +53,7 @@ psi4.core.set_num_threads(4)
 # Useful Constants
 psi_c = psi4.constants.get("Natural unit of velocity") * 100                                                    # speed of light in cm/s
 psi_na = psi4.constants.na                                                                                      # Avogdro's number
-psi_alpha = qcel.constants.get("fine-structure constant")                                                       # finite-structure constant
+psi_alpha = psi4.constants.get("fine-structure constant")                                                       # finite-structure constant
 psi_h = psi4.constants.h                                                                                        # Planck's constant in J s
 psi_hbar = psi_h / (2 * np.pi)                                                                                  # hbar in J s
 
